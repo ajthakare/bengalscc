@@ -179,7 +179,7 @@ function getTeamColor(teamName: string): string {
                 </div>
                 <div class={`grid gap-6 ${upcomingWeekendMatches.length === 1 ? 'md:grid-cols-1' : upcomingWeekendMatches.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
                     {upcomingWeekendMatches.map(match => (
-                        <div class="bg-white rounded-lg border-2 border-gray-200 p-5">
+                        <div class="fixture-card bg-white rounded-lg border-2 border-gray-200 p-5" data-team={match.ourTeam}>
                             <div class={`inline-block px-4 py-2 rounded-full text-base font-bold mb-3 ${getTeamColor(match.ourTeam)}`}>
                                 {match.ourTeam}
                             </div>
@@ -266,35 +266,60 @@ function getTeamColor(teamName: string): string {
 
     {/* Quick Stats */}
     <div class="grid grid-cols-3 gap-4 mb-8" id="stats-container">
-        <div class="bg-white rounded-lg p-4 border border-gray-200 text-center">
-            <div class="text-3xl font-bold text-primary" id="total-matches">{fixtures.length}</div>
-            <div class="text-sm text-gray-600">Total Matches</div>
+        <div class="bg-white rounded-lg p-4 border border-gray-200">
+            <div class="flex items-center justify-center gap-3 mb-2">
+                <div class="text-4xl">🏏</div>
+                <div class="text-3xl font-bold text-primary" id="total-matches">{fixtures.length}</div>
+            </div>
+            <div class="text-sm text-gray-600 text-center">Total Matches</div>
         </div>
-        <div class="bg-white rounded-lg p-4 border border-gray-200 text-center">
-            <div class="text-3xl font-bold text-complementary" id="home-games">{fixtures.filter(f => f.isHome).length}</div>
-            <div class="text-sm text-gray-600">Home Games</div>
+        <div class="bg-white rounded-lg p-4 border border-gray-200">
+            <div class="flex items-center justify-center gap-3 mb-2">
+                <div class="text-4xl">🏠</div>
+                <div class="text-3xl font-bold text-complementary" id="home-games">{fixtures.filter(f => f.isHome).length}</div>
+            </div>
+            <div class="text-sm text-gray-600 text-center">Home Games</div>
         </div>
-        <div class="bg-white rounded-lg p-4 border border-gray-200 text-center">
-            <div class="text-3xl font-bold text-gray-700" id="away-games">{fixtures.filter(f => !f.isHome).length}</div>
-            <div class="text-sm text-gray-600">Away Games</div>
+        <div class="bg-white rounded-lg p-4 border border-gray-200">
+            <div class="flex items-center justify-center gap-3 mb-2">
+                <div class="text-4xl">✈️</div>
+                <div class="text-3xl font-bold text-gray-700" id="away-games">{fixtures.filter(f => !f.isHome).length}</div>
+            </div>
+            <div class="text-sm text-gray-600 text-center">Away Games</div>
         </div>
     </div>
 
-    {/* Upcoming Fixtures Section */}
+    {/* Upcoming Fixtures Section - Collapsible */}
     {upcomingFixtures.length > 0 && (
         <div class="mb-12">
-            <div class="flex items-center gap-3 mb-8">
-                <h2 class="text-4xl font-bold text-gray-900">🏏 Upcoming Fixtures</h2>
-                <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
-                    <span id="upcoming-count">{upcomingFixtures.length}</span> matches
-                </span>
-            </div>
+            <button
+                id="upcoming-fixtures-toggle"
+                class="flex items-center justify-between w-full bg-orange-100 hover:bg-orange-200 rounded-lg p-6 transition-all mb-6"
+            >
+                <div class="flex items-center gap-3">
+                    <h2 class="text-4xl font-bold text-gray-900">🏏 Upcoming Fixtures</h2>
+                    <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
+                        <span id="upcoming-count">{upcomingFixtures.length}</span> matches
+                    </span>
+                </div>
+                <svg
+                    id="upcoming-fixtures-icon"
+                    class="w-8 h-8 transition-transform rotate-180"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+            </button>
+
+            <div id="upcoming-fixtures-content">
 
             {Object.entries(upcomingByMonth).map(([month, monthFixtures]) => (
-                <div class="month-section mb-8">
+                <div class="month-section mb-0">
                     <Section>
                         <div class="mb-6">
-                            <h3 class="text-2xl font-bold text-gray-900">{month}</h3>
+                            <h3 class="text-3xl font-bold text-gray-900 bg-gradient-to-r from-blue-100 to-blue-200 border-l-4 border-blue-600 px-6 py-4 rounded-lg">{month}</h3>
                         </div>
 
                         <div class="grid md:grid-cols-2 gap-6">
@@ -359,6 +384,7 @@ function getTeamColor(teamName: string): string {
                     </Section>
                 </div>
             ))}
+            </div>
         </div>
     )}
 
@@ -367,7 +393,7 @@ function getTeamColor(teamName: string): string {
         <div class="mb-12">
             <button
                 id="past-fixtures-toggle"
-                class="flex items-center justify-between w-full bg-gray-100 hover:bg-gray-200 rounded-lg p-6 transition-all mb-6"
+                class="flex items-center justify-between w-full bg-gray-200 hover:bg-gray-300 rounded-lg p-6 transition-all mb-6"
             >
                 <div class="flex items-center gap-3">
                     <h2 class="text-4xl font-bold text-gray-900">📋 Past Fixtures</h2>
@@ -388,10 +414,10 @@ function getTeamColor(teamName: string): string {
 
             <div id="past-fixtures-content" class="hidden">
                 {Object.entries(pastByMonth).map(([month, monthFixtures]) => (
-                    <div class="month-section mb-8">
+                    <div class="month-section mb-0">
                         <Section>
                             <div class="mb-6">
-                                <h3 class="text-2xl font-bold text-gray-700">{month}</h3>
+                                <h3 class="text-3xl font-bold text-gray-700 bg-gradient-to-r from-gray-50 to-gray-100 border-l-4 border-gray-400 px-6 py-4 rounded-lg">{month}</h3>
                             </div>
 
                             <div class="grid md:grid-cols-2 gap-6">
@@ -506,6 +532,9 @@ function getTeamColor(teamName: string): string {
     document.addEventListener('DOMContentLoaded', () => {
         const filterButtons = document.querySelectorAll('.filter-btn');
         const fixtureCards = document.querySelectorAll('.fixture-card');
+        const upcomingToggle = document.getElementById('upcoming-fixtures-toggle');
+        const upcomingContent = document.getElementById('upcoming-fixtures-content');
+        const upcomingIcon = document.getElementById('upcoming-fixtures-icon');
         const pastToggle = document.getElementById('past-fixtures-toggle');
         const pastContent = document.getElementById('past-fixtures-content');
         const pastIcon = document.getElementById('past-fixtures-icon');
@@ -513,6 +542,21 @@ function getTeamColor(teamName: string): string {
         // Check for team parameter in URL
         const urlParams = new URLSearchParams(window.location.search);
         const teamFromUrl = urlParams.get('team');
+
+        // Toggle upcoming fixtures section
+        if (upcomingToggle && upcomingContent && upcomingIcon) {
+            upcomingToggle.addEventListener('click', () => {
+                const isHidden = upcomingContent.classList.contains('hidden');
+
+                if (isHidden) {
+                    upcomingContent.classList.remove('hidden');
+                    upcomingIcon.style.transform = 'rotate(180deg)';
+                } else {
+                    upcomingContent.classList.add('hidden');
+                    upcomingIcon.style.transform = 'rotate(0deg)';
+                }
+            });
+        }
 
         // Toggle past fixtures section
         if (pastToggle && pastContent && pastIcon) {

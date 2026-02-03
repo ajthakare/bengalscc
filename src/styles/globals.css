@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import './theme-config.css';
 
 @theme {
     /* Typography */
@@ -45,15 +46,22 @@
 
 @layer base {
     h1 {
-        @apply text-4xl font-bold tracking-tight sm:text-5xl;
+        @apply text-4xl tracking-tight sm:text-5xl;
+        font-weight: var(--font-weight-display);
     }
 
     h2 {
-        @apply text-2xl font-bold sm:text-3xl;
+        @apply text-2xl sm:text-3xl;
+        font-weight: var(--font-weight-heading);
+    }
+
+    h3 {
+        font-weight: var(--font-weight-subheading);
     }
 
     a:not(.btn) {
-        @apply underline transition hover:opacity-80;
+        @apply underline hover:opacity-80;
+        transition: all var(--transition-base);
     }
 
     pre {
@@ -87,17 +95,29 @@
 
     /* Button Styles */
     .btn {
-        @apply inline-flex items-center justify-center gap-2 bg-primary text-primary-content cursor-pointer text-center font-semibold no-underline transition-colors;
+        @apply inline-flex items-center justify-center gap-2 text-primary-content cursor-pointer text-center font-semibold no-underline;
+        background: var(--gradient-primary);
         padding: var(--btn-py, 0.875rem) var(--btn-px, 1.25rem);
         font-size: var(--btn-font-size, 0.875rem);
-        border-radius: var(--btn-border-radius, 0.25rem);
+        border-radius: var(--border-radius-button);
+        box-shadow: var(--shadow-button);
+        transition: all var(--transition-hover);
 
         &:hover {
             @apply bg-primary/85;
+            box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+            transform: translateY(-2px);
+        }
+
+        &:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 2px rgba(249, 115, 22, 0.2);
         }
 
         &:disabled {
             @apply text-gray-400 bg-gray-700;
+            box-shadow: none;
+            transform: none;
         }
     }
 
@@ -120,16 +140,22 @@
     .card {
         background-color: var(--color-bg-card);
         border: 1px solid var(--color-border);
-        @apply rounded-lg p-6 transition-colors;
+        padding: 1.5rem;
+        border-radius: var(--border-radius-card);
+        box-shadow: var(--shadow-card);
+        transition: all var(--transition-hover);
 
         &:hover {
             background-color: var(--color-bg-card-hover);
+            box-shadow: var(--shadow-card-hover);
+            transform: translateY(-4px);
+            border-color: var(--color-primary);
         }
     }
 
     /* Hero Section Styles */
     .hero-bg {
-        background: linear-gradient(to bottom right, var(--color-bg-hero), var(--color-bg-hero-dark));
+        background: var(--gradient-hero);
     }
 
     /* Text Styles */
@@ -171,8 +197,74 @@
 
     /* Accent Box Styles */
     .accent-box {
-        background: linear-gradient(to bottom right, var(--color-bg-hero), var(--color-bg-hero-dark));
+        background: var(--gradient-card-header);
         border: 2px solid var(--color-primary);
-        @apply rounded-lg p-8;
+        padding: 2rem;
+        border-radius: var(--border-radius-card);
+        box-shadow: var(--shadow-card);
+    }
+
+    /* Enhanced Section Styles */
+    .section-gradient {
+        background: var(--gradient-section);
+    }
+
+    /* Stats & Feature Boxes */
+    .stat-box {
+        background-color: var(--color-bg-card);
+        border: 1px solid var(--color-border);
+        padding: 1.5rem;
+        border-radius: var(--border-radius-card);
+        box-shadow: var(--shadow-card);
+        transition: all var(--transition-hover);
+
+        &:hover {
+            box-shadow: var(--shadow-card-hover);
+            transform: translateY(-2px);
+        }
+    }
+
+    /* Team Cards Enhancement */
+    .team-card {
+        background: white;
+        border: 1px solid var(--color-border);
+        border-radius: var(--border-radius-card);
+        box-shadow: var(--shadow-card);
+        transition: all var(--transition-hover);
+        overflow: hidden;
+
+        &:hover {
+            box-shadow: var(--shadow-elevated);
+            transform: translateY(-6px);
+            border-color: var(--color-primary);
+        }
+    }
+
+    .team-card-header {
+        background: var(--gradient-card-header);
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--color-border);
+    }
+
+    /* Badge Enhancement */
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 9999px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        background: linear-gradient(135deg, rgba(249, 115, 22, 0.1) 0%, rgba(249, 115, 22, 0.05) 100%);
+        color: var(--color-primary);
+        border: 1px solid rgba(249, 115, 22, 0.2);
+    }
+
+    /* Elevated Card */
+    .card-elevated {
+        background: white;
+        border-radius: var(--border-radius-card);
+        box-shadow: var(--shadow-elevated);
+        padding: 2rem;
     }
 }

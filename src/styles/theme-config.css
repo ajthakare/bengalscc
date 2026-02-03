@@ -1,0 +1,16 @@
+/**
+ * THEME CONFIGURATION
+ *
+ * Switch between themes by changing the import below:
+ *
+ * - theme-basic.css  = Current design (clean, minimal, flat)
+ * - theme-rich.css   = Enhanced design (depth, shadows, gradients)
+ *
+ * Change one line to switch the entire site's theme!
+ */
+
+/* Active theme - change this import to switch themes */
+@import './themes/theme-rich.css';
+
+/* To use the basic theme instead, replace above with: */
+/* @import './themes/theme-basic.css'; */

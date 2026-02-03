@@ -2,19 +2,9 @@
 import { SITE_CONFIG } from '../config';
 ---
 
-<footer class="pt-16 pb-12 sm:pt-24 sm:pb-16" style="border-top: 1px solid var(--color-border);">
-    <div class="flex flex-col gap-6">
-        <div class="flex flex-wrap gap-6 text-sm">
-            <a href={SITE_CONFIG.social.instagram.url} target="_blank" rel="noopener noreferrer" class="text-muted hover:text-primary transition-colors">
-                {SITE_CONFIG.social.instagram.label}
-            </a>
-            <a href={SITE_CONFIG.social.youtube.url} target="_blank" rel="noopener noreferrer" class="text-muted hover:text-primary transition-colors">
-                {SITE_CONFIG.social.youtube.label}
-            </a>
-        </div>
-        <div class="text-sm text-muted">
-            <p>&copy; {SITE_CONFIG.name} &ndash; {SITE_CONFIG.location}</p>
-            <p class="mt-2">Affiliated with Northern California Cricket Association</p>
-        </div>
+<footer class="pt-8 pb-6 sm:pt-12 sm:pb-8" style="border-top: 1px solid var(--color-border);">
+    <div class="text-sm text-muted">
+        <p>&copy; {new Date().getFullYear()} {SITE_CONFIG.name} &ndash; {SITE_CONFIG.location}</p>
+        <p class="mt-2">Affiliated with Northern California Cricket Association</p>
     </div>
 </footer>

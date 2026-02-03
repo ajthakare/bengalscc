@@ -13,12 +13,12 @@ const highlights = [
 ];
 
 const achievements = [
-    { year: '2024', title: 'Summer League – Winners (T20 Division 1)' },
-    { year: '2024', title: 'Winter League – Runners Up (T20)' },
-    { year: '2023', title: 'Summer League Stage 1st Place (T20)' },
-    { year: '2022', title: 'Semi-Finalists (T30)' },
-    { year: '2022', title: 'Quarter Finalists (T20)' },
-    { year: '2021', title: 'Winter Semi-Finalists (T25 BACA League)' }
+    { year: '2024', title: 'Summer League – Winners (T20 Division 1)', icon: '🏆' },
+    { year: '2024', title: 'Winter League – Runners Up (T20)', icon: '🥈' },
+    { year: '2023', title: 'Summer League Stage 1st Place (T20)', icon: '🥇' },
+    { year: '2022', title: 'Semi-Finalists (T30)', icon: '🏅' },
+    { year: '2022', title: 'Quarter Finalists (T20)', icon: '🎖️' },
+    { year: '2021', title: 'Winter Semi-Finalists (T25 BACA League)', icon: '⭐' }
 ];
 ---
 
@@ -27,8 +27,8 @@ const achievements = [
         title="Bengals Cricket Club"
         subtitle="Bay Area, California"
     >
-        <div class="mt-6 inline-block bg-primary/20 border-2 border-primary px-6 py-2 rounded-full text-sm sm:text-base font-semibold">
-            2024 Summer League – T20 Division 1 Champions
+        <div class="mt-6 inline-block bg-primary/20 border-2 border-primary px-6 py-2 rounded-full text-sm sm:text-base font-semibold uppercase">
+            🏆 2024 Summer League – T20 Division 1 Champions 🏆
         </div>
         <div class="mt-8 flex flex-wrap gap-4 justify-center">
             <a href="/members" class="btn btn-lg">Join the Club</a>
@@ -54,7 +54,10 @@ const achievements = [
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {achievements.map(achievement => (
                 <div class="card">
-                    <div class="text-2xl font-bold text-primary mb-2">{achievement.year}</div>
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="text-3xl">{achievement.icon}</span>
+                        <div class="text-2xl font-bold text-primary">{achievement.year}</div>
+                    </div>
                     <p class="text-body">{achievement.title}</p>
                 </div>
             ))}

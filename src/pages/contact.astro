@@ -78,11 +78,12 @@ import { SITE_CONFIG } from '../config';
                 </div>
 
                 {/* Netlify reCAPTCHA v2 */}
-                <div data-netlify-recaptcha="true"></div>
+                <div data-netlify-recaptcha="true" data-callback="enableSubmit"></div>
 
-                <button type="submit" class="btn btn-lg w-full">
+                <button type="submit" id="submit-btn" disabled class="btn btn-lg w-full opacity-50 cursor-not-allowed">
                     Send Message
                 </button>
+                <p class="text-sm text-gray-600 text-center">Please complete the reCAPTCHA to submit</p>
             </form>
         </Section>
 
@@ -141,4 +142,14 @@ import { SITE_CONFIG } from '../config';
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     }
+
+    // Enable submit button when reCAPTCHA is completed
+    window.enableSubmit = function() {
+        const submitBtn = document.getElementById('submit-btn');
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            submitBtn.classList.add('cursor-pointer');
+        }
+    };
 </script>

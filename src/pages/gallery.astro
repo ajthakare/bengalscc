@@ -1,6 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import Section from '../components/Section.astro';
+import { SITE_CONFIG } from '../config';
 
 const filters = ['All', 'Matches', 'Events', 'Trophies'];
 
@@ -45,14 +46,11 @@ const galleryImages = Array.from({ length: 12 }, (_, i) => ({
                 Stay updated with our latest photos, videos, and match highlights on Instagram, Facebook, and YouTube.
             </p>
             <div class="flex flex-wrap gap-4 justify-center">
-                <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" class="btn">
-                    Instagram
+                <a href={SITE_CONFIG.social.instagram.url} target="_blank" rel="noopener noreferrer" class="btn">
+                    {SITE_CONFIG.social.instagram.label}
                 </a>
-                <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" class="btn bg-gray-200 hover:bg-gray-300 text-gray-900">
-                    Facebook
-                </a>
-                <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" class="btn bg-gray-200 hover:bg-gray-300 text-gray-900">
-                    YouTube
+                <a href={SITE_CONFIG.social.youtube.url} target="_blank" rel="noopener noreferrer" class="btn bg-gray-200 hover:bg-gray-300 text-gray-900">
+                    {SITE_CONFIG.social.youtube.label}
                 </a>
             </div>
         </div>

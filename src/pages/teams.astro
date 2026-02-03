@@ -5,28 +5,40 @@ import Card from '../components/Card.astro';
 
 const teams = [
     {
-        title: 'Bengals Tigers',
-        details: [
-            'NCCA T20 Division 1 team',
-            'Regular practice sessions',
-            'Competitive league participation'
-        ]
+        title: 'Bengal Tigers',
+        division: 'White Ball Division 2',
+        divisionShort: 'WB-D2',
+        color: 'orange',
+        captain: 'Likith Gowda',
+        viceCaptain: 'Ajinkya Thakare',
+        homeGround: {
+            name: 'NLCG East Avenue Middle School',
+            address: '3600 Pacific Ave, Livermore'
+        }
     },
     {
-        title: 'Bengals Bulls',
-        details: [
-            'NCCA T20 Division 2 team',
-            'Development-focused squad',
-            'Pathway to Tigers team'
-        ]
+        title: 'Bengal Bulls',
+        division: 'White Ball Division 3',
+        divisionShort: 'WB-D3',
+        color: 'blue',
+        captain: 'Mazar Khan',
+        viceCaptain: 'Ratik Sachdeva',
+        homeGround: {
+            name: 'NLCG East Avenue Middle School',
+            address: '3600 Pacific Ave, Livermore'
+        }
     },
     {
-        title: 'Development & Youth Squads',
-        details: [
-            'Seasonal development programs',
-            'Youth cricket initiatives',
-            'Skill-building focus'
-        ]
+        title: 'Bengal Thunder Cats',
+        division: 'Pink Ball Division 1',
+        divisionShort: 'PB-D1',
+        color: 'purple',
+        captain: 'Sharan CK',
+        viceCaptain: 'Karan Sidhu',
+        homeGround: {
+            name: 'Sierramont Middle School',
+            address: '3155 Kimlee Dr, San Jose'
+        }
     }
 ];
 
@@ -51,22 +63,72 @@ const playerDevelopment = [
 ---
 
 <Layout title="Teams - Bengals Cricket Club">
-    <h1 class="text-4xl sm:text-5xl font-bold mb-8">Our Teams</h1>
+    <h1 class="text-4xl sm:text-5xl font-bold mb-3">Our Teams</h1>
+    <p class="text-xl text-gray-600 mb-8">Winter 2025-2026 Season</p>
 
     <Section>
         <div class="grid md:grid-cols-3 gap-6 mb-12">
-            {teams.map(team => (
-                <Card title={team.title}>
-                    <ul class="space-y-2 text-gray-700">
-                        {team.details.map(detail => (
-                            <li class="flex items-start">
-                                <span class="text-primary mr-2">•</span>
-                                <span>{detail}</span>
-                            </li>
-                        ))}
-                    </ul>
-                </Card>
-            ))}
+            {teams.map(team => {
+                const colorClasses = {
+                    orange: 'bg-orange-100 border-orange-300 text-orange-800',
+                    blue: 'bg-blue-100 border-blue-300 text-blue-800',
+                    purple: 'bg-purple-100 border-purple-300 text-purple-800'
+                };
+
+                return (
+                    <div class="bg-white rounded-lg border-2 border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                        {/* Header with team color */}
+                        <div class={`p-6 ${team.color === 'orange' ? 'bg-orange-50 border-b-4 border-orange-400' : team.color === 'blue' ? 'bg-blue-50 border-b-4 border-blue-400' : 'bg-purple-50 border-b-4 border-purple-400'}`}>
+                            <h3 class="text-2xl font-bold text-gray-900 mb-3">{team.title}</h3>
+                            <div class={`inline-block px-4 py-2 rounded-full text-sm font-bold border-2 ${colorClasses[team.color]}`}>
+                                {team.division}
+                            </div>
+                        </div>
+
+                        {/* Team Leadership */}
+                        <div class="p-6 space-y-4">
+                            <div class="bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-lg p-4 border-2 border-yellow-300">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="text-2xl">👑</span>
+                                    <span class="text-xs font-semibold text-yellow-800 uppercase tracking-wide">Captain</span>
+                                </div>
+                                <div class="text-lg font-bold text-gray-900 ml-8">{team.captain}</div>
+                            </div>
+
+                            <div class="bg-gradient-to-r from-slate-50 to-slate-100 rounded-lg p-4 border-2 border-slate-300">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="text-2xl">⭐</span>
+                                    <span class="text-xs font-semibold text-slate-700 uppercase tracking-wide">Vice Captain</span>
+                                </div>
+                                <div class="text-lg font-bold text-gray-900 ml-8">{team.viceCaptain}</div>
+                            </div>
+
+                            {/* Home Ground */}
+                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200 mt-4">
+                                <div class="flex items-start gap-2 mb-2">
+                                    <span class="text-xl">🏟️</span>
+                                    <div class="flex-1">
+                                        <div class="text-xs text-gray-600 mb-1 uppercase tracking-wide font-semibold">Home Ground</div>
+                                        <div class="font-semibold text-gray-900">{team.homeGround.name}</div>
+                                    </div>
+                                </div>
+                                <div class="flex items-start gap-2 ml-7">
+                                    <span class="text-gray-600">📍</span>
+                                    <div class="text-sm text-gray-700">{team.homeGround.address}</div>
+                                </div>
+                            </div>
+
+                            {/* View Fixtures Link */}
+                            <a
+                                href={`/fixtures?team=${encodeURIComponent(team.title)}`}
+                                class="block mt-4 text-center py-3 bg-primary hover:bg-primary/90 text-white font-semibold rounded-lg transition-colors"
+                            >
+                                View Fixtures 🏏
+                            </a>
+                        </div>
+                    </div>
+                );
+            })}
         </div>
     </Section>
 

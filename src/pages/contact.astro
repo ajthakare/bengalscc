@@ -11,7 +11,19 @@ import { SITE_CONFIG } from '../config';
     <div class="grid md:grid-cols-2 gap-8 sm:gap-12">
         <Section>
             <h2 class="text-2xl sm:text-3xl font-bold mb-6">Send Us a Message</h2>
-            <form name="contact" method="POST" data-netlify="true" netlify-honeypot="bot-field" class="space-y-6">
+
+            {/* Success message */}
+            <div id="success-message" class="hidden mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div class="flex items-center gap-2 text-green-800">
+                    <span class="text-2xl">✅</span>
+                    <div>
+                        <div class="font-semibold">Message sent successfully!</div>
+                        <div class="text-sm">We'll get back to you soon.</div>
+                    </div>
+                </div>
+            </div>
+
+            <form name="contact" method="POST" action="/contact?success=true" data-netlify="true" netlify-honeypot="bot-field" class="space-y-6">
                 {/* Hidden fields for Netlify */}
                 <input type="hidden" name="form-name" value="contact" />
                 <div style="display: none;">
@@ -117,3 +129,16 @@ import { SITE_CONFIG } from '../config';
         </div>
     </div>
 </Layout>
+
+<script>
+    // Show success message if form was submitted
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('success') === 'true') {
+        const successMessage = document.getElementById('success-message');
+        if (successMessage) {
+            successMessage.classList.remove('hidden');
+            // Scroll to top to show message
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }
+</script>

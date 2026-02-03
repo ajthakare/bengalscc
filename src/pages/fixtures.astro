@@ -1,0 +1,511 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Section from '../components/Section.astro';
+import Papa from 'papaparse';
+import { readFileSync } from 'fs';
+
+// Our teams
+const OUR_TEAMS = ['Bengal Tigers', 'Bengal Bulls', 'Bengal Thunder Cats'];
+
+// Read and parse CSV
+const csvData = readFileSync('src/data/fixtures.csv', 'utf-8');
+const { data } = Papa.parse(csvData, {
+    header: true,
+    skipEmptyLines: true
+});
+
+// Process fixtures
+interface Fixture {
+    gameNumber: string;
+    week: string;
+    date: string;
+    division: string;
+    time: string;
+    homeTeam: string;
+    visitorTeam: string;
+    venue: string;
+    groundAddress: string;
+    umpire: string;
+    ourTeam: string;
+    opponent: string;
+    isHome: boolean;
+    monthYear: string;
+    sortDate: Date;
+}
+
+const fixtures: Fixture[] = data
+    .filter((row: any) => {
+        // Filter rows that include any of our teams
+        return OUR_TEAMS.some(team =>
+            row['Home Team'] === team || row['Visitor Team'] === team
+        );
+    })
+    .map((row: any) => {
+        const homeTeam = row['Home Team'];
+        const visitorTeam = row['Visitor Team'];
+
+        // Determine which is our team and which is opponent
+        const ourTeam = OUR_TEAMS.find(team =>
+            team === homeTeam || team === visitorTeam
+        ) || '';
+        const isHome = homeTeam === ourTeam;
+        const opponent = isHome ? visitorTeam : homeTeam;
+
+        // Parse date for sorting and grouping
+        const dateStr = row['Date'];
+
+        // Date now includes year (e.g., "Sat, Nov 1, 2025")
+        const sortDate = new Date(dateStr);
+
+        const monthYear = sortDate.toLocaleString('default', {
+            month: 'long',
+            year: 'numeric'
+        });
+
+        return {
+            gameNumber: row['Game#'],
+            week: row['Week#'],
+            date: dateStr,
+            division: row['Division'],
+            time: row['Start Time'],
+            homeTeam,
+            visitorTeam,
+            venue: row['Venue Name'],
+            groundAddress: row['Ground Address'],
+            umpire: row['Umpiring Team'],
+            ourTeam,
+            opponent,
+            isHome,
+            monthYear,
+            sortDate
+        };
+    })
+    .sort((a: Fixture, b: Fixture) => a.sortDate.getTime() - b.sortDate.getTime());
+
+// Get current date to determine upcoming vs past
+const today = new Date();
+const upcomingFixtures = fixtures.filter(f => f.sortDate >= today);
+const pastFixtures = fixtures.filter(f => f.sortDate < today).reverse();
+const nextMatch = upcomingFixtures[0];
+
+// Group upcoming fixtures by month
+const upcomingByMonth = upcomingFixtures.reduce((acc: Record<string, Fixture[]>, fixture: Fixture) => {
+    if (!acc[fixture.monthYear]) {
+        acc[fixture.monthYear] = [];
+    }
+    acc[fixture.monthYear].push(fixture);
+    return acc;
+}, {});
+
+// Group past fixtures by month
+const pastByMonth = pastFixtures.reduce((acc: Record<string, Fixture[]>, fixture: Fixture) => {
+    if (!acc[fixture.monthYear]) {
+        acc[fixture.monthYear] = [];
+    }
+    acc[fixture.monthYear].push(fixture);
+    return acc;
+}, {});
+
+// Get team color based on team name
+function getTeamColor(teamName: string): string {
+    if (teamName.includes('Tigers')) return 'bg-orange-100 border-orange-300 text-orange-800';
+    if (teamName.includes('Bulls')) return 'bg-blue-100 border-blue-300 text-blue-800';
+    if (teamName.includes('Thunder')) return 'bg-purple-100 border-purple-300 text-purple-800';
+    return 'bg-gray-100 border-gray-300 text-gray-800';
+}
+---
+
+<Layout title="Match Fixtures - Bengals Cricket Club">
+    <h1 class="text-4xl sm:text-5xl font-bold mb-8">Match Fixtures</h1>
+
+    {/* Next Match Highlight */}
+    {nextMatch && (
+        <Section>
+            <div class="bg-gradient-to-r from-primary/10 to-complementary/10 border-2 border-primary rounded-xl p-6 mb-8">
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="text-2xl">🏏</span>
+                    <h2 class="text-2xl font-bold text-gray-900">Next Match</h2>
+                </div>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <div class={`inline-block px-4 py-1.5 rounded-full text-base font-bold mb-3 ${getTeamColor(nextMatch.ourTeam)}`}>
+                            {nextMatch.ourTeam}
+                        </div>
+                        <div class="text-3xl font-bold text-gray-900 mb-2">
+                            vs {nextMatch.opponent}
+                        </div>
+                        <div class="flex items-center gap-2 text-gray-700 mb-2">
+                            <span class="text-lg">📅</span>
+                            <span class="font-semibold">{nextMatch.date}</span>
+                            <span class="text-gray-500">•</span>
+                            <span>{nextMatch.time}</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-gray-600">
+                            <span>{nextMatch.isHome ? '🏠' : '✈️'}</span>
+                            <span class="font-medium">{nextMatch.isHome ? 'Home' : 'Away'} Game</span>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg p-4 border border-gray-200">
+                        <div class="text-sm text-gray-600 mb-1">Venue</div>
+                        <div class="font-semibold text-gray-900 mb-3">{nextMatch.venue}</div>
+                        <div class="text-sm text-gray-600 mb-1">📍 Address</div>
+                        <div class="text-gray-700">{nextMatch.groundAddress}</div>
+                        <div class="text-sm text-gray-500 mt-3">
+                            Division: <span class="font-medium text-gray-700">{nextMatch.division}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </Section>
+    )}
+
+    {/* Team Filter Buttons */}
+    <div class="mb-8">
+        <div class="flex flex-wrap gap-3 items-center">
+            <span class="text-sm font-medium text-gray-700">Filter by team:</span>
+            <button
+                class="filter-btn active px-4 py-2 rounded-lg font-semibold transition-all border-2"
+                data-team="all"
+            >
+                All Teams ({fixtures.length})
+            </button>
+            <button
+                class="filter-btn px-4 py-2 rounded-lg font-semibold transition-all border-2 bg-orange-100 border-orange-300 text-orange-800 hover:bg-orange-200"
+                data-team="Bengal Tigers"
+            >
+                Bengal Tigers ({fixtures.filter(f => f.ourTeam === 'Bengal Tigers').length})
+            </button>
+            <button
+                class="filter-btn px-4 py-2 rounded-lg font-semibold transition-all border-2 bg-blue-100 border-blue-300 text-blue-800 hover:bg-blue-200"
+                data-team="Bengal Bulls"
+            >
+                Bengal Bulls ({fixtures.filter(f => f.ourTeam === 'Bengal Bulls').length})
+            </button>
+            <button
+                class="filter-btn px-4 py-2 rounded-lg font-semibold transition-all border-2 bg-purple-100 border-purple-300 text-purple-800 hover:bg-purple-200"
+                data-team="Bengal Thunder Cats"
+            >
+                Bengal Thunder Cats ({fixtures.filter(f => f.ourTeam === 'Bengal Thunder Cats').length})
+            </button>
+        </div>
+    </div>
+
+    {/* Quick Stats */}
+    <div class="grid grid-cols-3 gap-4 mb-8" id="stats-container">
+        <div class="bg-white rounded-lg p-4 border border-gray-200 text-center">
+            <div class="text-3xl font-bold text-primary" id="total-matches">{fixtures.length}</div>
+            <div class="text-sm text-gray-600">Total Matches</div>
+        </div>
+        <div class="bg-white rounded-lg p-4 border border-gray-200 text-center">
+            <div class="text-3xl font-bold text-complementary" id="home-games">{fixtures.filter(f => f.isHome).length}</div>
+            <div class="text-sm text-gray-600">Home Games</div>
+        </div>
+        <div class="bg-white rounded-lg p-4 border border-gray-200 text-center">
+            <div class="text-3xl font-bold text-gray-700" id="away-games">{fixtures.filter(f => !f.isHome).length}</div>
+            <div class="text-sm text-gray-600">Away Games</div>
+        </div>
+    </div>
+
+    {/* Upcoming Fixtures Section */}
+    {upcomingFixtures.length > 0 && (
+        <div class="mb-12">
+            <div class="flex items-center gap-3 mb-8">
+                <h2 class="text-4xl font-bold text-gray-900">🏏 Upcoming Fixtures</h2>
+                <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
+                    <span id="upcoming-count">{upcomingFixtures.length}</span> matches
+                </span>
+            </div>
+
+            {Object.entries(upcomingByMonth).map(([month, monthFixtures]) => (
+                <div class="month-section mb-8">
+                    <Section>
+                        <div class="mb-6">
+                            <h3 class="text-2xl font-bold text-gray-900">{month}</h3>
+                        </div>
+
+                        <div class="grid md:grid-cols-2 gap-6">
+                        {monthFixtures.map((fixture) => (
+                            <div
+                                class="fixture-card border-2 rounded-xl p-6 transition-all hover:shadow-lg bg-white border-gray-300 hover:border-primary"
+                                data-team={fixture.ourTeam}
+                                data-is-home={fixture.isHome}
+                                data-is-past="false"
+                            >
+                                {/* Header */}
+                                <div class="flex items-start justify-between mb-4">
+                                    <div class={`px-4 py-1.5 rounded-full text-sm font-bold ${getTeamColor(fixture.ourTeam)}`}>
+                                        {fixture.ourTeam}
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-lg">{fixture.isHome ? '🏠' : '✈️'}</span>
+                                        <span class={`text-sm font-semibold ${
+                                            fixture.isHome ? 'text-green-700' : 'text-blue-700'
+                                        }`}>
+                                            {fixture.isHome ? 'HOME' : 'AWAY'}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Match Info */}
+                                <div class="mb-4">
+                                    <div class="text-2xl font-bold text-gray-900 mb-2">
+                                        vs {fixture.opponent}
+                                    </div>
+                                    <div class="flex flex-wrap gap-3 text-sm text-gray-600">
+                                        <span>📅 {fixture.date}</span>
+                                        <span>🕐 {fixture.time}</span>
+                                        <span class="px-2 py-0.5 bg-gray-100 rounded text-xs font-medium">
+                                            {fixture.division}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Venue Info */}
+                                <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                                    <div class="font-semibold text-gray-900 mb-1 flex items-center gap-2">
+                                        <span>🏟️</span>
+                                        <span>{fixture.venue}</span>
+                                    </div>
+                                    <div class="text-sm text-gray-600 flex items-start gap-2">
+                                        <span>📍</span>
+                                        <span>{fixture.groundAddress}</span>
+                                    </div>
+                                </div>
+
+                                {/* Footer */}
+                                <div class="mt-4 pt-4 border-t border-gray-200 text-xs text-gray-500">
+                                    <div class="flex justify-between items-center">
+                                        <span>Game #{fixture.gameNumber} • {fixture.week}</span>
+                                        <span>Umpire: {fixture.umpire}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                        </div>
+                    </Section>
+                </div>
+            ))}
+        </div>
+    )}
+
+    {/* Past Fixtures Section - Collapsible */}
+    {pastFixtures.length > 0 && (
+        <div class="mb-12">
+            <button
+                id="past-fixtures-toggle"
+                class="flex items-center justify-between w-full bg-gray-100 hover:bg-gray-200 rounded-lg p-6 transition-all mb-6"
+            >
+                <div class="flex items-center gap-3">
+                    <h2 class="text-4xl font-bold text-gray-900">📋 Past Fixtures</h2>
+                    <span class="px-3 py-1 bg-gray-300 text-gray-700 rounded-full text-sm font-semibold">
+                        <span id="past-count">{pastFixtures.length}</span> matches
+                    </span>
+                </div>
+                <svg
+                    id="past-fixtures-icon"
+                    class="w-8 h-8 transition-transform"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+            </button>
+
+            <div id="past-fixtures-content" class="hidden">
+                {Object.entries(pastByMonth).map(([month, monthFixtures]) => (
+                    <div class="month-section mb-8">
+                        <Section>
+                            <div class="mb-6">
+                                <h3 class="text-2xl font-bold text-gray-700">{month}</h3>
+                            </div>
+
+                            <div class="grid md:grid-cols-2 gap-6">
+                            {monthFixtures.map((fixture) => (
+                                <div
+                                    class="fixture-card border-2 rounded-xl p-6 transition-all hover:shadow-lg bg-gray-50 border-gray-200 opacity-75"
+                                    data-team={fixture.ourTeam}
+                                    data-is-home={fixture.isHome}
+                                    data-is-past="true"
+                                >
+                                    {/* Header */}
+                                    <div class="flex items-start justify-between mb-4">
+                                        <div class={`px-4 py-1.5 rounded-full text-sm font-bold ${getTeamColor(fixture.ourTeam)}`}>
+                                            {fixture.ourTeam}
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-lg">{fixture.isHome ? '🏠' : '✈️'}</span>
+                                            <span class={`text-sm font-semibold ${
+                                                fixture.isHome ? 'text-green-700' : 'text-blue-700'
+                                            }`}>
+                                                {fixture.isHome ? 'HOME' : 'AWAY'}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Match Info */}
+                                    <div class="mb-4">
+                                        <div class="text-2xl font-bold text-gray-900 mb-2">
+                                            vs {fixture.opponent}
+                                        </div>
+                                        <div class="flex flex-wrap gap-3 text-sm text-gray-600">
+                                            <span>📅 {fixture.date}</span>
+                                            <span>🕐 {fixture.time}</span>
+                                            <span class="px-2 py-0.5 bg-gray-100 rounded text-xs font-medium">
+                                                {fixture.division}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Venue Info */}
+                                    <div class="bg-gray-100 rounded-lg p-3 border border-gray-200">
+                                        <div class="font-semibold text-gray-900 mb-1 flex items-center gap-2">
+                                            <span>🏟️</span>
+                                            <span>{fixture.venue}</span>
+                                        </div>
+                                        <div class="text-sm text-gray-600 flex items-start gap-2">
+                                            <span>📍</span>
+                                            <span>{fixture.groundAddress}</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Footer */}
+                                    <div class="mt-4 pt-4 border-t border-gray-200 text-xs text-gray-500">
+                                        <div class="flex justify-between items-center">
+                                            <span>Game #{fixture.gameNumber} • {fixture.week}</span>
+                                            <span>Umpire: {fixture.umpire}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                            </div>
+                        </Section>
+                    </div>
+                ))}
+            </div>
+        </div>
+    )}
+
+    {/* No Fixtures Message */}
+    {fixtures.length === 0 && (
+        <Section>
+            <div class="text-center py-12">
+                <span class="text-6xl mb-4 block">🏏</span>
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">No Fixtures Available</h2>
+                <p class="text-gray-600">Check back soon for upcoming match schedules.</p>
+            </div>
+        </Section>
+    )}
+</Layout>
+
+<style>
+    /* Smooth hover transitions */
+    .hover\:shadow-lg {
+        transition: all 0.2s ease-in-out;
+    }
+
+    /* Active filter button */
+    .filter-btn.active {
+        background-color: #f67280;
+        border-color: #f67280;
+        color: white;
+    }
+
+    .filter-btn:not(.active) {
+        background-color: white;
+        border-color: #e5e7eb;
+        color: #374151;
+    }
+
+    .filter-btn:not(.active):hover {
+        border-color: #f67280;
+    }
+
+    /* Hide filtered cards */
+    .fixture-card.hidden {
+        display: none;
+    }
+</style>
+
+<script>
+    // Team filter functionality
+    document.addEventListener('DOMContentLoaded', () => {
+        const filterButtons = document.querySelectorAll('.filter-btn');
+        const fixtureCards = document.querySelectorAll('.fixture-card');
+        const pastToggle = document.getElementById('past-fixtures-toggle');
+        const pastContent = document.getElementById('past-fixtures-content');
+        const pastIcon = document.getElementById('past-fixtures-icon');
+
+        // Toggle past fixtures section
+        if (pastToggle && pastContent && pastIcon) {
+            pastToggle.addEventListener('click', () => {
+                const isHidden = pastContent.classList.contains('hidden');
+
+                if (isHidden) {
+                    pastContent.classList.remove('hidden');
+                    pastIcon.style.transform = 'rotate(180deg)';
+                } else {
+                    pastContent.classList.add('hidden');
+                    pastIcon.style.transform = 'rotate(0deg)';
+                }
+            });
+        }
+
+        // Team filter functionality
+        filterButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const selectedTeam = button.getAttribute('data-team');
+
+                // Update active button
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+
+                // Filter cards
+                let visibleCount = 0;
+                let homeCount = 0;
+                let awayCount = 0;
+                let upcomingCount = 0;
+                let pastCount = 0;
+
+                fixtureCards.forEach(card => {
+                    const cardTeam = card.getAttribute('data-team');
+                    const isHome = card.getAttribute('data-is-home') === 'true';
+                    const isPast = card.getAttribute('data-is-past') === 'true';
+
+                    if (selectedTeam === 'all' || cardTeam === selectedTeam) {
+                        card.classList.remove('hidden');
+                        visibleCount++;
+                        if (isHome) homeCount++;
+                        else awayCount++;
+                        if (isPast) pastCount++;
+                        else upcomingCount++;
+                    } else {
+                        card.classList.add('hidden');
+                    }
+                });
+
+                // Update stats
+                document.getElementById('total-matches').textContent = visibleCount;
+                document.getElementById('home-games').textContent = homeCount;
+                document.getElementById('away-games').textContent = awayCount;
+
+                // Update section counts
+                const upcomingCountEl = document.getElementById('upcoming-count');
+                const pastCountEl = document.getElementById('past-count');
+                if (upcomingCountEl) upcomingCountEl.textContent = upcomingCount;
+                if (pastCountEl) pastCountEl.textContent = pastCount;
+
+                // Hide empty month sections
+                const monthSections = document.querySelectorAll('.month-section');
+                monthSections.forEach(section => {
+                    const visibleCards = section.querySelectorAll('.fixture-card:not(.hidden)');
+                    if (visibleCards.length === 0) {
+                        section.style.display = 'none';
+                    } else {
+                        section.style.display = 'block';
+                    }
+                });
+            });
+        });
+    });
+</script>

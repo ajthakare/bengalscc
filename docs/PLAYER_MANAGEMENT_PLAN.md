@@ -25,10 +25,10 @@ Implement a comprehensive player management system for Bengals Cricket Club that
 
 **Current Gap**:
 - No season management system
-- No player data management system
-- No roster tracking per team per season
-- No availability tracking for matches
-- No statistics calculation
+- No player data management system (global pool)
+- No core roster management (marking players as core to teams)
+- No availability tracking for matches (admin-managed)
+- No statistics calculation (multi-season)
 - No fixture upload/management per season (currently using single CSV)
 
 ## User Requirements
@@ -36,21 +36,22 @@ Implement a comprehensive player management system for Bengals Cricket Club that
 1. **Season Management**
    - Create and manage cricket seasons (e.g., "2025-2026")
    - Track which season is currently active
-   - Teams and player rosters are season-specific
-   - Players can change teams or join/leave between seasons
+   - Define teams for each season with flexible formats (T20, T30, T40, etc.)
+   - Teams and formats can change between seasons
 
-2. **Player Pool Management (Per Season)**
-   - Bulk import players from Excel/CSV for a season
+2. **Player Pool Management (Global)**
+   - Bulk import players from Excel/CSV
    - Add/edit/delete individual players
-   - Track player details (name, contact, position, jersey number)
-   - Assign players to multiple teams within a season
-   - Track player history across multiple seasons
+   - Track simple player details: First Name, Last Name, Role, Email, USAC ID, Active Status
+   - Players are NOT tied to specific seasons
+   - Players exist in a global pool
 
-3. **Team Roster Management (Per Season)**
-   - Track which players belong to which teams each season
-   - Support multiple team assignments per player per season
-   - Display team rosters with role indicators
-   - View historical rosters from previous seasons
+3. **Team Roster Management (Core Status)**
+   - Mark players as "core" to specific teams
+   - Players can be core to multiple teams (e.g., different formats)
+   - Admin can mark/unmark core status anytime during a season
+   - Display core roster per team with historical tracking
+   - View which players were core to which teams in previous seasons
 
 4. **Availability Tracking (Admin-Managed)**
    - **Admin marks** which players were available for each fixture
@@ -113,38 +114,38 @@ interface Fixture {
 }
 ```
 
-### Player Schema (Season-Based)
+### Player Schema (Simplified)
 ```typescript
 interface Player {
   id: string;                    // UUID
   firstName: string;
   lastName: string;
   email: string;
-  phone?: string;
-  position?: string;              // Batsman, Bowler, All-rounder, Wicket-keeper
-  dateJoined: string;             // First joined club (any season)
-  isActive: boolean;              // Currently active in club
-  seasonAssignments: SeasonAssignment[];  // History across all seasons
+  usacId: string;                // USAC ID
+  role: string;                  // Batsman, Bowler, All-rounder, Wicket-keeper
+  isActive: boolean;             // Currently active in club
   createdAt: string;
   updatedAt: string;
   createdBy: string;
   updatedBy: string;
 }
+```
 
-interface SeasonAssignment {
+### Core Roster Schema (Team Assignments)
+```typescript
+interface CoreRosterAssignment {
+  id: string;                    // UUID
+  playerId: string;
+  playerName: string;            // Cached for display
+  teamName: string;              // Team name
   seasonId: string;
-  seasonName: string;             // "2025-2026"
-  teams: TeamAssignment[];        // Can be in multiple teams per season
-  joinedDate: string;             // When joined this season
-  leftDate?: string;              // If left during season
-}
-
-interface TeamAssignment {
-  teamName: 'Bengal Tigers' | 'Bengal Bulls' | 'Bengal Thunder Cats';
-  division: string;
-  role?: 'Captain' | 'Vice Captain' | 'Player';
-  jerseyNumber?: number;
-  assignedDate: string;
+  seasonName: string;            // Cached for display
+  isCore: boolean;               // Is this player core to this team?
+  markedCoreDate?: string;       // When marked as core
+  unmarkedCoreDate?: string;     // When unmarked (if no longer core)
+  createdAt: string;
+  updatedAt: string;
+  updatedBy: string;             // Admin who last updated
 }
 ```
 
@@ -226,8 +227,11 @@ Store: "fixtures"
   - Key: "fixtures-{seasonId}" → Fixture[] (fixtures for specific season)
 
 Store: "players"
-  - Key: "players-all" → Player[] (all players with season history)
-  - Key: "players-{seasonId}" → Player[] (players active in specific season)
+  - Key: "players-all" → Player[] (global player pool)
+
+Store: "core-roster"
+  - Key: "core-roster-{seasonId}" → CoreRosterAssignment[] (all core assignments for season)
+  - Key: "core-roster-{seasonId}-{teamName}" → CoreRosterAssignment[] (core players for specific team)
 
 Store: "fixture-availability"
   - Key: "availability-{fixtureId}" → FixtureAvailability
@@ -240,21 +244,19 @@ Store: "player-statistics"
 ```
 
 ### CSV Import/Export Format
-**players-import.csv** (Season-Specific)
+**players-import.csv** (Global Player Pool)
 ```csv
-First Name,Last Name,Email,Phone,Teams,Position,Jersey Number,Role,Status
-John,Doe,john@example.com,555-1234,"Bengal Tigers|Bengal Bulls",Batsman,10,Player,Active
-Jane,Smith,jane@example.com,555-5678,Bengal Tigers,All-rounder,7,Captain,Active
+First Name,Last Name,Email,USAC ID,Role,Status
+John,Doe,john@example.com,USAC12345,Batsman,Active
+Jane,Smith,jane@example.com,USAC67890,All-rounder,Active
 ```
 
 **Validation Rules:**
-- Required: First Name, Last Name, Email, Teams, Season (implied - importing to active season)
-- Email must be unique within club (not per season)
-- Teams must match existing team names for the season
-- Jersey number: 1-99, unique per team per season
-- Position: Batsman, Bowler, All-rounder, Wicket-keeper
-- Role: Player, Captain, Vice Captain
-- Multiple teams separated by pipe (|)
+- Required: First Name, Last Name, Email, USAC ID, Role
+- Email must be unique within club
+- USAC ID must be unique
+- Role: Batsman, Bowler, All-rounder, Wicket-keeper
+- Status: Active, Inactive (defaults to Active)
 
 ---
 
@@ -265,15 +267,16 @@ src/
 ├── pages/admin/
 │   ├── seasons.astro              # Season management (list, create, set active)
 │   ├── fixtures.astro             # Fixture management per season (list, upload CSV, add/edit)
-│   ├── players.astro              # Player management (list, add, edit, delete)
+│   ├── players.astro              # Player management (global pool - list, add, edit, delete)
 │   ├── players/
-│   │   └── import.astro           # CSV import wizard (per season)
+│   │   └── import.astro           # CSV import wizard (global)
+│   ├── roster.astro               # Team roster management (mark/unmark core status)
 │   ├── availability.astro         # Availability tracking per fixture (admin-managed)
 │   └── statistics.astro           # Statistics dashboard (multi-season)
 ├── types/
-│   └── player.ts                  # Season, Fixture, Player, FixtureAvailability, Statistics interfaces
+│   └── player.ts                  # Season, Fixture, Player, CoreRosterAssignment, FixtureAvailability, Statistics
 └── layouts/
-    └── AdminLayout.astro          # UPDATE: Add season, fixtures, & player management links
+    └── AdminLayout.astro          # UPDATE: Add all management links
 
 netlify/functions/
 ├── seasons-list.ts                # GET: List all seasons
@@ -286,13 +289,16 @@ netlify/functions/
 ├── fixtures-update.ts             # PUT: Update fixture details
 ├── fixtures-delete.ts             # DELETE: Delete fixture(s)
 ├── fixtures-export.ts             # GET: Export fixtures to CSV (per season)
-├── players-list.ts                # GET: List players (filtered by season)
-├── players-get.ts                 # GET: Get single player by ID (with full history)
-├── players-create.ts              # POST: Create new player (for active season)
+├── players-list.ts                # GET: List all players (global pool)
+├── players-get.ts                 # GET: Get single player by ID
+├── players-create.ts              # POST: Create new player (global)
 ├── players-update.ts              # PUT: Update player details
-├── players-delete.ts              # DELETE: Delete player from season (keeps history)
-├── players-import.ts              # POST: Bulk import from CSV (for specific season)
-├── players-export.ts              # GET: Export players to CSV (for specific season)
+├── players-delete.ts              # DELETE: Delete player (soft delete)
+├── players-import.ts              # POST: Bulk import from CSV (global)
+├── players-export.ts              # GET: Export players to CSV (global)
+├── core-roster-list.ts            # GET: List core roster (filtered by season/team)
+├── core-roster-update.ts          # POST: Mark/unmark player as core to team
+├── core-roster-bulk-update.ts     # POST: Bulk update core status for multiple players
 ├── availability-create.ts         # POST: Create availability record for fixture
 ├── availability-get.ts            # GET: Get availability by fixture ID
 ├── availability-list.ts           # GET: List availability records (filtered by season/team)
@@ -316,7 +322,7 @@ docs/
 
 **Step 1.1: Create Data Models**
 - File: `/src/types/player.ts`
-- Define: Season, TeamDefinition, Player, SeasonAssignment, TeamAssignment, FixtureAvailability, PlayerAvailabilityRecord, PlayerStatistics
+- Define: Season, TeamDefinition, Fixture, Player, CoreRosterAssignment, FixtureAvailability, PlayerAvailabilityRecord, PlayerStatistics
 - Export all interfaces
 
 **Step 1.2: Implement Season Management Functions**
@@ -361,61 +367,91 @@ Create Netlify functions for season management:
 Create Netlify functions following existing patterns from `admin-users-*`:
 
 1. **players-list.ts**
-   - GET with query params: `?seasonId=xxx&team=Bengal Tigers&status=active&search=john`
-   - Filter by season (defaults to active season)
+   - GET with query params: `?status=active&search=john&role=Batsman`
+   - Returns all players from global pool (filtered by status, search query, role)
    - Returns: Player[]
    - Pattern: Load from Blobs, filter in memory
 
 2. **players-get.ts**
    - GET with query: `?id=player-123`
-   - Returns: Single Player object with full season history
+   - Returns: Single Player object
 
 3. **players-create.ts**
-   - POST with body: `Omit<Player, 'id' | 'createdAt' | 'updatedAt'> & { seasonId }`
-   - Validate: email uniqueness (across all seasons), jersey number per team per season
+   - POST with body: `Omit<Player, 'id' | 'createdAt' | 'updatedAt'>`
+   - Validate: email uniqueness, USAC ID uniqueness
    - Generate UUID, timestamps
-   - Create SeasonAssignment for specified season
    - Returns: Created player
 
 4. **players-update.ts**
-   - PUT with body: `Partial<Player> & { id: string, seasonId?: string }`
-   - Update player details or add/modify season assignment
+   - PUT with body: `Partial<Player> & { id: string }`
+   - Update player details
    - Returns: Updated player
 
 5. **players-delete.ts**
-   - DELETE with body: `{ id: string, seasonId: string } | { ids: string[], seasonId: string }`
-   - **Season-specific deletion**: Removes player from specified season roster only
-   - Player remains in historical data (other seasons)
-   - If player only exists in this season, mark as inactive but keep record
+   - DELETE with body: `{ id: string } | { ids: string[] }`
+   - Soft delete: Mark player as inactive
    - Support bulk delete
    - Returns: `{ success: true, deletedCount: number }`
 
 **Step 1.5: Create Player Management Page**
 - File: `/src/pages/admin/players.astro`
 - Features:
-  - **Season selector** dropdown at top (defaults to active season)
-  - Stats cards: Total Players, Active, Per Team (for selected season)
-  - Search bar (name, email)
-  - Filter dropdowns (team, status, position)
-  - Table columns: Checkbox, Name, Email, Teams (badges), Position, Jersey #, Status, Actions
+  - Stats cards: Total Players, Active Players, Inactive Players
+  - Search bar (name, email, USAC ID)
+  - Filter dropdowns (status, role)
+  - Table columns: Checkbox, Name, Email, USAC ID, Role, Status, Actions
   - Bulk actions toolbar: Delete Selected, Export
   - Add Player button → Modal form
   - Import Players button → Link to import wizard
   - Edit/Delete actions per row
-  - View player history button → Shows all seasons
 
 **Player Form Modal:**
 - First Name*, Last Name*, Email*
-- Phone (optional)
-- Position dropdown
-- **Season**: Display active season (pre-selected)
-- Team Assignments for this season (checkboxes with role dropdown and jersey number):
-  - [ ] Bengal Tigers - Role: [Player ▼] - Jersey #: [__]
-  - [ ] Bengal Bulls - Role: [Player ▼] - Jersey #: [__]
-  - [ ] Bengal Thunder Cats - Role: [Player ▼] - Jersey #: [__]
+- USAC ID*
+- Role dropdown* (Batsman, Bowler, All-rounder, Wicket-keeper)
 - Status toggle (Active/Inactive in club)
 
-**Step 1.6: Implement Fixture Management Functions**
+**Step 1.6: Implement Core Roster Management Functions**
+Create Netlify functions for managing core status:
+
+1. **core-roster-list.ts**
+   - GET with query: `?seasonId=xxx&teamName=Bengal Tigers`
+   - Returns: CoreRosterAssignment[] (filtered by season/team)
+   - If no filters, return all for active season
+
+2. **core-roster-update.ts**
+   - POST with body: `{ playerId, teamName, seasonId, isCore: boolean }`
+   - Mark or unmark player as core to a team for a season
+   - Creates or updates CoreRosterAssignment record
+   - Returns: Updated CoreRosterAssignment
+
+3. **core-roster-bulk-update.ts**
+   - POST with body: `{ seasonId, teamName, updates: [{ playerId, isCore }] }`
+   - Bulk update core status for multiple players
+   - Returns: `{ success: true, updatedCount: number }`
+
+**Step 1.7: Create Team Roster Management Page**
+- File: `/src/pages/admin/roster.astro`
+- Features:
+  - **Season selector** dropdown at top (defaults to active season)
+  - **Team selector** dropdown (Bengal Tigers, Bengal Bulls, Bengal Thunder Cats)
+  - Stats cards: Total Core Players, Total Players Available
+  - Two-column layout:
+    - Left: **Core Players** (players marked as core for selected team)
+    - Right: **Available Players** (all other active players)
+  - Drag-and-drop or buttons to mark/unmark core status
+  - Search bar to filter players
+  - "Mark as Core" / "Remove from Core" buttons
+  - Save changes button
+
+**Roster Management UI:**
+- Display all active players
+- Checkbox or toggle to mark player as core
+- Visual indicator (badge/highlight) for core players
+- Quick actions: "Mark All", "Clear All"
+- Show which other teams a player is core to (if any)
+
+**Step 1.8: Implement Fixture Management Functions**
 Create Netlify functions for fixture management per season:
 
 1. **fixtures-list.ts**
@@ -447,7 +483,7 @@ Create Netlify functions for fixture management per season:
    - Generate CSV
    - Returns: CSV file
 
-**Step 1.7: Create Fixture Management Page**
+**Step 1.9: Create Fixture Management Page**
 - File: `/src/pages/admin/fixtures.astro`
 - Features:
   - **Season selector** dropdown (defaults to active season)
@@ -467,12 +503,13 @@ Create Netlify functions for fixture management per season:
   Game 1,2025-11-10,10:00 AM,Bengal Tigers,Team A,Venue 1,WB-D2
   ```
 
-**Step 1.8: Update AdminLayout Navigation**
+**Step 1.10: Update AdminLayout Navigation**
 - File: `/src/layouts/AdminLayout.astro`
 - Add links:
   - Season Management
-  - Fixture Management (NEW)
+  - Fixture Management
   - Player Management
+  - Team Roster Management (NEW - mark/unmark core status)
   - Availability Tracking
   - Statistics
 - Use appropriate icons and existing nav pattern
@@ -483,10 +520,10 @@ Create Netlify functions for fixture management per season:
 - File: `/netlify/functions/players-import.ts`
 - Parse CSV using PapaParse (already installed)
 - Validation logic:
-  - Check required fields
+  - Check required fields (First Name, Last Name, Email, USAC ID, Role)
   - Validate email format and uniqueness
-  - Validate teams against existing teams
-  - Validate jersey numbers
+  - Validate USAC ID uniqueness
+  - Validate role against allowed values
 - Mode support: 'create' | 'update' | 'upsert'
 - Returns: `{ created: N, updated: M, errors: [...] }`
 
@@ -507,7 +544,7 @@ Create Netlify functions for fixture management per season:
 **Step 2.4: Add Bulk Operations**
 - Bulk delete with confirmation
 - Bulk status change (activate/deactivate)
-- Bulk team assignment
+- Export selected players to CSV
 
 ### Phase 3: Availability Tracking (Admin-Managed)
 
@@ -515,7 +552,7 @@ Create Netlify functions for fixture management per season:
 
 1. **availability-create.ts**
    - POST: `{ fixtureId, gameNumber, team, seasonId }`
-   - Auto-populate players from team roster for this season
+   - Auto-populate players who are marked as core to this team in this season
    - Initialize all records: wasAvailable=false, wasSelected=false
    - Returns: FixtureAvailability
 
@@ -543,7 +580,7 @@ Create Netlify functions for fixture management per season:
   - Click fixture → Show availability editor
 
   **Availability Editor (Two-Column Grid):**
-  - Player list from team roster
+  - Player list from core roster (players marked as core to this team)
   - Column 1: "Was Available?" checkbox
   - Column 2: "Was Selected?" checkbox (enabled only if available=true)
   - Notes field per player
@@ -595,16 +632,18 @@ Create Netlify functions for fixture management per season:
 **Statistics Calculation Logic:**
 ```typescript
 For each player:
-  For each season assignment:
-    For each team in that season:
+  Find all CoreRosterAssignments where player was marked as core
+
+  For each season where player was core to at least one team:
+    For each team player was core to in that season:
       - Count total fixtures for that team in season
-      - Count times marked wasAvailable = true
-      - Count times marked wasSelected = true
+      - Count times marked wasAvailable = true (from FixtureAvailability)
+      - Count times marked wasSelected = true (from FixtureAvailability)
       - Calculate availability rate = (timesAvailable / totalFixtures) * 100
       - Calculate selection rate = (gamesPlayed / timesAvailable) * 100
 
     Season club level:
-      - Aggregate across all teams in season
+      - Aggregate across all teams player was core to in season
       - Total fixtures (deduplicated by fixture ID)
       - Total times available
       - Total games played
@@ -613,8 +652,8 @@ For each player:
 
   Career level:
     - Aggregate across all seasons
-    - Total seasons played
-    - Total fixtures
+    - Total seasons participated in
+    - Total fixtures (across all teams, all seasons)
     - Total games played
     - Career availability rate = (total available / total fixtures) * 100
     - Career selection rate = (total played / total available) * 100
@@ -675,7 +714,8 @@ For each player:
 - Server-side validation in all functions
 - Graceful error handling with user-friendly messages
 - Prevent duplicate emails
-- Jersey number uniqueness per team
+- Prevent duplicate USAC IDs
+- Validate role values
 
 **Step 5.3: Documentation**
 - Create `/docs/guides/PLAYER_MANAGEMENT_GUIDE.md`
@@ -752,21 +792,45 @@ UI Update → Success Message
 Admin can then "Set Active" to activate season
 ```
 
-### Player Creation Flow (Season-Based)
+### Player Creation Flow (Global Pool)
 ```
-Admin → Fill Form → Validate (for active season)
+Admin → Fill Form → Validate
   ↓
 POST /api/players-create
   ↓
 Function:
   - Validate session
-  - Get active season
-  - Validate data (email unique globally, jersey # per team per season)
+  - Validate data (email unique, USAC ID unique, role valid)
   - Generate UUID
-  - Create SeasonAssignment for active season
   - Load players from Blobs
-  - Append new player
-  - Save to Blobs (both players-all and players-{seasonId})
+  - Append new player to global pool
+  - Save to Blobs (players-all)
+  ↓
+UI Update → Success Message
+  ↓
+Admin can then mark player as core to teams via Roster Management page
+```
+
+### Core Roster Assignment Flow
+```
+Admin → Navigate to Roster Management → Select Season & Team
+  ↓
+Load Core Roster for Team
+  ↓
+Display:
+  - Left: Core Players (marked as core)
+  - Right: Available Players (all other active players)
+  ↓
+Admin marks/unmarks players as core
+  ↓
+POST /api/core-roster-update (or bulk-update)
+  ↓
+Function:
+  - Validate session
+  - Load CoreRosterAssignment for season/team
+  - Update isCore status for specified players
+  - Set markedCoreDate or unmarkedCoreDate
+  - Save to Blobs
   ↓
 UI Update → Success Message
 ```
@@ -803,10 +867,10 @@ Stats recalculate (triggered manually or automatically)
 Admin → Upload CSV → Parse (PapaParse)
   ↓
 Validate Rows:
-  - Required fields
-  - Email format
-  - Teams exist
-  - Jersey numbers
+  - Required fields (First Name, Last Name, Email, USAC ID, Role)
+  - Email format and uniqueness
+  - USAC ID uniqueness
+  - Role valid
   ↓
 Show Preview (errors highlighted)
   ↓
@@ -818,7 +882,7 @@ Function:
   - Validate session
   - Load existing players
   - For each row: create or update
-  - Batch save to Blobs
+  - Batch save to Blobs (players-all)
   ↓
 Return Summary (X created, Y updated, Z errors)
   ↓
@@ -835,9 +899,10 @@ Show Results Page
 - No public access to player management
 
 ### Data Validation
-- Email format validation
+- Email format validation and uniqueness
+- USAC ID uniqueness
 - Sanitize all inputs
-- Jersey number validation per team
+- Role validation (Batsman, Bowler, All-rounder, Wicket-keeper)
 - Team name validation against existing teams
 
 ### Access Control
@@ -847,7 +912,7 @@ Show Results Page
 
 ### Privacy
 - Don't expose player emails publicly
-- Phone numbers optional
+- USAC IDs kept secure (admin-only access)
 - Secure export functionality (admin-only)
 
 ### Rate Limiting
@@ -868,31 +933,43 @@ Show Results Page
 - [ ] Configure teams for season
 - [ ] Validate date ranges
 
-**Player Management (Season-Based):**
-- [ ] Add new player to active season
-- [ ] Edit existing player
-- [ ] Add player to new season (existing player)
-- [ ] Delete single player
+**Player Management (Global Pool):**
+- [ ] Add new player to global pool
+- [ ] Edit existing player details
+- [ ] Delete single player (soft delete)
 - [ ] Bulk delete players
-- [ ] Search players across seasons
-- [ ] Filter by season, team, status, position
-- [ ] Validate email uniqueness (global)
-- [ ] Validate jersey number per team per season
-- [ ] View team badges with season context
-- [ ] View player season history
+- [ ] Search players (name, email, USAC ID)
+- [ ] Filter by status, role
+- [ ] Validate email uniqueness
+- [ ] Validate USAC ID uniqueness
+- [ ] Validate role selection
 - [ ] Active/inactive toggle
+- [ ] View all players in global pool
+
+**Team Roster Management (Core Status):**
+- [ ] Select season and team
+- [ ] View current core players for team
+- [ ] View all available players
+- [ ] Mark player as core to team
+- [ ] Unmark player from core roster
+- [ ] Mark player as core to multiple teams
+- [ ] Save core roster changes
+- [ ] View which teams a player is core to
+- [ ] View historical core rosters (previous seasons)
+- [ ] Bulk mark/unmark operations
 
 **Import/Export:**
 - [ ] Download import template
-- [ ] Import valid CSV to active season
+- [ ] Import valid CSV to global pool
 - [ ] Import CSV with errors (validate preview)
-- [ ] Export players to CSV (for specific season)
+- [ ] Export players to CSV (global pool)
 - [ ] Handle duplicate emails
-- [ ] Handle jersey number conflicts
+- [ ] Handle duplicate USAC IDs
+- [ ] Validate role values
 
 **Availability (Admin-Managed):**
 - [ ] Create availability record for fixture
-- [ ] View player list for team (from season roster)
+- [ ] View player list for team (from core roster)
 - [ ] Mark players as available
 - [ ] Mark available players as selected
 - [ ] Verify cannot select unavailable players
@@ -900,6 +977,7 @@ Show Results Page
 - [ ] View availability statistics (X available, Y selected)
 - [ ] Filter fixtures by season/team/date
 - [ ] Save and persist changes
+- [ ] Verify only core players shown for each fixture
 
 **Statistics:**
 - [ ] View player statistics (single season)
@@ -930,7 +1008,7 @@ Show Results Page
 ### To Create (Priority Order)
 
 1. **`/src/types/player.ts`**
-   - All TypeScript interfaces (Season, Fixture, Player, FixtureAvailability, Statistics)
+   - All TypeScript interfaces (Season, Fixture, Player, CoreRosterAssignment, FixtureAvailability, Statistics)
    - Foundation for entire system
 
 2. **`/netlify/functions/seasons-list.ts`**
@@ -958,38 +1036,55 @@ Show Results Page
    - Must be created before availability tracking
 
 8. **`/netlify/functions/players-list.ts`**
-   - List players (filtered by season)
+   - List all players (global pool)
    - Most frequently called function
 
 9. **`/netlify/functions/players-create.ts`**
-   - Create new players (for active season)
-   - Validation logic with season context
+   - Create new players (global)
+   - Validation logic (email, USAC ID uniqueness)
 
 10. **`/src/pages/admin/players.astro`**
-    - Main player management UI (with season selector)
+    - Main player management UI (global pool)
     - Follows pattern from `/admin/index.astro`
 
 11. **`/netlify/functions/players-import.ts`**
-    - Bulk import feature (per season)
+    - Bulk import feature (global)
     - CSV parsing and validation
 
 12. **`/src/pages/admin/players/import.astro`**
     - Import wizard UI
     - Multi-step process
 
-13. **`/src/pages/admin/availability.astro`**
+13. **`/netlify/functions/core-roster-list.ts`**
+    - List core roster assignments
+    - Required for roster management
+
+14. **`/netlify/functions/core-roster-update.ts`**
+    - Mark/unmark players as core
+    - Core roster management
+
+15. **`/netlify/functions/core-roster-bulk-update.ts`**
+    - Bulk update core status
+    - Batch operations
+
+16. **`/src/pages/admin/roster.astro`**
+    - Team roster management UI
+    - Mark/unmark core players per team/season
+
+17. **`/src/pages/admin/availability.astro`**
     - Admin-managed availability tracking interface
     - Two-column grid (available/selected)
+    - Uses core roster data
 
-14. **`/netlify/functions/availability-update.ts`**
+18. **`/netlify/functions/availability-update.ts`**
     - Update availability and selection records
     - Core availability feature
 
-15. **`/netlify/functions/statistics-calculate.ts`**
+19. **`/netlify/functions/statistics-calculate.ts`**
     - Statistics calculation logic (multi-season)
-    - Complex aggregations
+    - Complex aggregations based on core roster
 
-16. **`/src/pages/admin/statistics.astro`**
+20. **`/src/pages/admin/statistics.astro`**
     - Statistics dashboard (season/career views)
     - Data visualization
 
@@ -1046,24 +1141,26 @@ Show Results Page
 This plan implements a complete season-based player management system with:
 
 **Core Features:**
-- 🗓️ **Season Management**: Create and manage cricket seasons, track roster changes across seasons
-- 👥 **Player Pool Management**: Add, edit, delete, bulk import players (per season)
-- 🏏 **Team Roster Assignments**: Multiple teams per player per season, with historical tracking
-- ✅ **Admin-Managed Availability**: Admin marks player availability AND selection for each fixture
+- 🗓️ **Season Management**: Create and manage cricket seasons with flexible team formats (T20, T30, T40)
+- 👥 **Player Pool Management**: Global player pool with simplified data (Name, Email, USAC ID, Role, Active Status)
+- 🏏 **Core Roster Management**: Mark players as core to teams (can be core to multiple teams), manage anytime during season
+- ✅ **Admin-Managed Availability**: Admin marks player availability AND selection for each fixture (based on core roster)
 - 📈 **Multi-Season Statistics**: Track performance across seasons with availability/selection rates
 - 📊 **Career Statistics**: Aggregate player stats across entire career
-- 📁 **CSV Import/Export**: Bulk operations with season context
-- 🔍 **Advanced Filtering**: Search, filter by season/team/status, bulk operations
+- 📁 **CSV Import/Export**: Bulk operations for global player pool
+- 🔍 **Advanced Filtering**: Search, filter by team/status/role, bulk operations
 
-**Key Differences from Original Plan:**
+**Key Design Decisions:**
 - ❌ **No player polling**: Admin controls all availability marking (not players)
-- ✅ **Season-based rosters**: Teams and players organized by season
-- ✅ **Flexible teams per season**: Team names/divisions can change between seasons
+- ✅ **Global player pool**: Players not tied to specific seasons
+- ✅ **Core status per team**: Players marked as "core" to teams, can change anytime during season
+- ✅ **Multiple team membership**: Players can be core to multiple teams (different formats)
+- ✅ **Flexible teams per season**: Team names/formats can change between seasons
 - ✅ **Admin fixture management**: Upload/manage fixtures per season (not single CSV)
-- ✅ **Season-specific deletion**: Remove players from season (keeps historical data)
+- ✅ **Soft delete**: Mark players inactive (keeps historical data)
 - ✅ **Two-step tracking**: Availability → Selection (both admin-managed)
-- ✅ **Multi-season history**: Players can participate in multiple seasons
 - ✅ **Selection rate metric**: Track how often available players get selected
+- ✅ **Simplified player data**: Only essential fields (no phone, jersey number, complex assignments)
 
 **Technical Approach:**
 - **Storage**: Netlify Blobs (seasons, players, fixture-availability, statistics)

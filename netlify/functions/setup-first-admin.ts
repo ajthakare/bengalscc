@@ -32,8 +32,11 @@ export const handler: Handler = async (
       };
     }
 
-    // Get admin users store
-    const store = getStore('admin-users');
+    // Get admin users store with context
+    const store = getStore({
+      name: 'admin-users',
+      siteID: context.site?.id || process.env.SITE_ID,
+    });
     const existingUsers =
       (await store.get('users', { type: 'json' })) as AdminUser[] | null;
 

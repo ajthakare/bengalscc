@@ -25,7 +25,10 @@ export const handler: Handler = async (
     }
 
     // Get admin users from Netlify Blobs
-    const store = getStore('admin-users');
+    const store = getStore({
+      name: 'admin-users',
+      siteID: context.site?.id || process.env.SITE_ID,
+    });
     const users =
       (await store.get('users', { type: 'json' })) as AdminUser[] | null;
 

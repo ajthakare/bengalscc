@@ -101,7 +101,10 @@ export const handler: Handler = async (
       }
 
       // Also remove metadata from Blobs
-      const store = getStore('submission-metadata');
+      const store = getStore({
+        name: 'submission-metadata',
+        siteID: context.site?.id || process.env.SITE_ID,
+      });
       const allMetadata =
         (await store.get('metadata', { type: 'json' })) as
           | SubmissionMetadata[]
@@ -126,7 +129,10 @@ export const handler: Handler = async (
     }
 
     // Handle read/archive actions (store metadata in Netlify Blobs)
-    const store = getStore('submission-metadata');
+    const store = getStore({
+      name: 'submission-metadata',
+      siteID: context.site?.id || process.env.SITE_ID,
+    });
     const allMetadata =
       (await store.get('metadata', { type: 'json' })) as
         | SubmissionMetadata[]

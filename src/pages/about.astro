@@ -4,6 +4,8 @@ import Section from '../components/Section.astro';
 import Card from '../components/Card.astro';
 import MemberCard from '../components/MemberCard.astro';
 import Markdown from '../components/Markdown.astro';
+import NonProfitBadge from '../components/NonProfitBadge.astro';
+import { SITE_CONFIG } from '../config';
 
 const ourStory = `
 Bengals Cricket Club was founded in 2018 with the vision of inspiring the next generation of cricketers in Northern California. Our members come from diverse ethnicities, professions, and age groups, united by a love for the game and a commitment to excellence.
@@ -85,6 +87,53 @@ const boardMembers = [
                 {boardMembers.map(member => (
                     <MemberCard name={member.name} role={member.role} />
                 ))}
+            </div>
+        </div>
+    </Section>
+
+    <Section title="Our Non-Profit Foundation">
+        <div class="max-w-4xl mx-auto">
+            <div class="text-center mb-8">
+                <NonProfitBadge size="lg" showEIN={true} />
+            </div>
+
+            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-8 border-2 border-blue-200 mb-8">
+                <h3 class="text-2xl font-bold text-gray-900 mb-4 text-center">
+                    {SITE_CONFIG.nonProfit.name}
+                </h3>
+                <p class="text-lg text-gray-700 text-center max-w-3xl mx-auto mb-6">
+                    {SITE_CONFIG.nonProfit.mission}
+                </p>
+                <p class="text-gray-700 text-center">
+                    Through our foundation, we provide youth training programs, equipment donations,
+                    and scholarships to ensure cricket remains accessible to players from all backgrounds.
+                    Our mission extends beyond competitive cricket to fostering community engagement and
+                    cultural diversity through the sport.
+                </p>
+            </div>
+
+            {/* Impact Stats */}
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                {SITE_CONFIG.nonProfit.impactStats.map(stat => (
+                    <div class="bg-white rounded-lg p-6 border-2 border-gray-200 text-center hover:border-primary hover:shadow-lg transition-all">
+                        <div class="text-4xl mb-3">{stat.icon}</div>
+                        <div class="text-3xl font-bold text-primary mb-2">{stat.value}</div>
+                        <div class="text-sm text-gray-600">{stat.label}</div>
+                    </div>
+                ))}
+            </div>
+
+            {/* CTA to Non-Profit Page */}
+            <div class="text-center bg-orange-50 border-2 border-orange-300 rounded-xl p-8">
+                <h3 class="text-2xl font-bold mb-4 text-gray-900">Support Our Community Programs</h3>
+                <p class="text-gray-700 mb-6 max-w-2xl mx-auto">
+                    Learn more about our foundation's programs, see our impact in the community,
+                    and discover how you can make a tax-deductible donation to support cricket in Northern California.
+                </p>
+                <a href="/non-profit" class="btn btn-lg inline-flex items-center gap-2">
+                    <span class="text-xl">🤝</span>
+                    Learn More About Our Foundation
+                </a>
             </div>
         </div>
     </Section>

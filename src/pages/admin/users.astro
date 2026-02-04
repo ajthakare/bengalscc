@@ -1,0 +1,341 @@
+---
+export const prerender = false;
+
+import Layout from '../../layouts/Layout.astro';
+
+// Check authentication
+const cookieHeader = Astro.request.headers.get('cookie');
+let authenticated = false;
+let username = '';
+
+if (cookieHeader) {
+  try {
+    const response = await fetch(
+      `${Astro.url.origin}/.netlify/functions/auth-check`,
+      {
+        headers: {
+          cookie: cookieHeader,
+        },
+      }
+    );
+    const data = await response.json();
+    authenticated = data.authenticated;
+    username = data.username || '';
+  } catch (error) {
+    authenticated = false;
+  }
+}
+
+// Redirect to login if not authenticated
+if (!authenticated) {
+  return Astro.redirect('/admin/login');
+}
+---
+
+<Layout title="Manage Admin Users - Bengals Cricket Club">
+  <div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-gray-200">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div class="flex justify-between items-center">
+          <div>
+            <h1 class="text-2xl font-bold text-[#355c7d]">Manage Admin Users</h1>
+            <p class="text-sm text-gray-600 mt-1">Bengals Cricket Club</p>
+          </div>
+          <div class="flex items-center gap-4">
+            <span class="text-sm text-gray-600">
+              Logged in as <strong>{username}</strong>
+            </span>
+            <a
+              href="/admin"
+              class="px-4 py-2 text-sm font-medium text-[#355c7d] hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              Dashboard
+            </a>
+            <a
+              href="/admin/logout"
+              class="px-4 py-2 text-sm font-medium text-white bg-[#f67280] hover:bg-[#e55a6a] rounded-lg transition-colors"
+            >
+              Logout
+            </a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <!-- Add User Form -->
+      <div class="bg-white rounded-lg shadow-sm p-6 mb-8">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Add New Admin User</h2>
+
+        <form id="add-user-form" class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label for="new-username" class="block text-sm font-medium text-gray-700 mb-1">
+                Username
+              </label>
+              <input
+                type="text"
+                id="new-username"
+                name="username"
+                required
+                pattern="[a-zA-Z0-9_]{3,20}"
+                title="3-20 characters, letters, numbers, and underscores only"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#f67280] focus:border-transparent"
+                placeholder="e.g., john_admin"
+              />
+              <p class="text-xs text-gray-500 mt-1">3-20 characters, alphanumeric and underscores</p>
+            </div>
+
+            <div>
+              <label for="new-password" class="block text-sm font-medium text-gray-700 mb-1">
+                Password
+              </label>
+              <input
+                type="password"
+                id="new-password"
+                name="password"
+                required
+                minlength="8"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#f67280] focus:border-transparent"
+                placeholder="Minimum 8 characters"
+              />
+              <p class="text-xs text-gray-500 mt-1">Minimum 8 characters</p>
+            </div>
+          </div>
+
+          <div id="add-user-error" class="hidden">
+            <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+              <span id="add-user-error-text"></span>
+            </div>
+          </div>
+
+          <div id="add-user-success" class="hidden">
+            <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+              <span id="add-user-success-text"></span>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            id="add-user-button"
+            class="px-6 py-2 bg-[#f67280] text-white rounded-lg hover:bg-[#e55a6a] transition-colors font-medium"
+          >
+            Add Admin User
+          </button>
+        </form>
+      </div>
+
+      <!-- Users List -->
+      <div class="bg-white rounded-lg shadow-sm p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Current Admin Users</h2>
+
+        <!-- Loading State -->
+        <div id="loading-users" class="text-center py-8">
+          <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#f67280]"></div>
+          <p class="mt-2 text-sm text-gray-600">Loading users...</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="users-error" class="hidden">
+          <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+            <p class="font-medium">Error loading users</p>
+            <p class="text-sm mt-1" id="users-error-text"></p>
+          </div>
+        </div>
+
+        <!-- Users Table -->
+        <div id="users-table-container" class="hidden">
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Username
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Created At
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody id="users-tbody" class="bg-white divide-y divide-gray-200">
+                <!-- Users will be inserted here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</Layout>
+
+<script define:vars={{ currentUsername: username }}>
+  interface AdminUser {
+    username: string;
+    createdAt: string;
+  }
+
+  let users: AdminUser[] = [];
+
+  const loadingUsers = document.getElementById('loading-users')!;
+  const usersError = document.getElementById('users-error')!;
+  const usersErrorText = document.getElementById('users-error-text')!;
+  const usersTableContainer = document.getElementById('users-table-container')!;
+  const usersTbody = document.getElementById('users-tbody')!;
+  const addUserForm = document.getElementById('add-user-form') as HTMLFormElement;
+  const addUserButton = document.getElementById('add-user-button') as HTMLButtonElement;
+  const addUserError = document.getElementById('add-user-error')!;
+  const addUserErrorText = document.getElementById('add-user-error-text')!;
+  const addUserSuccess = document.getElementById('add-user-success')!;
+  const addUserSuccessText = document.getElementById('add-user-success-text')!;
+
+  async function loadUsers() {
+    try {
+      loadingUsers.classList.remove('hidden');
+      usersError.classList.add('hidden');
+      usersTableContainer.classList.add('hidden');
+
+      const response = await fetch('/.netlify/functions/admin-users-list');
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch users');
+      }
+
+      users = await response.json();
+
+      loadingUsers.classList.add('hidden');
+      usersTableContainer.classList.remove('hidden');
+
+      renderUsers();
+    } catch (error) {
+      loadingUsers.classList.add('hidden');
+      usersError.classList.remove('hidden');
+      usersErrorText.textContent = error instanceof Error ? error.message : 'Unknown error';
+    }
+  }
+
+  function renderUsers() {
+    usersTbody.innerHTML = '';
+
+    users.forEach((user) => {
+      const row = document.createElement('tr');
+
+      const date = new Date(user.createdAt);
+      const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+      const isCurrentUser = user.username === currentUsername;
+      const isOnlyUser = users.length === 1;
+
+      row.innerHTML = `
+        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+          ${user.username}
+          ${isCurrentUser ? '<span class="ml-2 text-xs text-[#f67280]">(You)</span>' : ''}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+          ${formattedDate}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm">
+          <button
+            onclick="deleteUser('${user.username}')"
+            class="text-red-600 hover:text-red-800 font-medium ${isCurrentUser || isOnlyUser ? 'opacity-50 cursor-not-allowed' : ''}"
+            ${isCurrentUser || isOnlyUser ? 'disabled' : ''}
+            title="${isCurrentUser ? 'Cannot delete your own account' : isOnlyUser ? 'Cannot delete the last admin' : 'Delete user'}"
+          >
+            Delete
+          </button>
+        </td>
+      `;
+
+      usersTbody.appendChild(row);
+    });
+  }
+
+  async function deleteUser(username: string) {
+    if (!confirm(`Are you sure you want to delete admin user "${username}"? This cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/.netlify/functions/admin-users-delete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete user');
+      }
+
+      await loadUsers();
+    } catch (error) {
+      alert('Failed to delete user: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    }
+  }
+
+  function hideMessages() {
+    addUserError.classList.add('hidden');
+    addUserSuccess.classList.add('hidden');
+  }
+
+  function showError(message: string) {
+    addUserErrorText.textContent = message;
+    addUserError.classList.remove('hidden');
+    addUserSuccess.classList.add('hidden');
+  }
+
+  function showSuccess(message: string) {
+    addUserSuccessText.textContent = message;
+    addUserSuccess.classList.remove('hidden');
+    addUserError.classList.add('hidden');
+  }
+
+  addUserForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideMessages();
+
+    const formData = new FormData(addUserForm);
+    const username = formData.get('username') as string;
+    const password = formData.get('password') as string;
+
+    addUserButton.disabled = true;
+    addUserButton.textContent = 'Adding...';
+
+    try {
+      const response = await fetch('/.netlify/functions/admin-users-create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create user');
+      }
+
+      showSuccess(`Admin user "${username}" created successfully`);
+      addUserForm.reset();
+      await loadUsers();
+    } catch (error) {
+      showError(error instanceof Error ? error.message : 'Unknown error');
+    } finally {
+      addUserButton.disabled = false;
+      addUserButton.textContent = 'Add Admin User';
+    }
+  });
+
+  // Make deleteUser globally available
+  (window as any).deleteUser = deleteUser;
+
+  // Load users on page load
+  loadUsers();
+</script>

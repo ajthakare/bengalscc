@@ -1,0 +1,413 @@
+---
+export const prerender = false;
+
+import Layout from '../../layouts/Layout.astro';
+
+// Check authentication
+const cookieHeader = Astro.request.headers.get('cookie');
+let authenticated = false;
+let username = '';
+
+if (cookieHeader) {
+  try {
+    const response = await fetch(
+      `${Astro.url.origin}/.netlify/functions/auth-check`,
+      {
+        headers: {
+          cookie: cookieHeader,
+        },
+      }
+    );
+    const data = await response.json();
+    authenticated = data.authenticated;
+    username = data.username || '';
+  } catch (error) {
+    authenticated = false;
+  }
+}
+
+// Redirect to login if not authenticated
+if (!authenticated) {
+  return Astro.redirect('/admin/login');
+}
+---
+
+<Layout title="Admin Dashboard - Bengals Cricket Club">
+  <div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-gray-200">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div class="flex justify-between items-center">
+          <div>
+            <h1 class="text-2xl font-bold text-[#355c7d]">Admin Dashboard</h1>
+            <p class="text-sm text-gray-600 mt-1">Bengals Cricket Club</p>
+          </div>
+          <div class="flex items-center gap-4">
+            <span class="text-sm text-gray-600">
+              Logged in as <strong>{username}</strong>
+            </span>
+            <a
+              href="/admin/users"
+              class="px-4 py-2 text-sm font-medium text-[#355c7d] hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              Manage Users
+            </a>
+            <a
+              href="/admin/logout"
+              class="px-4 py-2 text-sm font-medium text-white bg-[#f67280] hover:bg-[#e55a6a] rounded-lg transition-colors"
+            >
+              Logout
+            </a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <!-- Page Title -->
+      <div class="mb-6">
+        <h2 class="text-xl font-semibold text-gray-900">Contact Form Submissions</h2>
+        <p class="text-sm text-gray-600 mt-1">
+          View and manage submissions from the contact form
+        </p>
+      </div>
+
+      <!-- Search and Filters -->
+      <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+        <div class="flex flex-col sm:flex-row gap-4">
+          <div class="flex-1">
+            <input
+              type="text"
+              id="search-input"
+              placeholder="Search by name, email, or message..."
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#f67280] focus:border-transparent"
+            />
+          </div>
+          <div>
+            <button
+              id="refresh-button"
+              class="px-6 py-2 bg-[#355c7d] text-white rounded-lg hover:bg-[#2a4a63] transition-colors"
+            >
+              Refresh
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div id="loading-state" class="text-center py-12">
+        <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#f67280]"></div>
+        <p class="mt-4 text-gray-600">Loading submissions...</p>
+      </div>
+
+      <!-- Error State -->
+      <div id="error-state" class="hidden">
+        <div class="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-lg">
+          <p class="font-medium">Error loading submissions</p>
+          <p class="text-sm mt-1" id="error-text"></p>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div id="empty-state" class="hidden text-center py-12">
+        <div class="text-6xl mb-4">📬</div>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">No submissions yet</h3>
+        <p class="text-gray-600">Contact form submissions will appear here</p>
+      </div>
+
+      <!-- Submissions Table -->
+      <div id="submissions-container" class="hidden">
+        <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Date
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Name
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Email
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Phone
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Message
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody id="submissions-tbody" class="bg-white divide-y divide-gray-200">
+                <!-- Submissions will be inserted here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Submission Detail Modal -->
+    <div id="submission-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="p-6">
+          <div class="flex justify-between items-start mb-4">
+            <h3 class="text-xl font-bold text-gray-900">Submission Details</h3>
+            <button id="close-modal" class="text-gray-400 hover:text-gray-600">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <div id="modal-content" class="space-y-4">
+            <!-- Content will be inserted here -->
+          </div>
+
+          <div class="mt-6 flex gap-3">
+            <button
+              id="delete-submission"
+              class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Delete
+            </button>
+            <button
+              id="close-modal-button"
+              class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  interface Submission {
+    id: string;
+    number: number;
+    name: string;
+    email: string;
+    phone: string;
+    message: string;
+    createdAt: string;
+    formName: string;
+  }
+
+  let allSubmissions: Submission[] = [];
+  let filteredSubmissions: Submission[] = [];
+  let currentSubmission: Submission | null = null;
+
+  const loadingState = document.getElementById('loading-state')!;
+  const errorState = document.getElementById('error-state')!;
+  const errorText = document.getElementById('error-text')!;
+  const emptyState = document.getElementById('empty-state')!;
+  const submissionsContainer = document.getElementById('submissions-container')!;
+  const submissionsTbody = document.getElementById('submissions-tbody')!;
+  const searchInput = document.getElementById('search-input') as HTMLInputElement;
+  const refreshButton = document.getElementById('refresh-button')!;
+  const modal = document.getElementById('submission-modal')!;
+  const modalContent = document.getElementById('modal-content')!;
+  const closeModalButtons = [
+    document.getElementById('close-modal')!,
+    document.getElementById('close-modal-button')!,
+  ];
+  const deleteButton = document.getElementById('delete-submission')!;
+
+  async function loadSubmissions() {
+    try {
+      loadingState.classList.remove('hidden');
+      errorState.classList.add('hidden');
+      emptyState.classList.add('hidden');
+      submissionsContainer.classList.add('hidden');
+
+      const response = await fetch('/.netlify/functions/get-submissions');
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch submissions');
+      }
+
+      const data = await response.json();
+      allSubmissions = data.submissions || [];
+      filteredSubmissions = [...allSubmissions];
+
+      loadingState.classList.add('hidden');
+
+      if (allSubmissions.length === 0) {
+        emptyState.classList.remove('hidden');
+      } else {
+        renderSubmissions();
+        submissionsContainer.classList.remove('hidden');
+      }
+    } catch (error) {
+      loadingState.classList.add('hidden');
+      errorState.classList.remove('hidden');
+      errorText.textContent = error instanceof Error ? error.message : 'Unknown error';
+    }
+  }
+
+  function renderSubmissions() {
+    submissionsTbody.innerHTML = '';
+
+    filteredSubmissions.forEach((submission) => {
+      const row = document.createElement('tr');
+      row.className = 'hover:bg-gray-50 cursor-pointer';
+      row.onclick = () => showSubmissionDetail(submission);
+
+      const date = new Date(submission.createdAt);
+      const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+      const truncatedMessage = submission.message.length > 50
+        ? submission.message.substring(0, 50) + '...'
+        : submission.message;
+
+      row.innerHTML = `
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+          ${formattedDate}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+          ${submission.name}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+          ${submission.email}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+          ${submission.phone || '-'}
+        </td>
+        <td class="px-6 py-4 text-sm text-gray-600">
+          ${truncatedMessage}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm">
+          <button
+            onclick="event.stopPropagation(); showSubmissionDetail(${JSON.stringify(submission).replace(/"/g, '&quot;')})"
+            class="text-[#f67280] hover:text-[#e55a6a] font-medium"
+          >
+            View
+          </button>
+        </td>
+      `;
+
+      submissionsTbody.appendChild(row);
+    });
+  }
+
+  function showSubmissionDetail(submission: Submission) {
+    currentSubmission = submission;
+
+    const date = new Date(submission.createdAt);
+    const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+
+    modalContent.innerHTML = `
+      <div class="space-y-3">
+        <div>
+          <label class="text-sm font-medium text-gray-500">Date</label>
+          <p class="text-gray-900">${formattedDate}</p>
+        </div>
+        <div>
+          <label class="text-sm font-medium text-gray-500">Name</label>
+          <p class="text-gray-900">${submission.name}</p>
+        </div>
+        <div>
+          <label class="text-sm font-medium text-gray-500">Email</label>
+          <p class="text-gray-900">
+            <a href="mailto:${submission.email}" class="text-[#f67280] hover:underline">
+              ${submission.email}
+            </a>
+          </p>
+        </div>
+        ${submission.phone ? `
+          <div>
+            <label class="text-sm font-medium text-gray-500">Phone</label>
+            <p class="text-gray-900">
+              <a href="tel:${submission.phone}" class="text-[#f67280] hover:underline">
+                ${submission.phone}
+              </a>
+            </p>
+          </div>
+        ` : ''}
+        <div>
+          <label class="text-sm font-medium text-gray-500">Message</label>
+          <p class="text-gray-900 whitespace-pre-wrap">${submission.message}</p>
+        </div>
+      </div>
+    `;
+
+    modal.classList.remove('hidden');
+  }
+
+  function closeModal() {
+    modal.classList.add('hidden');
+    currentSubmission = null;
+  }
+
+  async function deleteSubmission() {
+    if (!currentSubmission) return;
+
+    if (!confirm('Are you sure you want to delete this submission? This cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/.netlify/functions/update-submission', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: currentSubmission.id,
+          action: 'delete',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete submission');
+      }
+
+      closeModal();
+      await loadSubmissions();
+    } catch (error) {
+      alert('Failed to delete submission: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    }
+  }
+
+  function filterSubmissions() {
+    const query = searchInput.value.toLowerCase();
+
+    if (!query) {
+      filteredSubmissions = [...allSubmissions];
+    } else {
+      filteredSubmissions = allSubmissions.filter((sub) =>
+        sub.name.toLowerCase().includes(query) ||
+        sub.email.toLowerCase().includes(query) ||
+        sub.message.toLowerCase().includes(query)
+      );
+    }
+
+    renderSubmissions();
+  }
+
+  // Event listeners
+  searchInput.addEventListener('input', filterSubmissions);
+  refreshButton.addEventListener('click', loadSubmissions);
+  closeModalButtons.forEach((btn) => btn.addEventListener('click', closeModal));
+  deleteButton.addEventListener('click', deleteSubmission);
+
+  // Close modal on outside click
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      closeModal();
+    }
+  });
+
+  // Make showSubmissionDetail globally available
+  (window as any).showSubmissionDetail = showSubmissionDetail;
+
+  // Load submissions on page load
+  loadSubmissions();
+</script>

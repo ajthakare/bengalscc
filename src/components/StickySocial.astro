@@ -3,6 +3,16 @@ import { SITE_CONFIG } from '../config';
 ---
 
 <div class="fixed bottom-6 right-6 flex flex-col gap-3 z-50">
+    <button
+        id="back-to-top"
+        class="group flex items-center justify-center w-14 h-14 bg-gray-700 rounded-full shadow-lg hover:scale-110 hover:bg-gray-800 transition-all duration-200"
+        aria-label="Back to top"
+    >
+        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+        </svg>
+    </button>
+
     <a
         href={SITE_CONFIG.social.instagram.url}
         target="_blank"
@@ -27,3 +37,17 @@ import { SITE_CONFIG } from '../config';
         </svg>
     </a>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const backToTopButton = document.getElementById('back-to-top');
+        if (backToTopButton) {
+            backToTopButton.addEventListener('click', () => {
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            });
+        }
+    });
+</script>

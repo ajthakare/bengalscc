@@ -22,7 +22,7 @@ Design specifications and content:
 
 ### `/assets`
 Documentation assets:
-- `logo.svg` - Club logo
+- `logo.svg` - Club logo (reference copy - source is in `src/assets/logo.svg`)
 - `fixtures.csv` - Fixtures data format example
 - `messages.png` - Screenshot for documentation
 

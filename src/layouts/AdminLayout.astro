@@ -1,0 +1,289 @@
+---
+import '../../src/styles/globals.css';
+import '@fontsource-variable/inter/wght.css';
+import interWoff2 from '@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url';
+
+interface Props {
+  title: string;
+  username: string;
+  activePage: 'dashboard' | 'users';
+}
+
+const { title, username, activePage } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title}</title>
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <link rel="preload" as="font" type="font/woff2" href={interWoff2} crossorigin />
+  </head>
+  <body class="antialiased text-body">
+    <div class="admin-container bg-noise">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <a href="/" class="logo-link">
+            <img src="/logo.svg" alt="Bengals CC" class="logo-img" />
+            <div>
+              <div class="logo-text">Bengals CC</div>
+              <div class="logo-subtitle">Admin Panel</div>
+            </div>
+          </a>
+        </div>
+
+        <nav class="sidebar-nav">
+          <a href="/admin" class:list={['nav-item', { active: activePage === 'dashboard' }]}>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 4h14a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/>
+              <path d="M18 5l-8 6-8-6"/>
+            </svg>
+            <span>Contact Submissions</span>
+          </a>
+
+          <a href="/admin/users" class:list={['nav-item', { active: activePage === 'users' }]}>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/>
+              <circle cx="10" cy="7" r="4"/>
+            </svg>
+            <span>Manage Users</span>
+          </a>
+
+          <div class="nav-divider"></div>
+
+          <a href="/" class="nav-item nav-external" target="_blank">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 13v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+              <path d="M15 3h6v6"/>
+              <path d="M10 14L21 3"/>
+            </svg>
+            <span>View Website</span>
+          </a>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="user-info">
+            <div class="user-avatar">
+              {username.charAt(0).toUpperCase()}
+            </div>
+            <div class="user-details">
+              <div class="user-name">{username}</div>
+              <div class="user-role">Administrator</div>
+            </div>
+          </div>
+          <a href="/admin/logout" class="logout-btn" title="Logout">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+          </a>
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="main-content">
+        <slot />
+      </main>
+    </div>
+
+    <style>
+      .admin-container {
+        display: flex;
+        min-height: 100vh;
+      }
+
+      /* Sidebar Styles */
+      .sidebar {
+        width: 280px;
+        background: white;
+        border-right: 1px solid var(--color-border);
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+        height: 100vh;
+        left: 0;
+        top: 0;
+        z-index: 100;
+      }
+
+      .sidebar-header {
+        padding: 24px;
+        border-bottom: 1px solid var(--color-border);
+      }
+
+      .logo-link {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-decoration: none;
+      }
+
+      .logo-img {
+        width: 48px;
+        height: 48px;
+        flex-shrink: 0;
+      }
+
+      .logo-text {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--color-text-heading);
+        line-height: 1.2;
+      }
+
+      .logo-subtitle {
+        font-size: 13px;
+        color: var(--color-text-muted);
+        font-weight: 500;
+      }
+
+      .sidebar-nav {
+        flex: 1;
+        padding: 20px 16px;
+        overflow-y: auto;
+      }
+
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        color: var(--color-text-muted);
+        text-decoration: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.2s;
+        margin-bottom: 4px;
+      }
+
+      .nav-item:hover {
+        background: var(--color-bg-card);
+        color: var(--color-text-body);
+      }
+
+      .nav-item.active {
+        background: var(--color-bg-hero);
+        color: var(--color-primary);
+        font-weight: 600;
+      }
+
+      .nav-item svg {
+        flex-shrink: 0;
+      }
+
+      .nav-external {
+        opacity: 0.7;
+      }
+
+      .nav-external:hover {
+        opacity: 1;
+      }
+
+      .nav-divider {
+        height: 1px;
+        background: var(--color-border);
+        margin: 16px 0;
+      }
+
+      .sidebar-footer {
+        padding: 16px;
+        border-top: 1px solid var(--color-border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .user-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: 1;
+        min-width: 0;
+      }
+
+      .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-complementary) 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 16px;
+        flex-shrink: 0;
+      }
+
+      .user-details {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .user-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--color-text-heading);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .user-role {
+        font-size: 12px;
+        color: var(--color-text-muted);
+      }
+
+      .logout-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--color-text-muted);
+        transition: all 0.2s;
+        text-decoration: none;
+        flex-shrink: 0;
+      }
+
+      .logout-btn:hover {
+        background: var(--color-bg-hero);
+        color: var(--color-primary);
+      }
+
+      /* Main Content */
+      .main-content {
+        flex: 1;
+        margin-left: 280px;
+        padding: 32px;
+        min-height: 100vh;
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+        .sidebar {
+          width: 100%;
+          position: relative;
+          height: auto;
+        }
+
+        .main-content {
+          margin-left: 0;
+          padding: 16px;
+        }
+
+        .admin-container {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </body>
+</html>

@@ -1,7 +1,7 @@
 ---
 export const prerender = false;
 
-import Layout from '../../layouts/Layout.astro';
+import AdminLayout from '../../layouts/AdminLayout.astro';
 
 // Check authentication
 const cookieHeader = Astro.request.headers.get('cookie');
@@ -32,47 +32,22 @@ if (!authenticated) {
 }
 ---
 
-<Layout title="Manage Admin Users - Bengals Cricket Club">
-  <div class="min-h-screen bg-gray-50">
-    <!-- Header -->
-    <header class="bg-white shadow-sm border-b border-gray-200">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <div class="flex justify-between items-center">
-          <div>
-            <h1 class="text-2xl font-bold text-[#355c7d]">Manage Admin Users</h1>
-            <p class="text-sm text-gray-600 mt-1">Bengals Cricket Club</p>
-          </div>
-          <div class="flex items-center gap-4">
-            <span class="text-sm text-gray-600">
-              Logged in as <strong>{username}</strong>
-            </span>
-            <a
-              href="/admin"
-              class="px-4 py-2 text-sm font-medium text-[#355c7d] hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              Dashboard
-            </a>
-            <a
-              href="/admin/logout"
-              class="px-4 py-2 text-sm font-medium text-white bg-[#f67280] hover:bg-[#e55a6a] rounded-lg transition-colors"
-            >
-              Logout
-            </a>
-          </div>
-        </div>
-      </div>
-    </header>
+<AdminLayout title="Manage Admin Users - Bengals CC Admin" username={username} activePage="users">
+  <div class="users-page">
+    <!-- Page Header -->
+    <div class="page-header">
+      <h1 class="page-title">Manage Admin Users</h1>
+      <p class="page-description">Add or remove admin users for the dashboard</p>
+    </div>
 
-    <!-- Main Content -->
-    <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <!-- Add User Form -->
-      <div class="bg-white rounded-lg shadow-sm p-6 mb-8">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">Add New Admin User</h2>
+      <div class="card">
+        <h2 class="card-title">Add New Admin User</h2>
 
-        <form id="add-user-form" class="space-y-4">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label for="new-username" class="block text-sm font-medium text-gray-700 mb-1">
+        <form id="add-user-form" class="form">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="new-username" class="form-label">
                 Username
               </label>
               <input
@@ -82,14 +57,14 @@ if (!authenticated) {
                 required
                 pattern="[a-zA-Z0-9_]{3,20}"
                 title="3-20 characters, letters, numbers, and underscores only"
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#f67280] focus:border-transparent"
+                class="form-input"
                 placeholder="e.g., john_admin"
               />
-              <p class="text-xs text-gray-500 mt-1">3-20 characters, alphanumeric and underscores</p>
+              <p class="form-hint">3-20 characters, alphanumeric and underscores</p>
             </div>
 
-            <div>
-              <label for="new-password" class="block text-sm font-medium text-gray-700 mb-1">
+            <div class="form-group">
+              <label for="new-password" class="form-label">
                 Password
               </label>
               <input
@@ -98,29 +73,25 @@ if (!authenticated) {
                 name="password"
                 required
                 minlength="8"
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#f67280] focus:border-transparent"
+                class="form-input"
                 placeholder="Minimum 8 characters"
               />
-              <p class="text-xs text-gray-500 mt-1">Minimum 8 characters</p>
+              <p class="form-hint">Minimum 8 characters</p>
             </div>
           </div>
 
-          <div id="add-user-error" class="hidden">
-            <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-              <span id="add-user-error-text"></span>
-            </div>
+          <div id="add-user-error" class="alert alert-error" style="display: none;">
+            <span id="add-user-error-text"></span>
           </div>
 
-          <div id="add-user-success" class="hidden">
-            <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
-              <span id="add-user-success-text"></span>
-            </div>
+          <div id="add-user-success" class="alert alert-success" style="display: none;">
+            <span id="add-user-success-text"></span>
           </div>
 
           <button
             type="submit"
             id="add-user-button"
-            class="px-6 py-2 bg-[#f67280] text-white rounded-lg hover:bg-[#e55a6a] transition-colors font-medium"
+            class="btn-primary"
           >
             Add Admin User
           </button>
@@ -128,92 +99,98 @@ if (!authenticated) {
       </div>
 
       <!-- Users List -->
-      <div class="bg-white rounded-lg shadow-sm p-6">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">Current Admin Users</h2>
+      <div class="card">
+        <h2 class="card-title">Current Admin Users</h2>
 
         <!-- Loading State -->
-        <div id="loading-users" class="text-center py-8">
-          <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#f67280]"></div>
-          <p class="mt-2 text-sm text-gray-600">Loading users...</p>
+        <div id="loading-users" class="state-container">
+          <div class="spinner"></div>
+          <p class="state-text">Loading users...</p>
         </div>
 
         <!-- Error State -->
-        <div id="users-error" class="hidden">
-          <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-            <p class="font-medium">Error loading users</p>
-            <p class="text-sm mt-1" id="users-error-text"></p>
+        <div id="users-error" class="alert alert-error" style="display: none;">
+          <div>
+            <p class="alert-title">Error loading users</p>
+            <p id="users-error-text"></p>
           </div>
         </div>
 
         <!-- Users Table -->
-        <div id="users-table-container" class="hidden">
-          <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-              <thead class="bg-gray-50">
+        <div id="users-table-container" style="display: none;">
+          <div class="table-container">
+            <table class="users-table">
+              <thead>
                 <tr>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Username
-                  </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Created At
-                  </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
+                  <th>Username</th>
+                  <th>Created At</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
-              <tbody id="users-tbody" class="bg-white divide-y divide-gray-200">
+              <tbody id="users-tbody">
                 <!-- Users will be inserted here -->
               </tbody>
             </table>
           </div>
         </div>
       </div>
-    </main>
   </div>
-</Layout>
+</AdminLayout>
 
 <script define:vars={{ currentUsername: username }}>
-  interface AdminUser {
-    username: string;
-    createdAt: string;
-  }
+  // Admin user: { username: string, createdAt: string }
+  let users = [];
 
-  let users: AdminUser[] = [];
+  console.log('Admin users script loaded');
 
-  const loadingUsers = document.getElementById('loading-users')!;
-  const usersError = document.getElementById('users-error')!;
-  const usersErrorText = document.getElementById('users-error-text')!;
-  const usersTableContainer = document.getElementById('users-table-container')!;
-  const usersTbody = document.getElementById('users-tbody')!;
-  const addUserForm = document.getElementById('add-user-form') as HTMLFormElement;
-  const addUserButton = document.getElementById('add-user-button') as HTMLButtonElement;
-  const addUserError = document.getElementById('add-user-error')!;
-  const addUserErrorText = document.getElementById('add-user-error-text')!;
-  const addUserSuccess = document.getElementById('add-user-success')!;
-  const addUserSuccessText = document.getElementById('add-user-success-text')!;
+  const loadingUsers = document.getElementById('loading-users');
+  const usersError = document.getElementById('users-error');
+  const usersErrorText = document.getElementById('users-error-text');
+  const usersTableContainer = document.getElementById('users-table-container');
+  const usersTbody = document.getElementById('users-tbody');
+  const addUserForm = document.getElementById('add-user-form');
+  const addUserButton = document.getElementById('add-user-button');
+  const addUserError = document.getElementById('add-user-error');
+  const addUserErrorText = document.getElementById('add-user-error-text');
+  const addUserSuccess = document.getElementById('add-user-success');
+  const addUserSuccessText = document.getElementById('add-user-success-text');
+
+  console.log('All DOM elements found:', {
+    loadingUsers: !!loadingUsers,
+    usersError: !!usersError,
+    addUserForm: !!addUserForm
+  });
 
   async function loadUsers() {
+    console.log('loadUsers called');
     try {
-      loadingUsers.classList.remove('hidden');
-      usersError.classList.add('hidden');
-      usersTableContainer.classList.add('hidden');
+      loadingUsers.style.display = 'flex';
+      usersError.style.display = 'none';
+      usersTableContainer.style.display = 'none';
 
-      const response = await fetch('/.netlify/functions/admin-users-list');
+      console.log('Fetching admin users...');
+      const response = await fetch('/.netlify/functions/admin-users-list', {
+        credentials: 'same-origin'
+      });
+
+      console.log('Response status:', response.status);
 
       if (!response.ok) {
-        throw new Error('Failed to fetch users');
+        const errorData = await response.json();
+        console.error('Error response:', errorData);
+        throw new Error(errorData.error || 'Failed to fetch users');
       }
 
       users = await response.json();
+      console.log('Users loaded:', users);
 
-      loadingUsers.classList.add('hidden');
-      usersTableContainer.classList.remove('hidden');
+      loadingUsers.style.display = 'none';
+      usersTableContainer.style.display = 'block';
 
       renderUsers();
     } catch (error) {
-      loadingUsers.classList.add('hidden');
-      usersError.classList.remove('hidden');
+      loadingUsers.style.display = 'none';
+      usersError.style.display = 'block';
       usersErrorText.textContent = error instanceof Error ? error.message : 'Unknown error';
     }
   }
@@ -230,17 +207,17 @@ if (!authenticated) {
       const isOnlyUser = users.length === 1;
 
       row.innerHTML = `
-        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+        <td class="user-username">
           ${user.username}
-          ${isCurrentUser ? '<span class="ml-2 text-xs text-[#f67280]">(You)</span>' : ''}
+          ${isCurrentUser ? '<span class="user-badge">(You)</span>' : ''}
         </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+        <td class="user-date">
           ${formattedDate}
         </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm">
+        <td>
           <button
             onclick="deleteUser('${user.username}')"
-            class="text-red-600 hover:text-red-800 font-medium ${isCurrentUser || isOnlyUser ? 'opacity-50 cursor-not-allowed' : ''}"
+            class="btn-delete ${isCurrentUser || isOnlyUser ? 'disabled' : ''}"
             ${isCurrentUser || isOnlyUser ? 'disabled' : ''}
             title="${isCurrentUser ? 'Cannot delete your own account' : isOnlyUser ? 'Cannot delete the last admin' : 'Delete user'}"
           >
@@ -253,7 +230,7 @@ if (!authenticated) {
     });
   }
 
-  async function deleteUser(username: string) {
+  async function deleteUser(username) {
     if (!confirm(`Are you sure you want to delete admin user "${username}"? This cannot be undone.`)) {
       return;
     }
@@ -265,6 +242,7 @@ if (!authenticated) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ username }),
+        credentials: 'same-origin'
       });
 
       const data = await response.json();
@@ -280,20 +258,20 @@ if (!authenticated) {
   }
 
   function hideMessages() {
-    addUserError.classList.add('hidden');
-    addUserSuccess.classList.add('hidden');
+    addUserError.style.display = 'none';
+    addUserSuccess.style.display = 'none';
   }
 
-  function showError(message: string) {
+  function showError(message) {
     addUserErrorText.textContent = message;
-    addUserError.classList.remove('hidden');
-    addUserSuccess.classList.add('hidden');
+    addUserError.style.display = 'block';
+    addUserSuccess.style.display = 'none';
   }
 
-  function showSuccess(message: string) {
+  function showSuccess(message) {
     addUserSuccessText.textContent = message;
-    addUserSuccess.classList.remove('hidden');
-    addUserError.classList.add('hidden');
+    addUserSuccess.style.display = 'block';
+    addUserError.style.display = 'none';
   }
 
   addUserForm.addEventListener('submit', async (e) => {
@@ -301,8 +279,8 @@ if (!authenticated) {
     hideMessages();
 
     const formData = new FormData(addUserForm);
-    const username = formData.get('username') as string;
-    const password = formData.get('password') as string;
+    const username = formData.get('username');
+    const password = formData.get('password');
 
     addUserButton.disabled = true;
     addUserButton.textContent = 'Adding...';
@@ -314,6 +292,7 @@ if (!authenticated) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ username, password }),
+        credentials: 'same-origin'
       });
 
       const data = await response.json();
@@ -334,8 +313,318 @@ if (!authenticated) {
   });
 
   // Make deleteUser globally available
-  (window as any).deleteUser = deleteUser;
+  window.deleteUser = deleteUser;
 
   // Load users on page load
   loadUsers();
 </script>
+
+<style is:global>
+  /* Page Header */
+  .page-header {
+    margin-bottom: 32px;
+  }
+
+  .page-title {
+    background: linear-gradient(135deg, #2c4a64 0%, #355c7d 50%, #3d6b8f 100%);
+    color: white;
+    padding: 2rem 2.5rem;
+    margin-bottom: 0;
+    padding-bottom: 1rem;
+    border-radius: 0.75rem 0.75rem 0 0;
+    box-shadow: 0 4px 12px rgba(44, 74, 100, 0.3), 0 2px 6px rgba(44, 74, 100, 0.2);
+    position: relative;
+    overflow: hidden;
+    border: 2px solid rgba(249, 115, 22, 0.2);
+    font-size: 28px;
+    font-weight: 700;
+  }
+
+  .page-title::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.12) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .page-description {
+    background: linear-gradient(135deg, #1e3a50 0%, #2c4a64 100%);
+    color: #fed7aa !important;
+    padding: 1rem 2.5rem 1.75rem 2.5rem;
+    margin-top: 0 !important;
+    margin-bottom: 2.5rem;
+    border-radius: 0 0 0.75rem 0.75rem;
+    box-shadow: 0 4px 12px rgba(44, 74, 100, 0.3), 0 2px 6px rgba(44, 74, 100, 0.2);
+    position: relative;
+    border: 2px solid rgba(249, 115, 22, 0.2);
+    border-top: none;
+    font-size: 15px;
+  }
+
+  .page-description::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #f97316 0%, #fb923c 50%, #f97316 100%);
+    opacity: 0.6;
+  }
+
+  /* Cards */
+  .card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+
+  .card-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-text-heading);
+    margin-bottom: 20px;
+  }
+
+  /* Form */
+  .form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .form-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text-body);
+    margin-bottom: 6px;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    font-size: 14px;
+    transition: all 0.2s;
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+  }
+
+  .form-hint {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    margin-top: 4px;
+  }
+
+  /* Alerts */
+  .alert {
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+  }
+
+  .alert-error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #dc2626;
+  }
+
+  .alert-success {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    color: #16a34a;
+  }
+
+  .alert-title {
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  /* Buttons */
+  .btn-primary {
+    padding: 10px 20px;
+    background: var(--color-primary);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-primary:hover {
+    background: #ea580c;
+    transform: translateY(-1px);
+  }
+
+  .btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .btn-delete {
+    color: #dc2626;
+    background: transparent;
+    border: none;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s;
+  }
+
+  .btn-delete:hover:not(.disabled) {
+    background: #fef2f2;
+    color: #991b1b;
+  }
+
+  .btn-delete.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  /* State Container */
+  .state-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 24px;
+    text-align: center;
+  }
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--color-border);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .state-text {
+    margin-top: 12px;
+    font-size: 14px;
+    color: var(--color-text-muted);
+  }
+
+  /* Table */
+  .table-container {
+    overflow-x: auto;
+    border-radius: 8px;
+    border: 1px solid var(--color-border);
+  }
+
+  .users-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .users-table thead {
+    background: var(--color-bg-card);
+  }
+
+  .users-table th {
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .users-table tbody tr {
+    border-bottom: 1px solid var(--color-border);
+    transition: background-color 0.2s;
+  }
+
+  .users-table tbody tr:hover {
+    background: var(--color-bg-card);
+  }
+
+  .users-table tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  .users-table td {
+    padding: 16px;
+    font-size: 14px;
+    color: var(--color-text-body);
+  }
+
+  .user-username {
+    font-weight: 600;
+    color: var(--color-text-heading);
+  }
+
+  .user-badge {
+    margin-left: 8px;
+    font-size: 12px;
+    color: var(--color-primary);
+    font-weight: 500;
+  }
+
+  .user-date {
+    color: var(--color-text-muted);
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .page-header {
+      margin-bottom: 24px;
+    }
+
+    .page-title {
+      font-size: 24px;
+    }
+
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .card {
+      padding: 20px;
+    }
+
+    .table-container {
+      border-radius: 0;
+      margin: 0 -20px;
+    }
+  }
+</style>

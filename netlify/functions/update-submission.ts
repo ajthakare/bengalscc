@@ -132,7 +132,8 @@ export const handler: Handler = async (
     // Handle read/archive actions (store metadata in Netlify Blobs)
     const store = getStore({
       name: 'submission-metadata',
-      siteID: context.site?.id || process.env.SITE_ID,
+      siteID: process.env.SITE_ID || '',
+      token: process.env.NETLIFY_AUTH_TOKEN || '',
     });
     const allMetadata =
       (await store.get('metadata', { type: 'json' })) as

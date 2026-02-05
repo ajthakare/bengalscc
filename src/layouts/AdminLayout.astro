@@ -1,5 +1,6 @@
 ---
-import '../../src/styles/globals.css';
+import '../styles/globals.css';
+import '../styles/admin.css';
 import '@fontsource-variable/inter/wght.css';
 import interWoff2 from '@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url';
 import logo from '../assets/logo.svg';
@@ -7,7 +8,7 @@ import logo from '../assets/logo.svg';
 interface Props {
   title: string;
   username: string;
-  activePage: 'dashboard' | 'users';
+  activePage: 'inquiries' | 'users' | 'seasons' | 'fixtures' | 'players' | 'roster' | 'availability' | 'statistics';
 }
 
 const { title, username, activePage } = Astro.props;
@@ -25,8 +26,20 @@ const { title, username, activePage } = Astro.props;
   </head>
   <body class="antialiased text-body">
     <div class="admin-container bg-noise">
+      <!-- Mobile Menu Button -->
+      <button id="mobile-menu-btn" class="mobile-menu-btn" aria-label="Toggle menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+
+      <!-- Mobile Overlay -->
+      <div id="mobile-overlay" class="mobile-overlay"></div>
+
       <!-- Sidebar -->
-      <aside class="sidebar">
+      <aside id="sidebar" class="sidebar">
         <div class="sidebar-header">
           <a href="/" class="logo-link">
             <img src={logo.src} alt="Bengals CC" class="logo-img" />
@@ -38,12 +51,85 @@ const { title, username, activePage } = Astro.props;
         </div>
 
         <nav class="sidebar-nav">
-          <a href="/admin" class:list={['nav-item', { active: activePage === 'dashboard' }]}>
+          <a href="/admin/availability" class:list={['nav-item', { active: activePage === 'availability' }]}>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="14" height="14" rx="2"/>
+              <line x1="3" y1="9" x2="17" y2="9"/>
+              <path d="M9 4v5l3 3"/>
+            </svg>
+            <span>Fixtures & Availability</span>
+          </a>
+
+          <a href="/admin/statistics" class:list={['nav-item', { active: activePage === 'statistics' }]}>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="20" x2="18" y2="10"/>
+              <line x1="12" y1="20" x2="12" y2="4"/>
+              <line x1="6" y1="20" x2="6" y2="14"/>
+            </svg>
+            <span>Statistics Dashboard</span>
+          </a>
+
+          <!-- Season Setup Section -->
+          <div class="nav-group">
+            <div class="nav-group-header" onclick="toggleNavGroup('competition')">
+              <div class="nav-group-title">
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2l8 8-8 8M4 2l8 8-8 8"/>
+                </svg>
+                <span>Season Setup</span>
+              </div>
+              <svg id="competition-chevron" class="nav-group-chevron collapsed" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+            <div id="competition-items" class="nav-group-items collapsed">
+              <a href="/admin/seasons" class:list={['nav-item nav-item-sub', { active: activePage === 'seasons' }]}>
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="14" height="14" rx="2"/>
+                  <line x1="3" y1="10" x2="17" y2="10"/>
+                  <line x1="10" y1="4" x2="10" y2="18"/>
+                </svg>
+                <span>Manage Seasons</span>
+              </a>
+
+              <a href="/admin/fixtures" class:list={['nav-item nav-item-sub', { active: activePage === 'fixtures' }]}>
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="14" height="14" rx="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="17" y2="10"/>
+                </svg>
+                <span>Manage Fixtures</span>
+              </a>
+
+              <a href="/admin/players" class:list={['nav-item nav-item-sub', { active: activePage === 'players' }]}>
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+                  <circle cx="11" cy="7" r="4"/>
+                  <path d="M5 11l-2 2 2 2"/>
+                </svg>
+                <span>Manage Players</span>
+              </a>
+
+              <a href="/admin/roster" class:list={['nav-item nav-item-sub', { active: activePage === 'roster' }]}>
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+                  <circle cx="11" cy="7" r="4"/>
+                  <path d="M5.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+                </svg>
+                <span>Manage Team Roster</span>
+              </a>
+            </div>
+          </div>
+
+          <div class="nav-divider"></div>
+
+          <a href="/admin/inquiries" class:list={['nav-item', { active: activePage === 'inquiries' }]}>
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M3 4h14a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/>
               <path d="M18 5l-8 6-8-6"/>
             </svg>
-            <span>Contact Submissions</span>
+            <span>Website Inquiries</span>
           </a>
 
           <a href="/admin/users" class:list={['nav-item', { active: activePage === 'users' }]}>
@@ -51,7 +137,7 @@ const { title, username, activePage } = Astro.props;
               <path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/>
               <circle cx="10" cy="7" r="4"/>
             </svg>
-            <span>Manage Users</span>
+            <span>Admin Users</span>
           </a>
 
           <div class="nav-divider"></div>
@@ -169,7 +255,7 @@ const { title, username, activePage } = Astro.props;
       }
 
       .nav-item.active {
-        background: var(--color-bg-hero);
+        background: rgba(128, 128, 128, 0.5);
         color: var(--color-primary);
         font-weight: 600;
       }
@@ -190,6 +276,80 @@ const { title, username, activePage } = Astro.props;
         height: 1px;
         background: var(--color-border);
         margin: 16px 0;
+      }
+
+      /* Nav Group Styles */
+      .nav-group {
+        margin-bottom: 0;
+      }
+
+      .nav-group-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 16px;
+        color: var(--color-text-muted);
+        cursor: pointer;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.2s;
+        user-select: none;
+        margin-bottom: 4px;
+      }
+
+      .nav-group-header:hover {
+        background: var(--color-bg-card);
+        color: var(--color-text-body);
+      }
+
+      .nav-group-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: 1;
+      }
+
+      .nav-group-title svg {
+        flex-shrink: 0;
+        width: 20px;
+        height: 20px;
+      }
+
+      .nav-group-chevron {
+        flex-shrink: 0;
+        transition: transform 0.2s;
+        width: 20px;
+        height: 20px;
+      }
+
+      .nav-group-chevron.collapsed {
+        transform: rotate(-90deg);
+      }
+
+      .nav-group-items {
+        margin-top: 4px;
+        padding-left: 12px;
+        max-height: 500px;
+        overflow: hidden;
+        transition: max-height 0.3s ease-out, opacity 0.2s;
+        opacity: 1;
+      }
+
+      .nav-group-items.collapsed {
+        max-height: 0;
+        opacity: 0;
+      }
+
+      .nav-item-sub {
+        font-size: 13px;
+        padding: 10px 16px;
+      }
+
+      .nav-item-sub svg {
+        width: 18px;
+        height: 18px;
       }
 
       .sidebar-footer {
@@ -268,23 +428,193 @@ const { title, username, activePage } = Astro.props;
         min-height: 100vh;
       }
 
+      /* Mobile Menu Button */
+      .mobile-menu-btn {
+        display: none;
+        position: fixed;
+        top: 16px;
+        left: 16px;
+        z-index: 1001;
+        background: white;
+        border: 1px solid var(--color-border);
+        border-radius: 8px;
+        padding: 12px;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transition: all 0.2s;
+      }
+
+      .mobile-menu-btn:hover {
+        background: var(--color-bg-card);
+      }
+
+      .mobile-menu-btn svg {
+        display: block;
+      }
+
+      /* Mobile Overlay */
+      .mobile-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+
+      .mobile-overlay.active {
+        opacity: 1;
+      }
+
       /* Responsive */
       @media (max-width: 768px) {
+        .mobile-menu-btn {
+          display: block;
+        }
+
         .sidebar {
-          width: 100%;
-          position: relative;
-          height: auto;
+          position: fixed;
+          top: 0;
+          left: 0;
+          height: 100vh;
+          width: 280px;
+          max-width: 85vw;
+          z-index: 1000;
+          transform: translateX(-100%);
+          transition: transform 0.3s ease-in-out;
+          box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar.mobile-open {
+          transform: translateX(0);
+        }
+
+        .mobile-overlay.active {
+          display: block;
         }
 
         .main-content {
           margin-left: 0;
-          padding: 16px;
+          padding: 72px 16px 16px 16px; /* Add top padding for mobile menu button */
         }
 
         .admin-container {
           flex-direction: column;
         }
+
+        /* Hide nav group by default on mobile */
+        .nav-group-items {
+          max-height: 0;
+          overflow: hidden;
+          transition: max-height 0.3s ease;
+        }
+
+        .nav-group-items:not(.collapsed) {
+          max-height: 500px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .main-content {
+          padding: 72px 12px 12px 12px;
+        }
       }
     </style>
+
+    <!-- Toast Notification System -->
+    <script>
+      import { toast } from '../components/Toast';
+      // Make toast globally available
+      window.toast = toast;
+    </script>
+
+    <!-- Nav Group Toggle -->
+    <script>
+      function toggleNavGroup(groupId) {
+        const items = document.getElementById(`${groupId}-items`);
+        const chevron = document.getElementById(`${groupId}-chevron`);
+
+        if (items && chevron) {
+          items.classList.toggle('collapsed');
+          chevron.classList.toggle('collapsed');
+
+          // Save state to localStorage
+          const isCollapsed = items.classList.contains('collapsed');
+          localStorage.setItem(`nav-group-${groupId}`, isCollapsed ? 'collapsed' : 'expanded');
+        }
+      }
+
+      // Restore saved state on page load
+      document.addEventListener('DOMContentLoaded', () => {
+        const competitionState = localStorage.getItem('nav-group-competition');
+        const items = document.getElementById('competition-items');
+        const chevron = document.getElementById('competition-chevron');
+
+        // Auto-expand if user is on one of the sub-pages
+        const activePage = document.querySelector('.nav-item-sub.active');
+        const shouldAutoExpand = activePage !== null;
+
+        // If user has explicitly expanded it OR they're on a sub-page, show it expanded
+        if (competitionState === 'expanded' || shouldAutoExpand) {
+          if (items && chevron) {
+            items.classList.remove('collapsed');
+            chevron.classList.remove('collapsed');
+          }
+        }
+        // Otherwise keep it collapsed (default state)
+      });
+
+      // Make toggleNavGroup available globally
+      window.toggleNavGroup = toggleNavGroup;
+    </script>
+
+    <!-- Mobile Menu Toggle -->
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('mobile-overlay');
+
+        function toggleMobileMenu() {
+          sidebar.classList.toggle('mobile-open');
+          overlay.classList.toggle('active');
+          document.body.style.overflow = sidebar.classList.contains('mobile-open') ? 'hidden' : '';
+        }
+
+        function closeMobileMenu() {
+          sidebar.classList.remove('mobile-open');
+          overlay.classList.remove('active');
+          document.body.style.overflow = '';
+        }
+
+        // Toggle menu on button click
+        if (mobileMenuBtn) {
+          mobileMenuBtn.addEventListener('click', toggleMobileMenu);
+        }
+
+        // Close menu on overlay click
+        if (overlay) {
+          overlay.addEventListener('click', closeMobileMenu);
+        }
+
+        // Close menu when clicking nav links
+        const navLinks = sidebar.querySelectorAll('.nav-item, .nav-item-sub');
+        navLinks.forEach(link => {
+          link.addEventListener('click', () => {
+            if (window.innerWidth <= 768) {
+              closeMobileMenu();
+            }
+          });
+        });
+
+        // Close menu on window resize to desktop
+        window.addEventListener('resize', () => {
+          if (window.innerWidth > 768) {
+            closeMobileMenu();
+          }
+        });
+      });
+    </script>
   </body>
 </html>

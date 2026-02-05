@@ -1,18 +1,35 @@
 ---
+export const prerender = false;
+
 import Layout from '../layouts/Layout.astro';
 import Section from '../components/Section.astro';
-import Papa from 'papaparse';
-import { readFileSync } from 'fs';
 
 // Our teams
 const OUR_TEAMS = ['Bengal Tigers', 'Bengal Bulls', 'Bengal Thunder Cats'];
 
-// Read and parse CSV
-const csvData = readFileSync('src/data/fixtures.csv', 'utf-8');
-const { data } = Papa.parse(csvData, {
-    header: true,
-    skipEmptyLines: true
-});
+// Fetch active season
+let activeSeason: any = null;
+try {
+    const seasonResponse = await fetch(`${Astro.url.origin}/.netlify/functions/seasons-get-active`);
+    if (seasonResponse.ok) {
+        activeSeason = await seasonResponse.json();
+    }
+} catch (error) {
+    console.error('Error fetching active season:', error);
+}
+
+// Fetch fixtures for active season
+let fixturesData: any[] = [];
+if (activeSeason) {
+    try {
+        const fixturesResponse = await fetch(`${Astro.url.origin}/.netlify/functions/fixtures-list?seasonId=${activeSeason.id}`);
+        if (fixturesResponse.ok) {
+            fixturesData = await fixturesResponse.json();
+        }
+    } catch (error) {
+        console.error('Error fetching fixtures:', error);
+    }
+}
 
 // Process fixtures
 interface Fixture {
@@ -33,46 +50,44 @@ interface Fixture {
     sortDate: Date;
 }
 
-const fixtures: Fixture[] = data
-    .filter((row: any) => {
-        // Filter rows that include any of our teams
-        return OUR_TEAMS.some(team =>
-            row['Home Team'] === team || row['Visitor Team'] === team
-        );
-    })
-    .map((row: any) => {
-        const homeTeam = row['Home Team'];
-        const visitorTeam = row['Visitor Team'];
+const fixtures: Fixture[] = fixturesData
+    .map((fixture: any) => {
+        // Determine home/away based on isHomeTeam flag
+        const ourTeam = fixture.team;
+        const opponent = fixture.opponent;
+        const isHome = fixture.isHomeTeam;
+        const homeTeam = isHome ? ourTeam : opponent;
+        const visitorTeam = isHome ? opponent : ourTeam;
 
-        // Determine which is our team and which is opponent
-        const ourTeam = OUR_TEAMS.find(team =>
-            team === homeTeam || team === visitorTeam
-        ) || '';
-        const isHome = homeTeam === ourTeam;
-        const opponent = isHome ? visitorTeam : homeTeam;
-
-        // Parse date for sorting and grouping
-        const dateStr = row['Date'];
-
-        // Date now includes year (e.g., "Sat, Nov 1, 2025")
-        const sortDate = new Date(dateStr);
+        // Parse date for sorting and grouping - avoid timezone issues
+        const datePart = fixture.date.split('T')[0]; // Extract YYYY-MM-DD
+        const [year, month, day] = datePart.split('-').map(Number);
+        const sortDate = new Date(year, month - 1, day); // Parse as local date
 
         const monthYear = sortDate.toLocaleString('default', {
             month: 'long',
             year: 'numeric'
         });
 
+        // Format date to match CSV format
+        const dateStr = sortDate.toLocaleDateString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+        });
+
         return {
-            gameNumber: row['Game#'],
-            week: row['Week#'],
+            gameNumber: fixture.gameNumber,
+            week: '', // Not stored in new schema
             date: dateStr,
-            division: row['Division'],
-            time: row['Start Time'],
+            division: fixture.division,
+            time: fixture.time,
             homeTeam,
             visitorTeam,
-            venue: row['Venue Name'],
-            groundAddress: row['Ground Address'],
-            umpire: row['Umpiring Team'],
+            venue: fixture.venue,
+            groundAddress: fixture.groundAddress || '',
+            umpire: fixture.umpiringTeam || '',
             ourTeam,
             opponent,
             isHome,
@@ -162,7 +177,16 @@ function getTeamColor(teamName: string): string {
 
 <Layout title="Match Fixtures - Bengals Cricket Club">
     <h1 class="text-4xl sm:text-5xl font-bold mb-3">Match Fixtures</h1>
-    <p class="text-xl text-gray-600 mb-8">Winter 2025-2026 Season</p>
+    <p class="text-xl text-gray-600 mb-8">
+        {activeSeason ? (
+            <>
+                {activeSeason.name} Season
+                <span class="text-base ml-2">
+                    ({new Date(activeSeason.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} - {new Date(activeSeason.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })})
+                </span>
+            </>
+        ) : 'Current Season'}
+    </p>
 
     {/* Upcoming Weekend Matches */}
     {upcomingWeekendMatches.length > 0 ? (

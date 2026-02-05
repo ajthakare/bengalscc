@@ -1,0 +1,1595 @@
+---
+export const prerender = false;
+
+import AdminLayout from '../../layouts/AdminLayout.astro';
+
+// Check authentication
+const cookieHeader = Astro.request.headers.get('cookie');
+let authenticated = false;
+let username = '';
+
+if (cookieHeader) {
+  try {
+    const response = await fetch(
+      `${Astro.url.origin}/.netlify/functions/auth-check`,
+      {
+        headers: {
+          cookie: cookieHeader,
+        },
+      }
+    );
+    const data = await response.json();
+    authenticated = data.authenticated;
+    username = data.username || '';
+  } catch (error) {
+    authenticated = false;
+  }
+}
+
+// Redirect to login if not authenticated
+if (!authenticated) {
+  return Astro.redirect('/admin/login');
+}
+---
+
+<AdminLayout title="Statistics Dashboard - Bengals CC Admin" username={username} activePage="statistics">
+  <script is:inline src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <div class="statistics-page">
+    <!-- Page Header -->
+    <div class="page-header">
+      <h1 class="page-title">Statistics Dashboard</h1>
+      <p class="page-description">Player availability and performance statistics</p>
+    </div>
+
+    <!-- Filters Toolbar -->
+    <div class="toolbar">
+      <select id="season-filter" class="filter-select">
+        <option value="">Loading seasons...</option>
+      </select>
+      <select id="team-filter" class="filter-select">
+        <option value="">All Teams</option>
+        <option value="Bengal Tigers">Bengal Tigers</option>
+        <option value="Bengal Bulls">Bengal Bulls</option>
+        <option value="Bengal Thunder Cats">Bengal Thunder Cats</option>
+      </select>
+      <div class="view-mode-toggle">
+        <button id="season-view-btn" class="toggle-btn active">Season View</button>
+        <button id="career-view-btn" class="toggle-btn">Career View</button>
+      </div>
+      <div class="toolbar-actions">
+        <button id="recalculate-btn" class="btn-secondary">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2a1 1 0 0 1 1 1v4h-4M4 16a1 1 0 0 1-1-1v-4h4"/>
+            <path d="M15 7A7 7 0 0 0 4 9m-1 4a7 7 0 0 0 11-2"/>
+          </svg>
+          Recalculate
+        </button>
+        <button id="export-btn" class="btn-primary">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M2 10v3a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-3M8 2v8m0 0L5 7m3 3l3-3"/>
+          </svg>
+          Export CSV
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div id="stats-grid" class="stats-grid" style="display: none;">
+      <div class="stat-card">
+        <div class="stat-label">Total Players</div>
+        <div class="stat-value" id="stat-total-players">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Fixtures</div>
+        <div class="stat-value" id="stat-total-fixtures">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Avg Availability</div>
+        <div class="stat-value stat-success" id="stat-avg-availability">0%</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Avg Selection Rate</div>
+        <div class="stat-value stat-primary" id="stat-avg-selection">0%</div>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loading-state" class="state-container">
+      <div class="spinner"></div>
+      <p class="state-text">Loading statistics...</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="error-state" class="alert alert-error" style="display: none;">
+      <div>
+        <p class="alert-title">Error loading statistics</p>
+        <p id="error-text"></p>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div id="empty-state" class="state-container" style="display: none;">
+      <div class="empty-icon">📊</div>
+      <p class="state-title">No statistics available</p>
+      <p class="state-text">Calculate statistics to view player performance data</p>
+      <button class="btn-primary" onclick="document.getElementById('recalculate-btn').click()">
+        Calculate Statistics
+      </button>
+    </div>
+
+    <!-- Player Statistics Table -->
+    <div id="table-container" class="table-container" style="display: none;">
+      <h2 class="section-heading">Player Availability Statistics</h2>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th class="sortable" data-sort="playerName">
+              Player Name
+              <svg class="sort-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 6l4-4 4 4M4 10l4 4 4-4"/>
+              </svg>
+            </th>
+            <th class="sortable" data-sort="team">
+              Team(s)
+              <svg class="sort-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 6l4-4 4 4M4 10l4 4 4-4"/>
+              </svg>
+            </th>
+            <th class="sortable" data-sort="totalFixtures" style="text-align: center;">
+              Fixtures
+              <svg class="sort-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 6l4-4 4 4M4 10l4 4 4-4"/>
+              </svg>
+            </th>
+            <th class="sortable" data-sort="timesAvailable" style="text-align: center;">
+              Available
+              <svg class="sort-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 6l4-4 4 4M4 10l4 4 4-4"/>
+              </svg>
+            </th>
+            <th class="sortable" data-sort="gamesPlayed" style="text-align: center;">
+              Played
+              <svg class="sort-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 6l4-4 4 4M4 10l4 4 4-4"/>
+              </svg>
+            </th>
+            <th class="sortable" data-sort="availabilityRate" style="text-align: center;">
+              Availability %
+              <svg class="sort-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 6l4-4 4 4M4 10l4 4 4-4"/>
+              </svg>
+            </th>
+            <th class="sortable" data-sort="selectionRate" style="text-align: center;">
+              Selection %
+              <svg class="sort-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 6l4-4 4 4M4 10l4 4 4-4"/>
+              </svg>
+            </th>
+          </tr>
+        </thead>
+        <tbody id="stats-tbody">
+          <!-- Statistics will be inserted here -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Advanced Statistics Sections -->
+    <div id="advanced-stats-container" style="display: none;">
+      <!-- Two Column Layout -->
+      <div class="advanced-stats-grid">
+        <!-- Left Column -->
+        <div class="stats-column">
+          <!-- Player of Match Leaderboard -->
+          <div class="stats-section">
+            <h2 class="section-heading">🏆 Player of the Match Awards</h2>
+            <div id="player-of-match-content" class="section-content">
+              <canvas id="player-of-match-chart" style="max-height: 400px;"></canvas>
+            </div>
+          </div>
+
+          <!-- Win/Loss Analysis -->
+          <div class="stats-section">
+            <h2 class="section-heading">📊 Win/Loss Analysis</h2>
+            <div id="win-loss-content" class="section-content">
+              <div class="team-win-loss-grid">
+                <!-- Team charts will be inserted here -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Duty Analysis -->
+          <div class="stats-section">
+            <h2 class="section-heading">👔 Match Duty Distribution</h2>
+            <div id="duty-analysis-content" class="section-content">
+              <canvas id="duty-chart" style="max-height: 400px;"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="stats-column">
+          <!-- Umpire Fees Tracking -->
+          <div class="stats-section">
+            <h2 class="section-heading">💰 Umpire Fees Tracking</h2>
+            <div id="umpire-fees-summary" class="fees-summary"></div>
+            <div id="umpire-fees-content" class="section-content">
+              <!-- Table will be inserted here -->
+            </div>
+          </div>
+
+          <!-- Venue Performance -->
+          <div class="stats-section">
+            <h2 class="section-heading">📍 Venue Performance</h2>
+            <div id="venue-performance-content" class="section-content">
+              <!-- Table will be inserted here -->
+            </div>
+          </div>
+
+          <!-- Playing Time Report -->
+          <div class="stats-section">
+            <h2 class="section-heading">⏱️ Playing Time Report</h2>
+            <p class="section-description">80% selection target for available players</p>
+            <div id="playing-time-content" class="section-content">
+              <!-- Table will be inserted here -->
+            </div>
+          </div>
+
+          <!-- Availability Alerts -->
+          <div class="stats-section alert-section">
+            <h2 class="section-heading">⚠️ Availability Decline Alerts</h2>
+            <p class="section-description">Players with >20% availability decline</p>
+            <div id="availability-alerts-content" class="section-content">
+              <!-- Alerts will be inserted here -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</AdminLayout>
+
+<style>
+  .statistics-page {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .toolbar {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .filter-select {
+    padding: 0.75rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    background: white;
+    cursor: pointer;
+    min-width: 200px;
+  }
+
+  .view-mode-toggle {
+    display: flex;
+    background: white;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .toggle-btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    background: white;
+    color: #6b7280;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .toggle-btn:hover {
+    background: #f9fafb;
+  }
+
+  .toggle-btn.active {
+    background: var(--color-primary);
+    color: white;
+  }
+
+  .toolbar-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  .sortable {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+  }
+
+  .sortable:hover {
+    background: #f9fafb;
+  }
+
+  .sort-icon {
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: 0.25rem;
+    opacity: 0.3;
+  }
+
+  .sortable.sorted .sort-icon {
+    opacity: 1;
+  }
+
+  .team-badge {
+    display: inline-flex;
+    padding: 0.25rem 0.75rem;
+    background: #ede9fe;
+    color: #5b21b6;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    margin-right: 0.5rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .rate-badge {
+    display: inline-flex;
+    padding: 0.25rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .rate-high {
+    background: #d1fae5;
+    color: #065f46;
+  }
+
+  .rate-medium {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  .rate-low {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  .empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+  }
+
+  /* Main data table improvements */
+  .data-table {
+    border: 1px solid #e5e7eb;
+  }
+
+  .data-table th {
+    background: #f9fafb;
+    border-right: 1px solid #e5e7eb;
+    border-bottom: 2px solid #d1d5db;
+  }
+
+  .data-table th:last-child {
+    border-right: none;
+  }
+
+  .data-table td {
+    border-right: 1px solid #f3f4f6;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .data-table td:last-child {
+    border-right: none;
+  }
+
+  .data-table tbody tr {
+    background: white;
+  }
+
+  .data-table tbody tr:nth-child(even) {
+    background: #f9fafb;
+  }
+
+  .data-table tbody tr:hover {
+    background: #f3f4f6;
+  }
+
+  /* Advanced Statistics Layout */
+  #advanced-stats-container {
+    margin-top: 3rem;
+  }
+
+  .advanced-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-top: 2rem;
+  }
+
+  @media (max-width: 1200px) {
+    .advanced-stats-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .stats-column {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .stats-section {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .alert-section {
+    border-left: 4px solid #ef4444;
+  }
+
+  .section-heading {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 0.5rem;
+  }
+
+  .subsection-heading {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #374151;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .section-description {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 1rem;
+  }
+
+  .section-content {
+    margin-top: 1rem;
+  }
+
+  .empty-text {
+    color: #9ca3af;
+    font-style: italic;
+    text-align: center;
+    padding: 2rem;
+  }
+
+  .fees-summary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .team-win-loss-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .team-chart-container {
+    background: #f9fafb;
+    border-radius: 8px;
+    padding: 1rem;
+  }
+
+  .team-chart-title {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: #374151;
+    margin-bottom: 0.5rem;
+    text-align: center;
+  }
+
+  .data-mini-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+    margin-top: 1rem;
+    border: 1px solid #e5e7eb;
+  }
+
+  .data-mini-table thead {
+    background: #f9fafb;
+  }
+
+  .data-mini-table th {
+    padding: 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    color: #374151;
+    border-bottom: 2px solid #d1d5db;
+    border-right: 1px solid #e5e7eb;
+    white-space: nowrap;
+  }
+
+  .data-mini-table th:last-child {
+    border-right: none;
+  }
+
+  .data-mini-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #e5e7eb;
+    border-right: 1px solid #f3f4f6;
+    vertical-align: middle;
+  }
+
+  .data-mini-table td:last-child {
+    border-right: none;
+  }
+
+  .data-mini-table tbody tr {
+    background: white;
+  }
+
+  .data-mini-table tbody tr:nth-child(even) {
+    background: #f9fafb;
+  }
+
+  .data-mini-table tbody tr:hover {
+    background: #f3f4f6;
+  }
+
+  .data-mini-table th.text-right,
+  .data-mini-table td.text-right {
+    text-align: right;
+  }
+
+  .data-mini-table th.text-center,
+  .data-mini-table td.text-center {
+    text-align: center;
+  }
+
+  .progress-bar-container {
+    background: #e5e7eb;
+    border-radius: 4px;
+    height: 20px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .progress-bar {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: white;
+    transition: width 0.3s ease;
+  }
+
+  .progress-bar.high {
+    background: #10b981;
+  }
+
+  .progress-bar.medium {
+    background: #f59e0b;
+  }
+
+  .progress-bar.low {
+    background: #ef4444;
+  }
+
+  .alert-card {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .alert-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .alert-player-name {
+    font-weight: 600;
+    color: #991b1b;
+  }
+
+  .alert-decline {
+    background: #dc2626;
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .alert-details {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+
+  .insufficient-data {
+    background: #fef3c7;
+    border: 1px solid #fde68a;
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+    color: #92400e;
+  }
+
+  .insufficient-data-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .insufficient-data-title {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+  }
+
+  /* Mobile Responsive Styles */
+  @media (max-width: 768px) {
+    .toolbar {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.75rem;
+    }
+
+    .filter-select {
+      min-width: 100%;
+    }
+
+    .view-mode-toggle {
+      width: 100%;
+    }
+
+    .toolbar-actions {
+      margin-left: 0;
+      width: 100%;
+      flex-direction: column;
+    }
+
+    .toolbar-actions button {
+      width: 100%;
+    }
+
+    /* Make tables horizontally scrollable */
+    .table-container {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin: 0 -1rem;
+      padding: 0;
+      border-radius: 0;
+    }
+
+    .data-table {
+      min-width: 700px;
+    }
+
+    /* Advanced stats grid - single column on mobile */
+    .advanced-stats-grid {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    .stats-section {
+      padding: 1rem;
+    }
+
+    .section-heading {
+      font-size: 1.125rem;
+    }
+
+    /* Make charts responsive */
+    canvas {
+      max-width: 100% !important;
+      height: auto !important;
+    }
+
+    /* Team chart grid - single column */
+    .team-win-loss-grid {
+      grid-template-columns: 1fr;
+    }
+
+    /* Mini table scrollable */
+    .data-mini-table {
+      font-size: 0.8125rem;
+      display: block;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    .data-mini-table thead,
+    .data-mini-table tbody,
+    .data-mini-table tr {
+      display: table;
+      width: 100%;
+      table-layout: fixed;
+    }
+
+    .data-mini-table th,
+    .data-mini-table td {
+      padding: 0.5rem;
+    }
+
+    /* Alert cards */
+    .alert-card {
+      padding: 0.875rem;
+    }
+
+    .alert-card-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    .alert-details {
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    /* Fees summary */
+    .fees-summary {
+      font-size: 1.125rem;
+      padding: 0.875rem 1rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .section-heading {
+      font-size: 1rem;
+    }
+
+    .stats-section {
+      padding: 0.875rem;
+    }
+
+    .data-mini-table {
+      font-size: 0.75rem;
+    }
+
+    .rate-badge {
+      font-size: 0.75rem;
+      padding: 0.2rem 0.5rem;
+    }
+  }
+</style>
+
+<script>
+  let seasons = [];
+  let currentViewMode = 'season'; // 'season' or 'career'
+  let currentSeasonId = '';
+  let currentTeamName = '';
+  let statisticsData = [];
+  let sortColumn = 'playerName';
+  let sortDirection = 'asc';
+
+  // DOM elements
+  const loadingState = document.getElementById('loading-state');
+  const errorState = document.getElementById('error-state');
+  const errorText = document.getElementById('error-text');
+  const emptyState = document.getElementById('empty-state');
+  const tableContainer = document.getElementById('table-container');
+  const statsTbody = document.getElementById('stats-tbody');
+  const statsGrid = document.getElementById('stats-grid');
+  const seasonFilter = document.getElementById('season-filter');
+  const teamFilter = document.getElementById('team-filter');
+  const seasonViewBtn = document.getElementById('season-view-btn');
+  const careerViewBtn = document.getElementById('career-view-btn');
+  const recalculateBtn = document.getElementById('recalculate-btn');
+  const exportBtn = document.getElementById('export-btn');
+
+  // Load seasons on page load
+  loadSeasons();
+
+  // View mode toggle
+  seasonViewBtn.addEventListener('click', () => {
+    currentViewMode = 'season';
+    seasonViewBtn.classList.add('active');
+    careerViewBtn.classList.remove('active');
+    seasonFilter.disabled = false;
+    teamFilter.disabled = false;
+    loadStatistics();
+  });
+
+  careerViewBtn.addEventListener('click', () => {
+    currentViewMode = 'career';
+    careerViewBtn.classList.add('active');
+    seasonViewBtn.classList.remove('active');
+    seasonFilter.disabled = true;
+    teamFilter.disabled = true;
+    document.getElementById('advanced-stats-container').style.display = 'none';
+    loadStatistics();
+  });
+
+  // Filters
+  seasonFilter.addEventListener('change', () => {
+    currentSeasonId = seasonFilter.value;
+    loadStatistics();
+  });
+
+  teamFilter.addEventListener('change', () => {
+    currentTeamName = teamFilter.value;
+    loadStatistics();
+  });
+
+  // Recalculate
+  recalculateBtn.addEventListener('click', async () => {
+    if (!confirm('Recalculate all statistics? This may take a moment.')) return;
+
+    try {
+      recalculateBtn.disabled = true;
+      recalculateBtn.textContent = 'Calculating...';
+
+      const response = await fetch('/.netlify/functions/statistics-calculate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ seasonId: currentSeasonId || undefined }),
+      });
+
+      if (!response.ok) throw new Error('Failed to calculate statistics');
+
+      const result = await response.json();
+      toast.success(
+        `Statistics calculated successfully! Players updated: ${result.playersUpdated}, Seasons updated: ${result.seasonsUpdated}`
+      );
+
+      await loadStatistics();
+    } catch (error) {
+      toast.error('Error: ' + error.message);
+    } finally {
+      recalculateBtn.disabled = false;
+      recalculateBtn.innerHTML = `
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2a1 1 0 0 1 1 1v4h-4M4 16a1 1 0 0 1-1-1v-4h4"/>
+          <path d="M15 7A7 7 0 0 0 4 9m-1 4a7 7 0 0 0 11-2"/>
+        </svg>
+        Recalculate
+      `;
+    }
+  });
+
+  // Export
+  exportBtn.addEventListener('click', async () => {
+    try {
+      const params = new URLSearchParams();
+      if (currentSeasonId) params.append('seasonId', currentSeasonId);
+      if (currentTeamName) params.append('teamName', currentTeamName);
+
+      const response = await fetch(`/.netlify/functions/statistics-export?${params}`);
+      if (!response.ok) throw new Error('Failed to export statistics');
+
+      const blob = await response.blob();
+      const contentDisposition = response.headers.get('Content-Disposition');
+      const filename = contentDisposition
+        ? contentDisposition.split('filename=')[1]?.replace(/"/g, '')
+        : 'statistics-export.csv';
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast.success('Statistics exported successfully');
+    } catch (error) {
+      toast.error('Error: ' + error.message);
+    }
+  });
+
+  async function loadSeasons() {
+    try {
+      const response = await fetch('/.netlify/functions/seasons-list');
+      if (!response.ok) throw new Error('Failed to load seasons');
+
+      seasons = await response.json();
+
+      // Update season filter
+      seasonFilter.innerHTML = seasons
+        .map(
+          (s) =>
+            `<option value="${s.id}" ${s.isActive ? 'selected' : ''}>${escapeHtml(s.name)}${s.isActive ? ' (Active)' : ''}</option>`
+        )
+        .join('');
+
+      // Set current season
+      const activeSeason = seasons.find((s) => s.isActive);
+      currentSeasonId = activeSeason ? activeSeason.id : seasons[0]?.id || '';
+
+      // Load statistics
+      if (currentSeasonId) {
+        await loadStatistics();
+      }
+    } catch (error) {
+      console.error('Error loading seasons:', error);
+      errorState.style.display = 'flex';
+      errorText.textContent = 'Failed to load seasons: ' + error.message;
+    }
+  }
+
+  async function loadStatistics() {
+    try {
+      loadingState.style.display = 'flex';
+      errorState.style.display = 'none';
+      emptyState.style.display = 'none';
+      tableContainer.style.display = 'none';
+      statsGrid.style.display = 'none';
+
+      if (currentViewMode === 'season') {
+        await loadSeasonStats();
+      } else {
+        await loadCareerStats();
+      }
+
+      loadingState.style.display = 'none';
+
+      if (statisticsData.length === 0) {
+        emptyState.style.display = 'flex';
+      } else {
+        updateStatsCards();
+        renderStatistics();
+        statsGrid.style.display = 'grid';
+        tableContainer.style.display = 'block';
+      }
+
+      // Load advanced statistics for season view only
+      if (currentViewMode === 'season') {
+        await loadAdvancedStatistics();
+      }
+    } catch (error) {
+      console.error('Error loading statistics:', error);
+      loadingState.style.display = 'none';
+      errorState.style.display = 'flex';
+      errorText.textContent = error.message;
+    }
+  }
+
+  async function loadSeasonStats() {
+    if (!currentSeasonId) {
+      throw new Error('No season selected');
+    }
+
+    if (currentTeamName) {
+      // Load specific team stats
+      const response = await fetch(
+        `/.netlify/functions/statistics-team-get?seasonId=${currentSeasonId}&teamName=${encodeURIComponent(currentTeamName)}`
+      );
+
+      if (response.status === 404) {
+        statisticsData = [];
+        return;
+      }
+
+      if (!response.ok) throw new Error('Failed to load team statistics');
+
+      const teamStats = await response.json();
+      statisticsData = teamStats.playerStats.map((p) => ({
+        playerId: p.playerId,
+        playerName: p.playerName,
+        team: currentTeamName,
+        totalFixtures: p.stats.totalFixtures,
+        timesAvailable: p.stats.timesAvailable,
+        gamesPlayed: p.stats.gamesPlayed,
+        availabilityRate: p.stats.availabilityRate,
+        selectionRate: p.stats.selectionRate,
+      }));
+    } else {
+      // Load all teams' stats for season
+      const response = await fetch(
+        `/.netlify/functions/statistics-season-get?seasonId=${currentSeasonId}`
+      );
+
+      if (response.status === 404) {
+        statisticsData = [];
+        return;
+      }
+
+      if (!response.ok) throw new Error('Failed to load season statistics');
+
+      const seasonStats = await response.json();
+
+      // Load individual team stats
+      const allPlayerStats = [];
+      for (const teamSummary of seasonStats.teamSummaries) {
+        const teamResponse = await fetch(
+          `/.netlify/functions/statistics-team-get?seasonId=${currentSeasonId}&teamName=${encodeURIComponent(teamSummary.teamName)}`
+        );
+
+        if (teamResponse.ok) {
+          const teamStats = await teamResponse.json();
+          teamStats.playerStats.forEach((p) => {
+            allPlayerStats.push({
+              playerId: p.playerId,
+              playerName: p.playerName,
+              team: teamSummary.teamName,
+              totalFixtures: p.stats.totalFixtures,
+              timesAvailable: p.stats.timesAvailable,
+              gamesPlayed: p.stats.gamesPlayed,
+              availabilityRate: p.stats.availabilityRate,
+              selectionRate: p.stats.selectionRate,
+            });
+          });
+        }
+      }
+
+      statisticsData = allPlayerStats;
+    }
+  }
+
+  async function loadCareerStats() {
+    // Load all players' career stats
+    const playersResponse = await fetch('/.netlify/functions/players-list?status=active');
+    if (!playersResponse.ok) throw new Error('Failed to load players');
+
+    const players = await playersResponse.json();
+    const careerStats = [];
+
+    for (const player of players) {
+      try {
+        const response = await fetch(
+          `/.netlify/functions/statistics-player-get?playerId=${player.id}`
+        );
+
+        if (response.ok) {
+          const playerStats = await response.json();
+
+          // Get all teams from season stats
+          const teams = new Set();
+          Object.values(playerStats.seasonStats).forEach((seasonStat: any) => {
+            Object.keys(seasonStat.teamStats).forEach((team) => teams.add(team));
+          });
+
+          careerStats.push({
+            playerId: player.id,
+            playerName: playerStats.playerName,
+            team: Array.from(teams).join(', '),
+            totalFixtures: playerStats.careerStats.totalFixtures,
+            timesAvailable: Math.round(
+              (playerStats.careerStats.careerAvailabilityRate / 100) *
+                playerStats.careerStats.totalFixtures
+            ),
+            gamesPlayed: playerStats.careerStats.totalGamesPlayed,
+            availabilityRate: playerStats.careerStats.careerAvailabilityRate,
+            selectionRate: playerStats.careerStats.careerSelectionRate,
+          });
+        }
+      } catch (error) {
+        console.error(`Error loading stats for player ${player.id}:`, error);
+      }
+    }
+
+    statisticsData = careerStats;
+  }
+
+  function updateStatsCards() {
+    const totalPlayers = new Set(statisticsData.map((s) => s.playerId)).size;
+    const totalFixtures = Math.max(...statisticsData.map((s) => s.totalFixtures), 0);
+    const avgAvailability = statisticsData.length > 0
+      ? Math.round(
+          statisticsData.reduce((sum, s) => sum + s.availabilityRate, 0) / statisticsData.length
+        )
+      : 0;
+    const avgSelection = statisticsData.length > 0
+      ? Math.round(
+          statisticsData.reduce((sum, s) => sum + s.selectionRate, 0) / statisticsData.length
+        )
+      : 0;
+
+    document.getElementById('stat-total-players').textContent = totalPlayers;
+    document.getElementById('stat-total-fixtures').textContent = totalFixtures;
+    document.getElementById('stat-avg-availability').textContent = avgAvailability + '%';
+    document.getElementById('stat-avg-selection').textContent = avgSelection + '%';
+  }
+
+  function renderStatistics() {
+    if (statisticsData.length === 0) {
+      statsTbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: #6b7280;">No statistics found</td></tr>';
+      return;
+    }
+
+    // Sort data
+    const sorted = [...statisticsData].sort((a, b) => {
+      const aVal = a[sortColumn];
+      const bVal = b[sortColumn];
+
+      if (typeof aVal === 'string') {
+        return sortDirection === 'asc'
+          ? aVal.localeCompare(bVal)
+          : bVal.localeCompare(aVal);
+      }
+
+      return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+    });
+
+    statsTbody.innerHTML = sorted
+      .map(
+        (stat) => `
+      <tr>
+        <td><strong>${escapeHtml(stat.playerName)}</strong></td>
+        <td><span class="team-badge">${escapeHtml(stat.team)}</span></td>
+        <td style="text-align: center;">${stat.totalFixtures}</td>
+        <td style="text-align: center;">${stat.timesAvailable}</td>
+        <td style="text-align: center;">${stat.gamesPlayed}</td>
+        <td style="text-align: center;">
+          <span class="rate-badge ${getRateClass(stat.availabilityRate)}">
+            ${stat.availabilityRate}%
+          </span>
+        </td>
+        <td style="text-align: center;">
+          <span class="rate-badge ${getRateClass(stat.selectionRate)}">
+            ${stat.selectionRate}%
+          </span>
+        </td>
+      </tr>
+    `
+      )
+      .join('');
+
+    // Update sort indicators
+    document.querySelectorAll('.sortable').forEach((th) => {
+      th.classList.remove('sorted');
+      if (th.dataset.sort === sortColumn) {
+        th.classList.add('sorted');
+      }
+    });
+  }
+
+  function getRateClass(rate) {
+    if (rate >= 80) return 'rate-high';
+    if (rate >= 50) return 'rate-medium';
+    return 'rate-low';
+  }
+
+  // Sort functionality
+  document.querySelectorAll('.sortable').forEach((th) => {
+    th.addEventListener('click', () => {
+      const column = th.dataset.sort;
+      if (sortColumn === column) {
+        sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+      } else {
+        sortColumn = column;
+        sortDirection = 'asc';
+      }
+      renderStatistics();
+    });
+  });
+
+  // Helper functions
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  // Advanced Statistics
+  let advancedStatsData = null;
+  let chartInstances = {};
+
+  async function loadAdvancedStatistics() {
+    if (!currentSeasonId) return;
+
+    try {
+      const response = await fetch(
+        `/.netlify/functions/statistics-advanced?seasonId=${currentSeasonId}`
+      );
+
+      if (!response.ok) {
+        console.error('Failed to load advanced statistics');
+        return;
+      }
+
+      advancedStatsData = await response.json();
+      renderAdvancedStatistics();
+      document.getElementById('advanced-stats-container').style.display = 'block';
+    } catch (error) {
+      console.error('Error loading advanced statistics:', error);
+    }
+  }
+
+  function renderAdvancedStatistics() {
+    if (!advancedStatsData) return;
+
+    renderPlayerOfMatchLeaderboard();
+    renderUmpireFees();
+    renderWinLossAnalysis();
+    renderVenuePerformance();
+    renderDutyAnalysis();
+    renderPlayingTimeReport();
+    renderAvailabilityAlerts();
+  }
+
+  function renderPlayerOfMatchLeaderboard() {
+    const container = document.getElementById('player-of-match-content');
+    const data = advancedStatsData.playerOfMatchLeaderboard;
+
+    if (!data || data.length === 0) {
+      container.innerHTML = `
+        <div class="insufficient-data">
+          <div class="insufficient-data-icon">📊</div>
+          <div class="insufficient-data-title">Insufficient Data</div>
+          <p>Player of Match awards need to be recorded in completed fixtures to generate this statistic.</p>
+        </div>
+      `;
+      return;
+    }
+
+    // Take top 10 players
+    const topPlayers = data.slice(0, 10);
+
+    // Destroy existing chart if any
+    if (chartInstances.playerOfMatch) {
+      chartInstances.playerOfMatch.destroy();
+    }
+
+    const ctx = document.getElementById('player-of-match-chart');
+    chartInstances.playerOfMatch = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: topPlayers.map(p => p.name),
+        datasets: [{
+          label: 'Awards',
+          data: topPlayers.map(p => p.count),
+          backgroundColor: 'rgba(245, 158, 11, 0.8)',
+          borderColor: 'rgba(245, 158, 11, 1)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            display: false
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              stepSize: 1
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function renderUmpireFees() {
+    const summaryContainer = document.getElementById('umpire-fees-summary');
+    const contentContainer = document.getElementById('umpire-fees-content');
+    const data = advancedStatsData.umpireFees;
+
+    if (!data || !data.players || data.players.length === 0) {
+      summaryContainer.style.display = 'none';
+      contentContainer.innerHTML = `
+        <div class="insufficient-data">
+          <div class="insufficient-data-icon">💰</div>
+          <div class="insufficient-data-title">Insufficient Data</div>
+          <p>Umpire fee payments need to be recorded in past fixtures to generate this statistic.</p>
+        </div>
+      `;
+      return;
+    }
+
+    summaryContainer.style.display = 'block';
+    summaryContainer.innerHTML = `Total Umpire Fees Paid: $${data.totalPaid.toFixed(2)}`;
+
+    contentContainer.innerHTML = `
+      <table class="data-mini-table">
+        <thead>
+          <tr>
+            <th>Player</th>
+            <th class="text-center">Times Paid</th>
+            <th class="text-right">Total Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.players.map(p => `
+            <tr>
+              <td><strong>${escapeHtml(p.name)}</strong></td>
+              <td class="text-center">${p.count}</td>
+              <td class="text-right">$${p.totalPaid.toFixed(2)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  }
+
+  function renderWinLossAnalysis() {
+    const container = document.getElementById('win-loss-content');
+    const data = advancedStatsData.winLossAnalysis;
+
+    if (!data || Object.keys(data).length === 0) {
+      container.innerHTML = `
+        <div class="insufficient-data">
+          <div class="insufficient-data-icon">📊</div>
+          <div class="insufficient-data-title">Insufficient Data</div>
+          <p>Match results need to be recorded in fixtures to generate this statistic.</p>
+        </div>
+      `;
+      return;
+    }
+
+    const teams = Object.keys(data);
+
+    container.innerHTML = `<div class="team-win-loss-grid"></div>`;
+    const grid = container.querySelector('.team-win-loss-grid');
+
+    teams.forEach((team, index) => {
+      const teamData = data[team];
+      const chartId = `win-loss-chart-${index}`;
+
+      const teamDiv = document.createElement('div');
+      teamDiv.className = 'team-chart-container';
+      teamDiv.innerHTML = `
+        <div class="team-chart-title">${escapeHtml(team)}</div>
+        <canvas id="${chartId}" style="max-height: 200px;"></canvas>
+        <div style="font-size: 0.75rem; color: #6b7280; margin-top: 0.5rem; text-align: center;">
+          ${teamData.total} games • ${teamData.winRate}% win rate<br/>
+          Home: ${teamData.homeWinRate}% • Away: ${teamData.awayWinRate}%
+        </div>
+      `;
+      grid.appendChild(teamDiv);
+
+      // Destroy existing chart if any
+      const chartKey = `winLoss${index}`;
+      if (chartInstances[chartKey]) {
+        chartInstances[chartKey].destroy();
+      }
+
+      // Create pie chart
+      const ctx = document.getElementById(chartId);
+      chartInstances[chartKey] = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: ['Wins', 'Losses', 'Ties'],
+          datasets: [{
+            data: [teamData.wins, teamData.losses, teamData.ties],
+            backgroundColor: [
+              'rgba(16, 185, 129, 0.8)',
+              'rgba(239, 68, 68, 0.8)',
+              'rgba(156, 163, 175, 0.8)'
+            ],
+            borderColor: [
+              'rgba(16, 185, 129, 1)',
+              'rgba(239, 68, 68, 1)',
+              'rgba(156, 163, 175, 1)'
+            ],
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                font: {
+                  size: 11
+                }
+              }
+            }
+          }
+        }
+      });
+    });
+  }
+
+  function renderVenuePerformance() {
+    const container = document.getElementById('venue-performance-content');
+    const data = advancedStatsData.venuePerformance;
+
+    if (!data || data.length === 0) {
+      container.innerHTML = `
+        <div class="insufficient-data">
+          <div class="insufficient-data-icon">📍</div>
+          <div class="insufficient-data-title">Insufficient Data</div>
+          <p>Match results with venue information need to be recorded to generate this statistic.</p>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = `
+      <table class="data-mini-table">
+        <thead>
+          <tr>
+            <th>Venue</th>
+            <th class="text-center">Played</th>
+            <th class="text-center">Won</th>
+            <th class="text-center">Lost</th>
+            <th class="text-center">Win Rate</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.map(v => `
+            <tr>
+              <td><strong>${escapeHtml(v.venue)}</strong></td>
+              <td class="text-center">${v.played}</td>
+              <td class="text-center">${v.won}</td>
+              <td class="text-center">${v.lost}</td>
+              <td class="text-center">
+                <span class="rate-badge ${v.winRate >= 60 ? 'rate-high' : v.winRate >= 40 ? 'rate-medium' : 'rate-low'}">
+                  ${v.winRate.toFixed(1)}%
+                </span>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  }
+
+  function renderDutyAnalysis() {
+    const container = document.getElementById('duty-analysis-content');
+    const data = advancedStatsData.dutyAnalysis;
+
+    if (!data || data.length === 0) {
+      container.innerHTML = `
+        <div class="insufficient-data">
+          <div class="insufficient-data-icon">👔</div>
+          <div class="insufficient-data-title">Insufficient Data</div>
+          <p>Match duties need to be assigned in fixtures to generate this statistic.</p>
+        </div>
+      `;
+      return;
+    }
+
+    // Take top 10 players with most duties
+    const topDutyPlayers = data.slice(0, 10);
+
+    // Destroy existing chart if any
+    if (chartInstances.duty) {
+      chartInstances.duty.destroy();
+    }
+
+    const ctx = document.getElementById('duty-chart');
+    chartInstances.duty = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: topDutyPlayers.map(p => p.name),
+        datasets: [{
+          label: 'Total Duties',
+          data: topDutyPlayers.map(p => p.totalDuties),
+          backgroundColor: 'rgba(99, 102, 241, 0.8)',
+          borderColor: 'rgba(99, 102, 241, 1)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            callbacks: {
+              afterLabel: function(context) {
+                const player = topDutyPlayers[context.dataIndex];
+                const duties = Object.entries(player.duties)
+                  .map(([duty, count]) => `${duty}: ${count}`)
+                  .join(', ');
+                return duties;
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              stepSize: 1
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function renderPlayingTimeReport() {
+    const container = document.getElementById('playing-time-content');
+    const data = advancedStatsData.playingTimeReport;
+
+    if (!data || data.length === 0) {
+      container.innerHTML = `
+        <div class="insufficient-data">
+          <div class="insufficient-data-icon">⏱️</div>
+          <div class="insufficient-data-title">Insufficient Data</div>
+          <p>Player availability and selection data from fixtures is needed to generate this report.</p>
+        </div>
+      `;
+      return;
+    }
+
+    // Show all players, sorted by selection rate (lowest first - needs attention)
+    container.innerHTML = `
+      <table class="data-mini-table">
+        <thead>
+          <tr>
+            <th>Player</th>
+            <th class="text-center">Available</th>
+            <th class="text-center">Selected</th>
+            <th style="min-width: 180px;">Selection Rate</th>
+            <th class="text-center">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.map(p => `
+            <tr>
+              <td><strong>${escapeHtml(p.name)}</strong></td>
+              <td class="text-center">${p.available}</td>
+              <td class="text-center">${p.selected}</td>
+              <td>
+                <div class="progress-bar-container">
+                  <div class="progress-bar ${p.selectionRate >= 80 ? 'high' : p.selectionRate >= 50 ? 'medium' : 'low'}"
+                       style="width: ${p.selectionRate}%">
+                    ${p.selectionRate.toFixed(1)}%
+                  </div>
+                </div>
+              </td>
+              <td class="text-center">
+                ${p.meetsTarget
+                  ? '<span class="rate-badge rate-high">✓ Meets Target</span>'
+                  : '<span class="rate-badge rate-low">⚠ Below Target</span>'}
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  }
+
+  function renderAvailabilityAlerts() {
+    const container = document.getElementById('availability-alerts-content');
+    const data = advancedStatsData.availabilityAlerts;
+
+    if (!data || data.length === 0) {
+      container.innerHTML = `
+        <div class="insufficient-data">
+          <div class="insufficient-data-icon">✅</div>
+          <div class="insufficient-data-title">No Alerts</div>
+          <p>No significant availability declines detected. All players are maintaining good availability!</p>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = data.map(p => `
+      <div class="alert-card">
+        <div class="alert-card-header">
+          <span class="alert-player-name">${escapeHtml(p.name)}</span>
+          <span class="alert-decline">↓ ${p.decline.toFixed(1)}%</span>
+        </div>
+        <div class="alert-details">
+          <span>Overall: ${p.overallRate.toFixed(1)}%</span>
+          <span>Recent: ${p.recentRate.toFixed(1)}%</span>
+        </div>
+      </div>
+    `).join('');
+  }
+</script>

@@ -1,0 +1,1771 @@
+---
+export const prerender = false;
+
+import AdminLayout from '../../layouts/AdminLayout.astro';
+
+// Check authentication
+const cookieHeader = Astro.request.headers.get('cookie');
+let authenticated = false;
+let username = '';
+
+if (cookieHeader) {
+  try {
+    const response = await fetch(
+      `${Astro.url.origin}/.netlify/functions/auth-check`,
+      {
+        headers: {
+          cookie: cookieHeader,
+        },
+      }
+    );
+    const data = await response.json();
+    authenticated = data.authenticated;
+    username = data.username || '';
+  } catch (error) {
+    authenticated = false;
+  }
+}
+
+// Redirect to login if not authenticated
+if (!authenticated) {
+  return Astro.redirect('/admin/login');
+}
+---
+
+<AdminLayout title="Fixtures & Availability - Bengals CC Admin" username={username} activePage="availability">
+  <div class="availability-page">
+    <!-- Page Header -->
+    <div class="page-header">
+      <h1 class="page-title">Fixtures & Availability</h1>
+      <p class="page-description">Track player availability, selection, duties, and match results</p>
+    </div>
+
+    <!-- Filters -->
+    <div class="toolbar">
+      <select id="season-filter" class="filter-select">
+        <option value="">Loading seasons...</option>
+      </select>
+      <select id="team-filter" class="filter-select">
+        <option value="">All Teams</option>
+        <option value="Bengal Tigers">Bengal Tigers</option>
+        <option value="Bengal Bulls">Bengal Bulls</option>
+        <option value="Bengal Thunder Cats">Bengal Thunder Cats</option>
+      </select>
+      <input type="date" id="date-from-filter" class="filter-input" placeholder="From Date" />
+      <input type="date" id="date-to-filter" class="filter-input" placeholder="To Date" />
+    </div>
+
+    <!-- Loading State -->
+    <div id="loading-state" class="state-container">
+      <div class="spinner"></div>
+      <p class="state-text">Loading fixtures...</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="error-state" class="alert alert-error" style="display: none;">
+      <div>
+        <p class="alert-title">Error loading fixtures</p>
+        <p id="error-text"></p>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div id="empty-state" class="state-container" style="display: none;">
+      <div class="empty-icon">📋</div>
+      <p class="state-title">No fixtures found</p>
+      <p class="state-text">Add fixtures to track player availability</p>
+    </div>
+
+    <!-- Fixtures List -->
+    <div id="fixtures-container" class="fixtures-container" style="display: none;">
+      <!-- Coming Weekend Section -->
+      <div id="weekend-section" class="fixtures-section" style="display: none;">
+        <div class="section-header">
+          <h3 class="section-title">Coming Weekend</h3>
+          <span class="section-count" id="weekend-count">0</span>
+        </div>
+        <div id="weekend-grid" class="fixtures-grid">
+          <!-- Weekend fixtures will be rendered here -->
+        </div>
+      </div>
+
+      <!-- All Upcoming Section (Collapsible) -->
+      <div id="upcoming-section" class="fixtures-section" style="display: none;">
+        <div class="section-header clickable" onclick="toggleSection('upcoming')">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <svg id="upcoming-chevron" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" style="transition: transform 0.2s;">
+              <polyline points="6 8 10 12 14 8"></polyline>
+            </svg>
+            <h3 class="section-title">All Upcoming Fixtures</h3>
+          </div>
+          <span class="section-count" id="upcoming-count">0</span>
+        </div>
+        <div id="upcoming-grid" class="fixtures-grid" style="display: none;">
+          <!-- Upcoming fixtures will be rendered here -->
+        </div>
+      </div>
+
+      <!-- Past Fixtures Section (Collapsible) -->
+      <div id="past-section" class="fixtures-section" style="display: none;">
+        <div class="section-header clickable" onclick="toggleSection('past')">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <svg id="past-chevron" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" style="transition: transform 0.2s;">
+              <polyline points="6 8 10 12 14 8"></polyline>
+            </svg>
+            <h3 class="section-title">Past Fixtures</h3>
+          </div>
+          <span class="section-count" id="past-count">0</span>
+        </div>
+        <div id="past-grid" class="fixtures-grid">
+          <!-- Past fixtures will be rendered here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Availability Editor Modal -->
+  <div id="availability-modal" class="modal" style="display: none;">
+    <div class="modal-content modal-lg">
+      <div class="modal-header">
+        <div>
+          <h2 id="modal-title" class="modal-title">Manage Availability</h2>
+          <p id="modal-subtitle" class="modal-subtitle"></p>
+        </div>
+        <button class="modal-close" onclick="closeAvailabilityModal()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="stats-grid" id="modal-stats">
+        <div class="stat-card">
+          <div class="stat-label">Total Players</div>
+          <div class="stat-value" id="stat-total-players">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Available</div>
+          <div class="stat-value stat-success" id="stat-available">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Selected</div>
+          <div class="stat-value stat-primary" id="stat-selected">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Availability Rate</div>
+          <div class="stat-value" id="stat-availability-rate">0%</div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="quick-actions">
+        <button id="mark-all-available-btn" class="btn-secondary">Mark All Available</button>
+        <button id="mark-all-unavailable-btn" class="btn-secondary">Mark All Unavailable</button>
+      </div>
+
+      <!-- Players Grid -->
+      <div id="players-loading" class="state-container">
+        <div class="spinner"></div>
+        <p class="state-text">Loading players...</p>
+      </div>
+
+      <div id="players-grid-container" style="display: none;">
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Player</th>
+                <th style="text-align: center; width: 150px;">Was Available?</th>
+                <th style="text-align: center; width: 150px;">Was Selected?</th>
+                <th style="width: 250px;">Match Duties</th>
+              </tr>
+            </thead>
+            <tbody id="players-tbody">
+              <!-- Players will be rendered here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Match Result Section (for past fixtures) -->
+      <div id="match-result-section" style="display: none; margin-top: 2rem; padding-top: 2rem; border-top: 2px solid #e5e7eb;">
+        <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem; color: #111827;">Match Result</h3>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label for="match-result" class="form-label">Result*</label>
+            <select id="match-result" class="form-input">
+              <option value="">Select result...</option>
+              <option value="win">Win</option>
+              <option value="loss">Loss</option>
+              <option value="tie">Tie</option>
+              <option value="abandoned">Abandoned</option>
+              <option value="forfeit">Forfeit</option>
+            </select>
+          </div>
+
+          <div id="player-of-match-group" class="form-group" style="display: none;">
+            <label for="player-of-match" class="form-label">Player of the Match*</label>
+            <select id="player-of-match" class="form-input">
+              <option value="">Select player...</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+          <div class="form-group">
+            <label for="paid-umpire-fee" class="form-label">Paid Umpire Fee?</label>
+            <select id="paid-umpire-fee" class="form-input">
+              <option value="">Select...</option>
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="umpire-fee-details" style="display: none; margin-top: 1rem;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+              <label for="umpire-fee-paid-by" class="form-label">Paid By*</label>
+              <select id="umpire-fee-paid-by" class="form-input">
+                <option value="">Select player...</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="umpire-fee-amount" class="form-label">Amount Paid ($)*</label>
+              <input type="number" id="umpire-fee-amount" class="form-input" placeholder="Enter amount" min="0" step="0.01" />
+            </div>
+          </div>
+        </div>
+
+        <div id="result-success" class="alert alert-success" style="display: none; margin-top: 1rem;">
+          <span id="result-success-text"></span>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" onclick="closeAvailabilityModal()">Cancel</button>
+        <button id="save-availability-btn" class="btn-primary">Save Changes</button>
+      </div>
+    </div>
+  </div>
+</AdminLayout>
+
+<style is:global>
+  .availability-page {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .toolbar {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .filter-select,
+  .filter-input {
+    padding: 0.75rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    background: white;
+  }
+
+  .filter-select {
+    cursor: pointer;
+    min-width: 200px;
+  }
+
+  .filter-input {
+    flex: 1;
+    min-width: 150px;
+  }
+
+  .fixtures-container {
+    margin-top: 2rem;
+  }
+
+  .fixtures-section {
+    margin-bottom: 2rem;
+  }
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px 12px 0 0;
+    margin-bottom: 0;
+  }
+
+  .section-header.clickable {
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .section-header.clickable:hover {
+    background: linear-gradient(135deg, #5a6fd8 0%, #6a4090 100%);
+  }
+
+  .section-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: white;
+    margin: 0;
+  }
+
+  .section-count {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .fixtures-grid {
+    display: grid;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+  }
+
+  .fixtures-section:first-child .fixtures-grid {
+    border-radius: 0 0 12px 12px;
+  }
+
+  .fixture-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.5rem;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+
+  .fixture-card:hover {
+    border-color: var(--color-primary);
+    box-shadow: 0 4px 12px rgba(246, 114, 128, 0.1);
+  }
+
+  .fixture-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+  }
+
+  .fixture-game-number {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    margin-bottom: 0.25rem;
+  }
+
+  .fixture-teams {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--color-text-heading);
+  }
+
+  .fixture-date {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+  }
+
+  .availability-badge {
+    display: inline-flex;
+    padding: 0.5rem 1rem;
+    background: #f3f4f6;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #374151;
+    white-space: nowrap;
+  }
+
+  .availability-badge.players-selected {
+    background: #d1fae5;
+    color: #065f46;
+    border: 1px solid #10b981;
+  }
+
+  .availability-badge.players-pending {
+    background: #fef3c7;
+    color: #78350f;
+    border: 1px solid #fbbf24;
+  }
+
+  .availability-badge.result-win {
+    background: #d1fae5;
+    color: #065f46;
+    border: 1px solid #10b981;
+  }
+
+  .availability-badge.result-loss {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #ef4444;
+  }
+
+  .availability-badge.result-other {
+    background: #e0e7ff;
+    color: #3730a3;
+    border: 1px solid #6366f1;
+  }
+
+  .availability-badge.result-pending {
+    background: #fef3c7;
+    color: #78350f;
+    border: 1px solid #fbbf24;
+  }
+
+  .fixture-details {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+  }
+
+  .fixture-detail {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .availability-stats {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    gap: 1.5rem;
+    font-size: 0.875rem;
+  }
+
+  .stat-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .stat-item .label {
+    color: var(--color-text-muted);
+  }
+
+  .stat-item .value {
+    font-weight: 600;
+    color: var(--color-text-heading);
+  }
+
+  .modal-lg {
+    max-width: 900px;
+  }
+
+  .modal-subtitle {
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+  }
+
+  .quick-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .player-row {
+    transition: background 0.2s;
+  }
+
+  .player-row:hover {
+    background: #f9fafb;
+  }
+
+  .checkbox-cell {
+    text-align: center;
+  }
+
+  .checkbox-cell input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+  }
+
+  .checkbox-cell input[type="checkbox"]:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .form-label {
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.875rem;
+  }
+
+  .form-input {
+    padding: 0.75rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    background: white;
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(246, 114, 128, 0.1);
+  }
+
+  .alert-success {
+    padding: 1rem;
+    background: #d1fae5;
+    border: 1px solid #10b981;
+    border-radius: 8px;
+    color: #065f46;
+    font-size: 0.875rem;
+  }
+
+  .empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+  }
+
+  .duties-cell {
+    position: relative;
+    min-height: 40px;
+    padding: 0.5rem;
+  }
+
+  .duties-cell.clickable {
+    cursor: pointer;
+  }
+
+  .duties-cell.disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  .duties-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    min-height: 28px;
+    align-items: center;
+  }
+
+  .duty-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.5rem;
+    background: #3b82f6;
+    color: white;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .duties-placeholder {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    color: #6b7280;
+    font-size: 0.75rem;
+  }
+
+  .duties-placeholder svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+
+  .duties-disabled {
+    color: #9ca3af;
+    font-size: 0.75rem;
+    font-style: italic;
+  }
+
+  .duties-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 1000;
+    background: white;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    padding: 0.75rem;
+    min-width: 220px;
+    margin-top: 0.25rem;
+  }
+
+  .duties-dropdown-header {
+    font-weight: 600;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+    color: #374151;
+  }
+
+  .duty-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .duty-option:hover {
+    background: #f3f4f6;
+  }
+
+  .duty-option input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+  }
+
+  .duty-option.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .duty-option.disabled input[type="checkbox"] {
+    cursor: not-allowed;
+  }
+
+  .duty-option-label {
+    font-size: 0.875rem;
+    flex: 1;
+  }
+
+  .duty-assigned-to {
+    font-size: 0.75rem;
+    color: #6b7280;
+    font-style: italic;
+  }
+
+  /* Mobile Responsive Styles */
+  @media (max-width: 768px) {
+    /* Filters toolbar - stack on mobile */
+    .filters-toolbar {
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .filters-toolbar select {
+      width: 100%;
+    }
+
+    /* Fixtures grid - single column on mobile */
+    .fixtures-grid {
+      grid-template-columns: 1fr;
+    }
+
+    /* Fixture card adjustments */
+    .fixture-card {
+      padding: 1rem;
+    }
+
+    /* Player grid - make horizontally scrollable if needed */
+    .player-grid {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* Duties dropdown - full width on mobile */
+    .duties-dropdown {
+      position: fixed;
+      top: auto;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      width: 100%;
+      max-height: 70vh;
+      border-radius: 12px 12px 0 0;
+      z-index: 1001;
+    }
+
+    /* Add overlay for mobile dropdown */
+    .duties-dropdown::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: -1;
+    }
+
+    /* Availability editor modal - full width */
+    .availability-modal .modal-content {
+      max-width: 100%;
+      max-height: 95vh;
+    }
+
+    /* Player availability grid - stack on mobile */
+    .player-availability-row {
+      flex-direction: column;
+      gap: 0.5rem;
+      padding: 0.75rem;
+    }
+
+    /* Make checkboxes larger for touch */
+    input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+    }
+
+    /* Umpire fee section - stack inputs */
+    .umpire-fee-inputs {
+      flex-direction: column;
+    }
+
+    .umpire-fee-inputs select,
+    .umpire-fee-inputs input {
+      width: 100%;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .fixture-card {
+      padding: 0.875rem;
+    }
+
+    .fixture-card h3 {
+      font-size: 1rem;
+    }
+
+    .badge {
+      font-size: 0.6875rem;
+      padding: 0.2rem 0.5rem;
+    }
+  }
+</style>
+
+<script>
+  let seasons = [];
+  let fixtures = [];
+  let availabilityRecords = [];
+  let currentFixture = null;
+  let currentAvailability = null;
+  let coreRosterMap = new Map(); // Map of playerId -> { isCore, isCaptain, isViceCaptain }
+  let openDropdownPlayerId = null; // Track which dropdown is open
+
+  // Available match duties
+  const MATCH_DUTIES = [
+    'Water Assignment',
+    'Scoring',
+    'Team Kit',
+    'Ice',
+    'Ground Set-up',
+    'Ground Cleaning',
+    'Video Broadcast'
+  ];
+
+  // DOM elements
+  const loadingState = document.getElementById('loading-state');
+  const errorState = document.getElementById('error-state');
+  const errorText = document.getElementById('error-text');
+  const emptyState = document.getElementById('empty-state');
+  const fixturesContainer = document.getElementById('fixtures-container');
+  const fixturesGrid = document.getElementById('fixtures-grid');
+  const seasonFilter = document.getElementById('season-filter');
+  const teamFilter = document.getElementById('team-filter');
+  const dateFromFilter = document.getElementById('date-from-filter');
+  const dateToFilter = document.getElementById('date-to-filter');
+  const availabilityModal = document.getElementById('availability-modal');
+  const playersTbody = document.getElementById('players-tbody');
+  const playersLoading = document.getElementById('players-loading');
+  const playersGridContainer = document.getElementById('players-grid-container');
+
+  // Load seasons and fixtures on page load
+  loadSeasons();
+
+  // Add event listeners for filters
+  seasonFilter.addEventListener('change', loadFixtures);
+  teamFilter.addEventListener('change', applyFilters);
+  dateFromFilter.addEventListener('change', applyFilters);
+  dateToFilter.addEventListener('change', applyFilters);
+
+  async function loadSeasons() {
+    try {
+      const response = await fetch('/.netlify/functions/seasons-list');
+      if (!response.ok) throw new Error('Failed to load seasons');
+
+      seasons = await response.json();
+
+      // Update season filter
+      seasonFilter.innerHTML = seasons
+        .map(
+          (s) =>
+            `<option value="${s.id}" ${s.isActive ? 'selected' : ''}>${escapeHtml(s.name)}${s.isActive ? ' (Active)' : ''}</option>`
+        )
+        .join('');
+
+      // Load fixtures for active season
+      if (seasons.length > 0) {
+        await loadFixtures();
+      }
+    } catch (error) {
+      console.error('Error loading seasons:', error);
+      errorState.style.display = 'flex';
+      errorText.textContent = 'Failed to load seasons: ' + error.message;
+    }
+  }
+
+  async function loadFixtures() {
+    try {
+      loadingState.style.display = 'flex';
+      errorState.style.display = 'none';
+      emptyState.style.display = 'none';
+      fixturesContainer.style.display = 'none';
+
+      const seasonId = seasonFilter.value;
+      if (!seasonId) return;
+
+      // Load fixtures
+      const fixturesResponse = await fetch(
+        `/.netlify/functions/fixtures-list?seasonId=${seasonId}`
+      );
+      if (!fixturesResponse.ok) throw new Error('Failed to load fixtures');
+      fixtures = await fixturesResponse.json();
+
+      // Load availability records
+      const availabilityResponse = await fetch(
+        `/.netlify/functions/availability-list?seasonId=${seasonId}`
+      );
+      if (!availabilityResponse.ok) throw new Error('Failed to load availability');
+      availabilityRecords = await availabilityResponse.json();
+
+      loadingState.style.display = 'none';
+
+      if (fixtures.length === 0) {
+        emptyState.style.display = 'flex';
+      } else {
+        applyFilters();
+      }
+    } catch (error) {
+      console.error('Error loading fixtures:', error);
+      loadingState.style.display = 'none';
+      errorState.style.display = 'flex';
+      errorText.textContent = error.message;
+    }
+  }
+
+  function applyFilters() {
+    const team = teamFilter.value;
+    const dateFrom = dateFromFilter.value;
+    const dateTo = dateToFilter.value;
+
+    let filtered = [...fixtures];
+
+    if (team) {
+      filtered = filtered.filter((f) => f.team === team);
+    }
+
+    if (dateFrom) {
+      filtered = filtered.filter((f) => f.date >= dateFrom);
+    }
+
+    if (dateTo) {
+      filtered = filtered.filter((f) => f.date <= dateTo);
+    }
+
+    renderFixtures(filtered);
+  }
+
+  function renderFixtures(fixtureList) {
+    if (fixtureList.length === 0) {
+      emptyState.style.display = 'flex';
+      fixturesContainer.style.display = 'none';
+      return;
+    }
+
+    emptyState.style.display = 'none';
+    fixturesContainer.style.display = 'block';
+
+    // Get today and categorize fixtures
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = today.toISOString().split('T')[0];
+
+    // Get this coming Saturday and Sunday
+    const dayOfWeek = today.getDay(); // 0 = Sunday, 6 = Saturday
+    const daysUntilSaturday = dayOfWeek === 6 ? 0 : (6 - dayOfWeek + 7) % 7;
+    const daysUntilSunday = dayOfWeek === 0 ? 0 : (7 - dayOfWeek) % 7;
+
+    const thisSaturday = new Date(today);
+    thisSaturday.setDate(today.getDate() + daysUntilSaturday);
+    const thisSaturdayStr = thisSaturday.toISOString().split('T')[0];
+
+    const thisSunday = new Date(today);
+    thisSunday.setDate(today.getDate() + daysUntilSunday);
+    const thisSundayStr = thisSunday.toISOString().split('T')[0];
+
+    // Categorize fixtures
+    const weekendFixtures = fixtureList.filter((f) => {
+      const fDate = f.date.split('T')[0];
+      return (fDate === thisSaturdayStr || fDate === thisSundayStr) && fDate >= todayStr;
+    });
+
+    const upcomingFixtures = fixtureList.filter((f) => {
+      const fDate = f.date.split('T')[0];
+      return fDate >= todayStr;
+    });
+
+    const pastFixtures = fixtureList.filter((f) => {
+      const fDate = f.date.split('T')[0];
+      return fDate < todayStr;
+    }).sort((a, b) => b.date.localeCompare(a.date)); // Most recent first
+
+    // Render fixture card helper
+    const renderFixtureCard = (fixture, isPast = false) => {
+      const availability = availabilityRecords.find((a) => a.fixtureId === fixture.id);
+      const hasAvailability = !!availability;
+      const selectedCount = availability ? availability.selectedCount : 0;
+      const hasEnoughPlayers = selectedCount >= 11;
+
+      // Build badges for header
+      let badges = [];
+
+      // Player selection badge (always show)
+      if (hasEnoughPlayers) {
+        badges.push(`<div class="availability-badge players-selected">11 Players Selected</div>`);
+      } else {
+        badges.push(`<div class="availability-badge players-pending">11 Players Selection Pending</div>`);
+      }
+
+      // Result badge (only for past fixtures)
+      if (isPast) {
+        if (fixture.result) {
+          const resultText = fixture.result.charAt(0).toUpperCase() + fixture.result.slice(1);
+          const resultClass = fixture.result === 'win' ? 'result-win' : fixture.result === 'loss' ? 'result-loss' : 'result-other';
+          badges.push(`<div class="availability-badge ${resultClass}">Result - ${resultText}</div>`);
+        } else {
+          badges.push(`<div class="availability-badge result-pending">Select Match Result</div>`);
+        }
+      }
+
+      return `
+        <div class="fixture-card" onclick="openAvailabilityEditor('${fixture.id}')">
+          <div class="fixture-header">
+            <div>
+              <div class="fixture-game-number">${escapeHtml(fixture.gameNumber)}</div>
+              <div class="fixture-teams">${escapeHtml(fixture.team)} vs ${escapeHtml(fixture.opponent)}</div>
+              <div class="fixture-date">${formatDate(fixture.date)} • ${escapeHtml(fixture.time)}</div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end;">
+              ${badges.join('')}
+            </div>
+          </div>
+          <div class="fixture-details">
+            <div class="fixture-detail">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M8 14c3.5 0 6-2.5 6-6s-2.5-6-6-6-6 2.5-6 6 2.5 6 6 6z"/>
+                <path d="M8 4v4l2 2"/>
+              </svg>
+              ${escapeHtml(fixture.venue)}
+            </div>
+            <div class="fixture-detail">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="10" height="10" rx="2"/>
+                <line x1="3" y1="8" x2="13" y2="8"/>
+              </svg>
+              ${escapeHtml(fixture.division)}
+            </div>
+          </div>
+          ${
+            hasAvailability
+              ? `
+            <div class="availability-stats">
+              <div class="stat-item">
+                <span class="label">Available:</span>
+                <span class="value">${availability.availableCount}/${availability.totalPlayers}</span>
+              </div>
+              <div class="stat-item">
+                <span class="label">Selected:</span>
+                <span class="value">${availability.selectedCount}</span>
+              </div>
+              <div class="stat-item">
+                <span class="label">Rate:</span>
+                <span class="value">${availability.availabilityRate}%</span>
+              </div>
+            </div>
+          `
+              : ''
+          }
+        </div>
+      `;
+    };
+
+    // Render coming weekend section
+    const weekendSection = document.getElementById('weekend-section');
+    const weekendGrid = document.getElementById('weekend-grid');
+    const weekendCount = document.getElementById('weekend-count');
+
+    if (weekendFixtures.length > 0) {
+      weekendSection.style.display = 'block';
+      weekendGrid.innerHTML = weekendFixtures.map(f => renderFixtureCard(f, false)).join('');
+      weekendCount.textContent = weekendFixtures.length;
+    } else {
+      weekendSection.style.display = 'none';
+    }
+
+    // Render all upcoming section
+    const upcomingSection = document.getElementById('upcoming-section');
+    const upcomingGrid = document.getElementById('upcoming-grid');
+    const upcomingCount = document.getElementById('upcoming-count');
+
+    if (upcomingFixtures.length > 0) {
+      upcomingSection.style.display = 'block';
+      upcomingGrid.innerHTML = upcomingFixtures.map(f => renderFixtureCard(f, false)).join('');
+      upcomingCount.textContent = upcomingFixtures.length;
+    } else {
+      upcomingSection.style.display = 'none';
+    }
+
+    // Render past fixtures section
+    const pastSection = document.getElementById('past-section');
+    const pastGrid = document.getElementById('past-grid');
+    const pastCount = document.getElementById('past-count');
+
+    if (pastFixtures.length > 0) {
+      pastSection.style.display = 'block';
+      pastGrid.innerHTML = pastFixtures.map(f => renderFixtureCard(f, true)).join(''); // Pass true for isPast
+      pastGrid.style.display = 'grid'; // Past section starts open
+      pastCount.textContent = pastFixtures.length;
+    } else {
+      pastSection.style.display = 'none';
+    }
+  }
+
+  // Toggle section collapse/expand
+  window.toggleSection = (section) => {
+    const grid = document.getElementById(`${section}-grid`);
+    const chevron = document.getElementById(`${section}-chevron`);
+
+    if (grid.style.display === 'none') {
+      grid.style.display = 'grid';
+      chevron.style.transform = 'rotate(0deg)';
+    } else {
+      grid.style.display = 'none';
+      chevron.style.transform = 'rotate(-90deg)';
+    }
+  };
+
+  window.openAvailabilityEditor = async (fixtureId) => {
+    try {
+      currentFixture = fixtures.find((f) => f.id === fixtureId);
+      if (!currentFixture) return;
+
+      // Show modal with loading state
+      availabilityModal.style.display = 'flex';
+      playersLoading.style.display = 'flex';
+      playersGridContainer.style.display = 'none';
+
+      // Update modal title
+      document.getElementById('modal-title').textContent = currentFixture.gameNumber;
+      document.getElementById('modal-subtitle').textContent =
+        `${currentFixture.team} vs ${currentFixture.opponent} • ${formatDate(currentFixture.date)}`;
+
+      // Try to load existing availability, or create new
+      try {
+        const response = await fetch(
+          `/.netlify/functions/availability-get?fixtureId=${fixtureId}`
+        );
+
+        if (response.ok) {
+          currentAvailability = await response.json();
+        } else if (response.status === 404) {
+          // Create new availability record
+          const createResponse = await fetch('/.netlify/functions/availability-create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fixtureId }),
+          });
+
+          if (!createResponse.ok) throw new Error('Failed to create availability record');
+
+          const result = await createResponse.json();
+          currentAvailability = result.data;
+        } else {
+          throw new Error('Failed to load availability');
+        }
+
+        // Load core roster data for this team and season
+        if (currentFixture.seasonId) {
+          try {
+            const rosterResponse = await fetch(
+              `/.netlify/functions/core-roster-list?seasonId=${currentFixture.seasonId}&teamName=${encodeURIComponent(currentFixture.team)}`
+            );
+
+            if (rosterResponse.ok) {
+              const roster = await rosterResponse.json();
+              coreRosterMap.clear();
+              roster.forEach(assignment => {
+                coreRosterMap.set(assignment.playerId, {
+                  isCore: assignment.isCore || false,
+                  isCaptain: assignment.isCaptain || false,
+                  isViceCaptain: assignment.isViceCaptain || false
+                });
+              });
+            }
+          } catch (err) {
+            console.warn('Could not load core roster data:', err);
+            // Non-critical, continue anyway
+          }
+        }
+      } catch (error) {
+        toast.error('Error loading availability: ' + error.message);
+        closeAvailabilityModal();
+        return;
+      }
+
+      // Render players
+      renderPlayers();
+      updateStats();
+
+      // Show match result section for past fixtures
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const fixtureDate = new Date(currentFixture.date.split('T')[0]);
+      const isPastFixture = fixtureDate < today;
+
+      const matchResultSection = document.getElementById('match-result-section');
+      if (isPastFixture) {
+        matchResultSection.style.display = 'block';
+
+        // Pre-fill existing result if available
+        const matchResultSelect = document.getElementById('match-result');
+        if (currentFixture.result) {
+          matchResultSelect.value = currentFixture.result;
+          if (currentFixture.result === 'win') {
+            loadPlayerOfMatchOptions();
+            document.getElementById('player-of-match-group').style.display = 'block';
+            if (currentFixture.playerOfMatch) {
+              document.getElementById('player-of-match').value = currentFixture.playerOfMatch;
+            }
+          }
+        } else {
+          matchResultSelect.value = '';
+          document.getElementById('player-of-match-group').style.display = 'none';
+        }
+
+        // Pre-fill umpire fee data if available
+        const paidUmpireFeeSelect = document.getElementById('paid-umpire-fee');
+        if (currentFixture.paidUmpireFee !== undefined) {
+          paidUmpireFeeSelect.value = currentFixture.paidUmpireFee ? 'yes' : 'no';
+          if (currentFixture.paidUmpireFee) {
+            loadUmpireFeePaidByOptions();
+            document.getElementById('umpire-fee-details').style.display = 'block';
+            if (currentFixture.umpireFeePaidBy) {
+              document.getElementById('umpire-fee-paid-by').value = currentFixture.umpireFeePaidBy;
+            }
+            if (currentFixture.umpireFeeAmount) {
+              document.getElementById('umpire-fee-amount').value = currentFixture.umpireFeeAmount;
+            }
+          }
+        } else {
+          paidUmpireFeeSelect.value = '';
+          document.getElementById('umpire-fee-details').style.display = 'none';
+        }
+      } else {
+        matchResultSection.style.display = 'none';
+      }
+
+      playersLoading.style.display = 'none';
+      playersGridContainer.style.display = 'block';
+    } catch (error) {
+      console.error('Error opening availability editor:', error);
+      toast.error('Error: ' + error.message);
+    }
+  };
+
+  function renderPlayers() {
+    if (!currentAvailability || !currentAvailability.playerAvailability) return;
+
+    // Sort players alphabetically by name
+    const players = currentAvailability.playerAvailability
+      .slice()
+      .sort((a, b) => a.playerName.localeCompare(b.playerName));
+
+    playersTbody.innerHTML = players
+      .map(
+        (player, index) => {
+          const rosterData = coreRosterMap.get(player.playerId) || { isCore: false, isCaptain: false, isViceCaptain: false };
+          const badges = [];
+
+          if (rosterData.isCaptain) {
+            badges.push('<span style="display: inline-block; margin-left: 0.5rem; padding: 0.125rem 0.5rem; background: #eab308; color: white; border-radius: 4px; font-size: 0.625rem; font-weight: 700; text-transform: uppercase;">CAPTAIN</span>');
+          }
+
+          if (rosterData.isViceCaptain) {
+            badges.push('<span style="display: inline-block; margin-left: 0.5rem; padding: 0.125rem 0.5rem; background: #f97316; color: white; border-radius: 4px; font-size: 0.625rem; font-weight: 700; text-transform: uppercase;">VICE CAPTAIN</span>');
+          }
+
+          if (rosterData.isCore) {
+            badges.push('<span style="display: inline-block; margin-left: 0.5rem; padding: 0.125rem 0.5rem; background: #10b981; color: white; border-radius: 4px; font-size: 0.625rem; font-weight: 700; text-transform: uppercase;">CORE</span>');
+          }
+
+          // Render duties cell - only clickable if player was selected
+          const duties = player.duties || [];
+          const isSelected = player.wasSelected;
+
+          let dutiesCellContent = '';
+          let dutiesCellClass = 'duties-cell';
+          let dutiesCellOnClick = '';
+
+          if (isSelected) {
+            dutiesCellClass += ' clickable';
+            dutiesCellOnClick = `onclick="toggleDutiesDropdown('${player.playerId}', event)"`;
+
+            if (duties.length > 0) {
+              dutiesCellContent = duties.map(duty => `<span class="duty-badge">${escapeHtml(duty)}</span>`).join('');
+            } else {
+              dutiesCellContent = `
+                <span class="duties-placeholder">
+                  <svg viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                  </svg>
+                  Click to assign duties
+                </span>
+              `;
+            }
+          } else {
+            dutiesCellClass += ' disabled';
+            dutiesCellContent = '<span class="duties-disabled">Not selected</span>';
+          }
+
+          return `
+      <tr class="player-row">
+        <td><strong>${escapeHtml(player.playerName)}</strong>${badges.join('')}</td>
+        <td class="checkbox-cell">
+          <input
+            type="checkbox"
+            data-player-id="${player.playerId}"
+            data-field="wasAvailable"
+            ${player.wasAvailable ? 'checked' : ''}
+            onchange="handleCheckboxChange(event)"
+          />
+        </td>
+        <td class="checkbox-cell">
+          <input
+            type="checkbox"
+            data-player-id="${player.playerId}"
+            data-field="wasSelected"
+            ${player.wasSelected ? 'checked' : ''}
+            ${!player.wasAvailable ? 'disabled' : ''}
+            onchange="handleCheckboxChange(event)"
+          />
+        </td>
+        <td class="${dutiesCellClass}" ${dutiesCellOnClick}>
+          <div class="duties-badges">
+            ${dutiesCellContent}
+          </div>
+        </td>
+      </tr>
+    `;
+        }
+      )
+      .join('');
+  }
+
+  window.handleCheckboxChange = (event) => {
+    const playerId = event.target.dataset.playerId;
+    const field = event.target.dataset.field;
+    const checked = event.target.checked;
+
+    if (!currentAvailability) return;
+
+    // Find the player by ID in the original array
+    const player = currentAvailability.playerAvailability.find(p => p.playerId === playerId);
+    if (!player) return;
+
+    player[field] = checked;
+
+    // If unmarking wasAvailable, also unmark wasSelected and clear duties
+    if (field === 'wasAvailable' && !checked) {
+      player.wasSelected = false;
+      player.duties = []; // Clear duties when player becomes unavailable
+    }
+
+    // If unmarking wasSelected, clear duties
+    if (field === 'wasSelected' && !checked) {
+      player.duties = []; // Clear duties when player is unselected
+    }
+
+    // Always re-render to update the disabled state of dependent checkboxes
+    renderPlayers();
+    updateStats();
+  };
+
+  // Duties dropdown management
+  window.toggleDutiesDropdown = (playerId, event) => {
+    event.stopPropagation();
+
+    // Check if player is selected
+    const player = currentAvailability.playerAvailability.find(p => p.playerId === playerId);
+    if (!player || !player.wasSelected) {
+      return; // Only allow duty assignment for selected players
+    }
+
+    // Close any existing dropdown
+    const existingDropdown = document.querySelector('.duties-dropdown');
+    if (existingDropdown) {
+      existingDropdown.remove();
+    }
+
+    // If clicking the same player, just close (toggle off)
+    if (openDropdownPlayerId === playerId) {
+      openDropdownPlayerId = null;
+      return;
+    }
+
+    openDropdownPlayerId = playerId;
+
+    // Create and show dropdown
+    const cell = event.currentTarget;
+    const dropdown = document.createElement('div');
+    dropdown.className = 'duties-dropdown';
+    dropdown.onclick = (e) => e.stopPropagation(); // Prevent closing when clicking inside
+
+    // Get current player's duties (player already declared above)
+    const playerDuties = player.duties || [];
+
+    // Get duties assigned to other players
+    const assignedDuties = new Map(); // duty -> playerName
+    currentAvailability.playerAvailability.forEach(p => {
+      if (p.playerId !== playerId && p.duties) {
+        p.duties.forEach(duty => {
+          assignedDuties.set(duty, p.playerName);
+        });
+      }
+    });
+
+    // Build dropdown content
+    let dropdownHtml = '<div class="duties-dropdown-header">Assign Match Duties</div>';
+
+    MATCH_DUTIES.forEach(duty => {
+      const isChecked = playerDuties.includes(duty);
+      const assignedTo = assignedDuties.get(duty);
+      const isDisabled = assignedTo && !isChecked;
+
+      dropdownHtml += `
+        <label class="duty-option ${isDisabled ? 'disabled' : ''}" onclick="${isDisabled ? 'event.preventDefault()' : ''}">
+          <input
+            type="checkbox"
+            data-player-id="${playerId}"
+            data-duty="${duty}"
+            ${isChecked ? 'checked' : ''}
+            ${isDisabled ? 'disabled' : ''}
+            onchange="handleDutyChange(event)"
+          />
+          <span class="duty-option-label">${escapeHtml(duty)}</span>
+          ${assignedTo ? `<span class="duty-assigned-to">(${escapeHtml(assignedTo)})</span>` : ''}
+        </label>
+      `;
+    });
+
+    dropdown.innerHTML = dropdownHtml;
+    cell.appendChild(dropdown);
+  };
+
+  window.handleDutyChange = (event) => {
+    const playerId = event.target.dataset.playerId;
+    const duty = event.target.dataset.duty;
+    const checked = event.target.checked;
+
+    if (!currentAvailability) return;
+
+    // Find the player
+    const player = currentAvailability.playerAvailability.find(p => p.playerId === playerId);
+    if (!player) return;
+
+    // Initialize duties array if not exists
+    if (!player.duties) {
+      player.duties = [];
+    }
+
+    if (checked) {
+      // Add duty to this player and remove from all others
+      currentAvailability.playerAvailability.forEach(p => {
+        if (p.duties) {
+          p.duties = p.duties.filter(d => d !== duty);
+        }
+      });
+      player.duties.push(duty);
+    } else {
+      // Remove duty from this player
+      player.duties = player.duties.filter(d => d !== duty);
+    }
+
+    // Re-render players to update badges
+    renderPlayers();
+
+    // Re-open the dropdown for the same player
+    const cell = document.querySelector(`[onclick*="toggleDutiesDropdown('${playerId}'"]`);
+    if (cell) {
+      // Small delay to let renderPlayers complete
+      setTimeout(() => {
+        openDropdownPlayerId = null; // Reset so toggle will open
+        cell.click();
+      }, 10);
+    }
+  };
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', (event) => {
+    const existingDropdown = document.querySelector('.duties-dropdown');
+    if (existingDropdown && openDropdownPlayerId) {
+      existingDropdown.remove();
+      openDropdownPlayerId = null;
+    }
+  });
+
+  function updateStats() {
+    if (!currentAvailability) return;
+
+    const players = currentAvailability.playerAvailability;
+    const total = players.length;
+    const available = players.filter((p) => p.wasAvailable).length;
+    const selected = players.filter((p) => p.wasSelected).length;
+    const availabilityRate = total > 0 ? Math.round((available / total) * 100) : 0;
+
+    document.getElementById('stat-total-players').textContent = total;
+    document.getElementById('stat-available').textContent = available;
+    document.getElementById('stat-selected').textContent = selected;
+    document.getElementById('stat-availability-rate').textContent = availabilityRate + '%';
+  }
+
+  // Quick actions
+  document.getElementById('mark-all-available-btn').addEventListener('click', () => {
+    if (!currentAvailability) return;
+    currentAvailability.playerAvailability.forEach((p) => {
+      p.wasAvailable = true;
+    });
+    renderPlayers();
+    updateStats();
+  });
+
+  document.getElementById('mark-all-unavailable-btn').addEventListener('click', () => {
+    if (!currentAvailability) return;
+    currentAvailability.playerAvailability.forEach((p) => {
+      p.wasAvailable = false;
+      p.wasSelected = false;
+      p.duties = []; // Clear all duties when marking all unavailable
+    });
+    renderPlayers();
+    updateStats();
+  });
+
+  // Save changes
+  document.getElementById('save-availability-btn').addEventListener('click', async () => {
+    if (!currentAvailability) return;
+
+    try {
+      const response = await fetch('/.netlify/functions/availability-update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fixtureId: currentAvailability.fixtureId,
+          updates: currentAvailability.playerAvailability.map((p) => ({
+            playerId: p.playerId,
+            wasAvailable: p.wasAvailable,
+            wasSelected: p.wasSelected,
+            duties: p.duties || [],
+          })),
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to save availability');
+      }
+
+      toast.success('Availability saved successfully!');
+      closeAvailabilityModal();
+      await loadFixtures(); // Reload to update stats
+    } catch (error) {
+      toast.error('Error saving availability: ' + error.message);
+    }
+  });
+
+  window.closeAvailabilityModal = () => {
+    availabilityModal.style.display = 'none';
+    currentFixture = null;
+    currentAvailability = null;
+    // Reset match result section
+    document.getElementById('match-result').value = '';
+    document.getElementById('player-of-match-group').style.display = 'none';
+    document.getElementById('player-of-match').value = '';
+    document.getElementById('paid-umpire-fee').value = '';
+    document.getElementById('umpire-fee-details').style.display = 'none';
+    document.getElementById('umpire-fee-paid-by').value = '';
+    document.getElementById('umpire-fee-amount').value = '';
+    document.getElementById('result-success').style.display = 'none';
+  };
+
+  // Load player of match options (only selected players)
+  function loadPlayerOfMatchOptions() {
+    if (!currentAvailability || !currentAvailability.playerAvailability) return;
+
+    const selectedPlayers = currentAvailability.playerAvailability
+      .filter(p => p.wasSelected)
+      .sort((a, b) => a.playerName.localeCompare(b.playerName));
+
+    const playerOfMatchSelect = document.getElementById('player-of-match');
+    playerOfMatchSelect.innerHTML = '<option value="">Select player...</option>' +
+      selectedPlayers.map(p =>
+        `<option value="${p.playerId}">${escapeHtml(p.playerName)}</option>`
+      ).join('');
+  }
+
+  // Load umpire fee paid by options (only selected players)
+  function loadUmpireFeePaidByOptions() {
+    if (!currentAvailability || !currentAvailability.playerAvailability) return;
+
+    const selectedPlayers = currentAvailability.playerAvailability
+      .filter(p => p.wasSelected)
+      .sort((a, b) => a.playerName.localeCompare(b.playerName));
+
+    const umpireFeePaidBySelect = document.getElementById('umpire-fee-paid-by');
+    umpireFeePaidBySelect.innerHTML = '<option value="">Select player...</option>' +
+      selectedPlayers.map(p =>
+        `<option value="${p.playerId}">${escapeHtml(p.playerName)}</option>`
+      ).join('');
+  }
+
+  // Handle match result change
+  document.getElementById('match-result')?.addEventListener('change', (e) => {
+    const playerOfMatchGroup = document.getElementById('player-of-match-group');
+
+    if (e.target.value === 'win') {
+      loadPlayerOfMatchOptions();
+      playerOfMatchGroup.style.display = 'block';
+      document.getElementById('player-of-match').required = true;
+    } else {
+      playerOfMatchGroup.style.display = 'none';
+      document.getElementById('player-of-match').required = false;
+      document.getElementById('player-of-match').value = '';
+    }
+  });
+
+  // Save match result
+  document.getElementById('match-result')?.addEventListener('change', async (e) => {
+    if (!currentFixture) return;
+
+    const result = e.target.value;
+    if (!result) return;
+
+    // If not a win, save immediately
+    if (result !== 'win') {
+      await saveMatchResult(result, null);
+    }
+    // If win, wait for player of match selection
+  });
+
+  document.getElementById('player-of-match')?.addEventListener('change', async (e) => {
+    if (!currentFixture) return;
+
+    const result = document.getElementById('match-result').value;
+    const playerOfMatch = e.target.value;
+
+    if (result === 'win' && playerOfMatch) {
+      await saveMatchResult(result, playerOfMatch);
+    }
+  });
+
+  // Handle paid umpire fee change
+  document.getElementById('paid-umpire-fee')?.addEventListener('change', async (e) => {
+    const umpireFeeDetails = document.getElementById('umpire-fee-details');
+
+    if (e.target.value === 'yes') {
+      loadUmpireFeePaidByOptions();
+      umpireFeeDetails.style.display = 'block';
+      document.getElementById('umpire-fee-paid-by').required = true;
+      document.getElementById('umpire-fee-amount').required = true;
+    } else if (e.target.value === 'no') {
+      umpireFeeDetails.style.display = 'none';
+      document.getElementById('umpire-fee-paid-by').required = false;
+      document.getElementById('umpire-fee-amount').required = false;
+      document.getElementById('umpire-fee-paid-by').value = '';
+      document.getElementById('umpire-fee-amount').value = '';
+      // Save immediately when selecting "no"
+      await saveUmpireFee(false, null, null);
+    } else {
+      umpireFeeDetails.style.display = 'none';
+    }
+  });
+
+  // Handle umpire fee paid by change
+  document.getElementById('umpire-fee-paid-by')?.addEventListener('change', async (e) => {
+    if (!currentFixture) return;
+
+    const paidUmpireFee = document.getElementById('paid-umpire-fee').value === 'yes';
+    const paidBy = e.target.value;
+    const amount = document.getElementById('umpire-fee-amount').value;
+
+    if (paidUmpireFee && paidBy && amount) {
+      await saveUmpireFee(true, paidBy, parseFloat(amount));
+    }
+  });
+
+  // Handle umpire fee amount change
+  document.getElementById('umpire-fee-amount')?.addEventListener('change', async (e) => {
+    if (!currentFixture) return;
+
+    const paidUmpireFee = document.getElementById('paid-umpire-fee').value === 'yes';
+    const paidBy = document.getElementById('umpire-fee-paid-by').value;
+    const amount = e.target.value;
+
+    if (paidUmpireFee && paidBy && amount) {
+      await saveUmpireFee(true, paidBy, parseFloat(amount));
+    }
+  });
+
+  async function saveMatchResult(result, playerOfMatch) {
+    if (!currentFixture) return;
+
+    try {
+      // Get umpire fee data
+      const paidUmpireFee = document.getElementById('paid-umpire-fee').value === 'yes';
+      const umpireFeePaidBy = paidUmpireFee ? document.getElementById('umpire-fee-paid-by').value : null;
+      const umpireFeeAmount = paidUmpireFee ? document.getElementById('umpire-fee-amount').value : null;
+
+      const data = {
+        fixtureId: currentFixture.id,
+        seasonId: currentFixture.seasonId,
+        result: result,
+        playerOfMatch: playerOfMatch || undefined,
+        paidUmpireFee: paidUmpireFee || undefined,
+        umpireFeePaidBy: umpireFeePaidBy || undefined,
+        umpireFeeAmount: umpireFeeAmount ? parseFloat(umpireFeeAmount) : undefined,
+      };
+
+      const response = await fetch('/.netlify/functions/fixtures-update-result', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to save result');
+      }
+
+      // Update current fixture with new result
+      currentFixture.result = result;
+      currentFixture.playerOfMatch = playerOfMatch;
+      currentFixture.paidUmpireFee = paidUmpireFee;
+      currentFixture.umpireFeePaidBy = umpireFeePaidBy;
+      currentFixture.umpireFeeAmount = umpireFeeAmount ? parseFloat(umpireFeeAmount) : null;
+
+      // Show success message
+      const resultSuccess = document.getElementById('result-success');
+      const resultSuccessText = document.getElementById('result-success-text');
+      resultSuccessText.textContent = 'Match result saved successfully!';
+      resultSuccess.style.display = 'block';
+
+      // Hide after 3 seconds
+      setTimeout(() => {
+        resultSuccess.style.display = 'none';
+      }, 3000);
+
+      // Reload fixtures to update the cards
+      await loadFixtures();
+    } catch (error) {
+      toast.error('Error saving match result: ' + error.message);
+    }
+  }
+
+  async function saveUmpireFee(paidUmpireFee, umpireFeePaidBy, umpireFeeAmount) {
+    if (!currentFixture) return;
+
+    try {
+      const data = {
+        fixtureId: currentFixture.id,
+        seasonId: currentFixture.seasonId,
+        paidUmpireFee: paidUmpireFee,
+        umpireFeePaidBy: umpireFeePaidBy || undefined,
+        umpireFeeAmount: umpireFeeAmount || undefined,
+      };
+
+      const response = await fetch('/.netlify/functions/fixtures-update-result', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to save umpire fee');
+      }
+
+      // Update current fixture
+      currentFixture.paidUmpireFee = paidUmpireFee;
+      currentFixture.umpireFeePaidBy = umpireFeePaidBy;
+      currentFixture.umpireFeeAmount = umpireFeeAmount;
+
+      // Show success message
+      const resultSuccess = document.getElementById('result-success');
+      const resultSuccessText = document.getElementById('result-success-text');
+      resultSuccessText.textContent = 'Umpire fee information saved successfully!';
+      resultSuccess.style.display = 'block';
+
+      // Hide after 3 seconds
+      setTimeout(() => {
+        resultSuccess.style.display = 'none';
+      }, 3000);
+
+      // Reload fixtures to update the cards
+      await loadFixtures();
+    } catch (error) {
+      toast.error('Error saving umpire fee: ' + error.message);
+    }
+  }
+
+  // Helper functions
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  function formatDate(dateStr) {
+    // Extract just the date part (YYYY-MM-DD) from ISO timestamp or date string
+    const datePart = dateStr.split('T')[0]; // Handles both "2026-02-08" and "2026-02-08T00:00:00.000Z"
+
+    // Parse as local date to avoid timezone shifts
+    const [year, month, day] = datePart.split('-').map(Number);
+    const date = new Date(year, month - 1, day); // month is 0-indexed
+
+    return date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  }
+
+  // Close modal on outside click
+  availabilityModal?.addEventListener('click', (e) => {
+    if (e.target === availabilityModal) {
+      closeAvailabilityModal();
+    }
+  });
+</script>

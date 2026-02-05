@@ -246,6 +246,54 @@ if (!authenticated) {
         </div>
       </div>
 
+      <!-- YouTube Video Section (for all fixtures) -->
+      <div id="youtube-video-section" style="margin-top: 1rem; padding-top: 1.5rem; border-top: 2px solid #e5e7eb; padding: 1.5rem;">
+        <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.5rem; color: #111827;">
+          📹 YouTube Video Link
+        </h3>
+        <p style="font-size: 0.875rem; color: #6b7280; margin-bottom: 1rem;">
+          Add a YouTube video link for live streaming or match recording (optional)
+        </p>
+
+        <div class="form-group">
+          <label for="youtube-video-url" class="form-label">YouTube URL</label>
+          <input
+            type="url"
+            id="youtube-video-url"
+            class="form-input"
+            placeholder="https://youtube.com/watch?v=..."
+            style="width: 100%;"
+          >
+          <small style="color: #6b7280; font-size: 0.75rem; margin-top: 0.25rem; display: block;">
+            Paste the full YouTube video URL. This will be displayed on the public fixtures page.
+          </small>
+        </div>
+      </div>
+
+      <!-- Scoring App Section (for all fixtures) -->
+      <div id="scoring-app-section" style="margin-top: 1rem; padding-top: 1.5rem; border-top: 2px solid #e5e7eb; padding: 1.5rem;">
+        <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.5rem; color: #111827;">
+          🏏 NCCA CricHeroes Link
+        </h3>
+        <p style="font-size: 0.875rem; color: #6b7280; margin-bottom: 1rem;">
+          Add a link to the NCCA CricHeroes scoring app for live scoring (optional)
+        </p>
+
+        <div class="form-group">
+          <label for="scoring-app-url" class="form-label">CricHeroes URL</label>
+          <input
+            type="url"
+            id="scoring-app-url"
+            class="form-input"
+            placeholder="https://cricheroes.com/..."
+            style="width: 100%;"
+          >
+          <small style="color: #6b7280; font-size: 0.75rem; margin-top: 0.25rem; display: block;">
+            Paste the CricHeroes app or web link. This will be displayed on the public fixtures page.
+          </small>
+        </div>
+      </div>
+
       <div class="modal-footer">
         <button type="button" class="btn-secondary" onclick="closeAvailabilityModal()">Cancel</button>
         <button id="save-availability-btn" class="btn-primary">Save Changes</button>
@@ -1188,6 +1236,22 @@ if (!authenticated) {
         matchResultSection.style.display = 'none';
       }
 
+      // Pre-fill YouTube video URL if available
+      const youtubeVideoUrlInput = document.getElementById('youtube-video-url');
+      if (currentFixture.youtubeVideoUrl) {
+        youtubeVideoUrlInput.value = currentFixture.youtubeVideoUrl;
+      } else {
+        youtubeVideoUrlInput.value = '';
+      }
+
+      // Pre-fill CricHeroes URL if available
+      const scoringAppUrlInput = document.getElementById('scoring-app-url');
+      if (currentFixture.scoringAppUrl) {
+        scoringAppUrlInput.value = currentFixture.scoringAppUrl;
+      } else {
+        scoringAppUrlInput.value = '';
+      }
+
       playersLoading.style.display = 'none';
       playersGridContainer.style.display = 'block';
     } catch (error) {
@@ -1475,10 +1539,25 @@ if (!authenticated) {
 
   // Save changes
   document.getElementById('save-availability-btn').addEventListener('click', async () => {
-    if (!currentAvailability) return;
+    if (!currentAvailability || !currentFixture) return;
 
     try {
-      const response = await fetch('/.netlify/functions/availability-update', {
+      // Validate YouTube URL if provided
+      const youtubeUrl = document.getElementById('youtube-video-url').value.trim();
+      if (youtubeUrl && !isValidYouTubeUrl(youtubeUrl)) {
+        toast.error('Please enter a valid YouTube URL');
+        return;
+      }
+
+      // Validate CricHeroes URL if provided
+      const scoringAppUrl = document.getElementById('scoring-app-url').value.trim();
+      if (scoringAppUrl && !isValidUrl(scoringAppUrl)) {
+        toast.error('Please enter a valid CricHeroes URL');
+        return;
+      }
+
+      // Save availability data
+      const availabilityResponse = await fetch('/.netlify/functions/availability-update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1492,16 +1571,41 @@ if (!authenticated) {
         }),
       });
 
-      if (!response.ok) {
-        const error = await response.json();
+      if (!availabilityResponse.ok) {
+        const error = await availabilityResponse.json();
         throw new Error(error.error || 'Failed to save availability');
       }
 
-      toast.success('Availability saved successfully!');
+      // Save YouTube URL if it has changed
+      const originalYoutubeUrl = currentFixture.youtubeVideoUrl || '';
+      const originalCricHeroesUrl = currentFixture.scoringAppUrl || '';
+
+      if (youtubeUrl !== originalYoutubeUrl || scoringAppUrl !== originalCricHeroesUrl) {
+        const fixtureResponse = await fetch('/.netlify/functions/fixtures-update', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: currentFixture.id,
+            seasonId: currentFixture.seasonId,
+            youtubeVideoUrl: youtubeUrl || null,
+            scoringAppUrl: scoringAppUrl || null,
+          }),
+        });
+
+        if (!fixtureResponse.ok) {
+          throw new Error('Failed to save fixture links');
+        }
+
+        // Update current fixture
+        currentFixture.youtubeVideoUrl = youtubeUrl || undefined;
+        currentFixture.scoringAppUrl = scoringAppUrl || undefined;
+      }
+
+      toast.success('Changes saved successfully!');
       closeAvailabilityModal();
       await loadFixtures(); // Reload to update stats
     } catch (error) {
-      toast.error('Error saving availability: ' + error.message);
+      toast.error('Error saving changes: ' + error.message);
     }
   });
 
@@ -1518,6 +1622,10 @@ if (!authenticated) {
     document.getElementById('umpire-fee-paid-by').value = '';
     document.getElementById('umpire-fee-amount').value = '';
     document.getElementById('result-success').style.display = 'none';
+    // Reset YouTube URL section
+    document.getElementById('youtube-video-url').value = '';
+    // Reset CricHeroes URL section
+    document.getElementById('scoring-app-url').value = '';
   };
 
   // Load player of match options (only selected players)
@@ -1736,6 +1844,22 @@ if (!authenticated) {
       await loadFixtures();
     } catch (error) {
       toast.error('Error saving umpire fee: ' + error.message);
+    }
+  }
+
+  // Validate YouTube URL
+  function isValidYouTubeUrl(url) {
+    const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)[\w-]+/;
+    return youtubeRegex.test(url);
+  }
+
+  // Validate general URL
+  function isValidUrl(url) {
+    try {
+      const urlObj = new URL(url);
+      return urlObj.protocol === 'http:' || urlObj.protocol === 'https:';
+    } catch {
+      return false;
     }
   }
 

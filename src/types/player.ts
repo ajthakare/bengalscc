@@ -44,6 +44,8 @@ export interface Fixture {
   paidUmpireFee?: boolean;       // Whether umpire fee was paid
   umpireFeePaidBy?: string;      // Player ID who paid the fee
   umpireFeeAmount?: number;      // Amount paid for umpire fee
+  youtubeVideoUrl?: string;      // YouTube video link (live or recorded)
+  scoringAppUrl?: string;        // Scoring app link (e.g., CricHeroes)
   createdAt: string;
   createdBy: string;
 }

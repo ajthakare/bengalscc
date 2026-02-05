@@ -52,14 +52,14 @@ export const handler: Handler = async (
 };
 
 async function getFixturesForSeason(seasonId: string) {
-  const store = getStore({
+  const fixturesStore = getStore({
     name: 'fixtures',
     siteID: process.env.SITE_ID || '',
     token: process.env.NETLIFY_AUTH_TOKEN || '',
   });
 
   const fixtures =
-    (await store.get(`fixtures-${seasonId}`, { type: 'json' })) as
+    (await fixturesStore.get(`fixtures-${seasonId}`, { type: 'json' })) as
       | Fixture[]
       | null;
 
@@ -73,10 +73,31 @@ async function getFixturesForSeason(seasonId: string) {
     };
   }
 
-  // Sort fixtures by date
-  const sortedFixtures = fixtures.sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-  );
+  // Load all players to get player of match names
+  const playersStore = getStore({
+    name: 'players',
+    siteID: process.env.SITE_ID || '',
+    token: process.env.NETLIFY_AUTH_TOKEN || '',
+  });
+
+  const allPlayers = await playersStore.get('players-all', { type: 'json' }) as any[] | null;
+
+  // Sort fixtures by date and enrich with player names
+  const sortedFixtures = fixtures
+    .map((fixture) => {
+      // Add player of match name if available
+      if (fixture.playerOfMatch && allPlayers) {
+        const player = allPlayers.find((p: any) => p.id === fixture.playerOfMatch);
+        if (player) {
+          return {
+            ...fixture,
+            playerOfMatchName: `${player.firstName} ${player.lastName}`,
+          };
+        }
+      }
+      return fixture;
+    })
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   return {
     statusCode: 200,

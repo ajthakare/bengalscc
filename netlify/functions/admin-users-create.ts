@@ -5,6 +5,7 @@ import {
   hashPassword,
   AdminUser,
 } from '../../src/middleware/auth';
+import { addAuditLog } from '../../src/utils/auditLog';
 
 /**
  * Create a new admin user
@@ -37,14 +38,36 @@ export const handler: Handler = async (
       };
     }
 
+    // Get current user's role (with fallback for old sessions without role)
+    const currentUserRole = session.role || (session.username === 'admin' ? 'super_admin' : 'admin');
+
+    // Only super admin can create users
+    if (currentUserRole !== 'super_admin') {
+      return {
+        statusCode: 403,
+        body: JSON.stringify({
+          error: 'Forbidden: Only super admins can create new admin users'
+        }),
+      };
+    }
+
     // Parse request body
     const body = JSON.parse(event.body || '{}');
-    const { username, password } = body;
+    const { username, password, role } = body;
 
     if (!username || !password) {
       return {
         statusCode: 400,
         body: JSON.stringify({ error: 'Username and password are required' }),
+      };
+    }
+
+    // Validate role
+    const userRole = role || 'admin';
+    if (userRole !== 'super_admin' && userRole !== 'admin') {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'Invalid role. Must be "super_admin" or "admin"' }),
       };
     }
 
@@ -96,6 +119,7 @@ export const handler: Handler = async (
     const newUser: AdminUser = {
       username,
       passwordHash,
+      role: userRole,
       createdAt: new Date().toISOString(),
     };
 
@@ -104,6 +128,15 @@ export const handler: Handler = async (
 
     // Save to Netlify Blobs
     await store.set('users', JSON.stringify(existingUsers));
+
+    // Add audit log (non-blocking)
+    addAuditLog(
+      session.username,
+      'admin_user_create',
+      `Created admin user ${username} with role ${userRole}`,
+      username,
+      { role: userRole }
+    ).catch(err => console.error('Audit log failed:', err));
 
     return {
       statusCode: 201,

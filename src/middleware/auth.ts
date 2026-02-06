@@ -6,14 +6,18 @@ const SESSION_SECRET = process.env.SESSION_SECRET || '';
 const SESSION_COOKIE_NAME = 'bengals_admin_session';
 const SESSION_EXPIRY = '24h';
 
+export type AdminRole = 'super_admin' | 'admin';
+
 export interface AdminUser {
   username: string;
   passwordHash: string;
+  role: AdminRole;
   createdAt: string;
 }
 
 export interface SessionPayload {
   username: string;
+  role: AdminRole;
   iat?: number;
   exp?: number;
 }
@@ -44,14 +48,15 @@ export async function verifyPassword(
 /**
  * Create a JWT session token
  * @param username - Admin username
+ * @param role - Admin role
  * @returns JWT token string
  */
-export function createSession(username: string): string {
+export function createSession(username: string, role: AdminRole): string {
   if (!SESSION_SECRET) {
     throw new Error('SESSION_SECRET environment variable is not set');
   }
 
-  const payload: SessionPayload = { username };
+  const payload: SessionPayload = { username, role };
   return jwt.sign(payload, SESSION_SECRET, { expiresIn: SESSION_EXPIRY });
 }
 

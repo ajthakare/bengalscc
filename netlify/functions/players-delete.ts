@@ -2,6 +2,7 @@ import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
 import { validateAdminSession } from '../../src/middleware/auth';
 import type { Player } from '../../src/types/player';
+import { addAuditLog } from '../../src/utils/auditLog';
 
 /**
  * Delete player(s) - soft delete (mark as inactive)
@@ -87,12 +88,14 @@ export const handler: Handler = async (
 
     // Soft delete: Mark players as inactive
     let deletedCount = 0;
+    const deletedPlayerNames: string[] = [];
     players.forEach((player) => {
       if (playerIds.includes(player.id) && player.isActive) {
         player.isActive = false;
         player.updatedAt = new Date().toISOString();
         player.updatedBy = session.username;
         deletedCount++;
+        deletedPlayerNames.push(`${player.firstName} ${player.lastName}`);
       }
     });
 
@@ -107,6 +110,19 @@ export const handler: Handler = async (
 
     // Save to Blobs
     await store.setJSON('players-all', players);
+
+    // Add audit log (non-blocking)
+    const description = deletedCount === 1
+      ? `Deleted player ${deletedPlayerNames[0]}`
+      : `Deleted ${deletedCount} players: ${deletedPlayerNames.join(', ')}`;
+
+    addAuditLog(
+      session.username,
+      'player_delete',
+      description,
+      deletedCount === 1 ? deletedPlayerNames[0] : `${deletedCount} players`,
+      { playerIds, deletedCount }
+    ).catch(err => console.error('Audit log failed:', err));
 
     return {
       statusCode: 200,

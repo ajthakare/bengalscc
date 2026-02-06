@@ -35,6 +35,7 @@ export const handler: Handler = async (
       body: JSON.stringify({
         authenticated: true,
         username: session.username,
+        role: session.role || (session.username === 'admin' ? 'super_admin' : 'admin'),
         expiresAt: session.exp ? new Date(session.exp * 1000).toISOString() : null,
       }),
     };

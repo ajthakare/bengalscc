@@ -2,6 +2,7 @@ import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
 import { validateAdminSession } from '../../src/middleware/auth';
 import type { Fixture } from '../../src/types/player';
+import { addAuditLog } from '../../src/utils/auditLog';
 
 /**
  * Update a fixture
@@ -109,6 +110,22 @@ export const handler: Handler = async (
 
     // Save to Blobs
     await fixturesStore.setJSON(`fixtures-${seasonId}`, fixtures);
+
+    // Add audit log (non-blocking)
+    const changedFields = Object.keys(updates).filter(key =>
+      JSON.stringify(existingFixture[key as keyof Fixture]) !== JSON.stringify(updates[key])
+    );
+    const description = changedFields.length > 0
+      ? `Updated fixture ${existingFixture.gameNumber}: ${changedFields.join(', ')}`
+      : `Updated fixture ${existingFixture.gameNumber}`;
+
+    addAuditLog(
+      session.username,
+      'fixture_update',
+      description,
+      existingFixture.gameNumber,
+      { seasonId, changedFields, updates }
+    ).catch(err => console.error('Audit log failed:', err));
 
     return {
       statusCode: 200,

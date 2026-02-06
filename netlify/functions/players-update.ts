@@ -3,6 +3,7 @@ import { getStore } from '@netlify/blobs';
 import { validateAdminSession } from '../../src/middleware/auth';
 import type { Player } from '../../src/types/player';
 import { PLAYER_ROLES } from '../../src/types/player';
+import { addAuditLog } from '../../src/utils/auditLog';
 
 /**
  * Update player details
@@ -187,6 +188,23 @@ export const handler: Handler = async (
 
     // Save to Blobs
     await store.setJSON('players-all', players);
+
+    // Add audit log (non-blocking)
+    const changedFields = Object.keys(cleanUpdates).filter(key =>
+      JSON.stringify(existingPlayer[key as keyof Player]) !== JSON.stringify(cleanUpdates[key])
+    );
+    const playerName = `${updatedPlayer.firstName} ${updatedPlayer.lastName}`;
+    const description = changedFields.length > 0
+      ? `Updated player ${playerName}: ${changedFields.join(', ')}`
+      : `Updated player ${playerName}`;
+
+    addAuditLog(
+      session.username,
+      'player_update',
+      description,
+      playerName,
+      { changedFields, updates: cleanUpdates }
+    ).catch(err => console.error('Audit log failed:', err));
 
     return {
       statusCode: 200,

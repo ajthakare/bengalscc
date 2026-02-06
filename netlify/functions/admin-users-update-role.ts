@@ -1,21 +1,20 @@
 import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
-import { validateAdminSession, AdminUser } from '../../src/middleware/auth';
+import { validateAdminSession, AdminUser, AdminRole } from '../../src/middleware/auth';
 import { addAuditLog } from '../../src/utils/auditLog';
 
 /**
- * Delete an admin user
- * DELETE /api/admin-users-delete
- * Body: { username }
- * Requires: Valid admin session
+ * Update admin user role
+ * POST /api/admin-users-update-role
+ * Body: { username, role }
+ * Requires: Super admin session
  * Returns: Success message
  */
 export const handler: Handler = async (
   event: HandlerEvent,
   context: HandlerContext
 ) => {
-  // Only allow DELETE or POST requests
-  if (event.httpMethod !== 'DELETE' && event.httpMethod !== 'POST') {
+  if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
       body: JSON.stringify({ error: 'Method not allowed' }),
@@ -37,32 +36,32 @@ export const handler: Handler = async (
     // Get user role (with fallback for old sessions without role)
     const userRole = session.role || (session.username === 'admin' ? 'super_admin' : 'admin');
 
-    // Only super admin can delete users
+    // Only super admin can change roles
     if (userRole !== 'super_admin') {
       return {
         statusCode: 403,
         body: JSON.stringify({
-          error: 'Forbidden: Only super admins can delete admin users'
+          error: 'Forbidden: Only super admins can change user roles'
         }),
       };
     }
 
     // Parse request body
     const body = JSON.parse(event.body || '{}');
-    const { username } = body;
+    const { username, role } = body;
 
-    if (!username) {
+    if (!username || !role) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: 'Username is required' }),
+        body: JSON.stringify({ error: 'Username and role are required' }),
       };
     }
 
-    // Prevent deleting self
-    if (username === session.username) {
+    // Validate role
+    if (role !== 'super_admin' && role !== 'admin') {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: 'Cannot delete your own account' }),
+        body: JSON.stringify({ error: 'Invalid role. Must be "super_admin" or "admin"' }),
       };
     }
 
@@ -82,17 +81,7 @@ export const handler: Handler = async (
       };
     }
 
-    // Prevent deleting the last admin
-    if (users.length === 1) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({
-          error: 'Cannot delete the last admin user',
-        }),
-      };
-    }
-
-    // Find user to delete
+    // Find user
     const userIndex = users.findIndex((u) => u.username === username);
     if (userIndex === -1) {
       return {
@@ -101,21 +90,31 @@ export const handler: Handler = async (
       };
     }
 
-    const deletedUser = users[userIndex];
+    // Prevent removing super_admin from yourself
+    if (username === session.username && role !== 'super_admin') {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({
+          error: 'Cannot remove super_admin role from your own account'
+        }),
+      };
+    }
 
-    // Remove user from array
-    users.splice(userIndex, 1);
+    const oldRole = users[userIndex].role;
 
-    // Save updated users list
+    // Update user role
+    users[userIndex].role = role as AdminRole;
+
+    // Save updated users
     await store.set('users', JSON.stringify(users));
 
     // Add audit log (non-blocking)
     addAuditLog(
       session.username,
-      'admin_user_delete',
-      `Deleted admin user ${username} (role: ${deletedUser.role})`,
+      'admin_user_role_change',
+      `Changed ${username}'s role from ${oldRole} to ${role}`,
       username,
-      { role: deletedUser.role }
+      { oldRole, newRole: role }
     ).catch(err => console.error('Audit log failed:', err));
 
     return {
@@ -125,16 +124,17 @@ export const handler: Handler = async (
       },
       body: JSON.stringify({
         success: true,
-        message: 'Admin user deleted successfully',
+        message: 'User role updated successfully',
         username,
+        role,
       }),
     };
   } catch (error) {
-    console.error('Error deleting admin user:', error);
+    console.error('Error updating user role:', error);
     return {
       statusCode: 500,
       body: JSON.stringify({
-        error: 'Failed to delete admin user',
+        error: 'Failed to update user role',
         details: error instanceof Error ? error.message : 'Unknown error',
       }),
     };

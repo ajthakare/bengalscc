@@ -39,7 +39,7 @@ if (userRole !== 'super_admin') {
 }
 ---
 
-<AdminLayout title="Audit Logs - Bengals CC Admin" username={username} userRole={userRole} activePage="logs">
+<AdminLayout title="Audit Logs - GSCC Admin" username={username} userRole={userRole} activePage="logs">
   <div class="audit-logs-page">
     <!-- Page Header -->
     <div class="page-header">
@@ -312,17 +312,7 @@ if (userRole !== 'super_admin') {
     margin-bottom: 32px;
   }
 
-  .page-title {
-    font-size: 32px;
-    font-weight: 700;
-    color: #111827;
-    margin-bottom: 8px;
-  }
-
-  .page-description {
-    font-size: 16px;
-    color: #6b7280;
-  }
+  /* Note: .page-title and .page-description styles are now in theme file */
 
   .card {
     background: white;

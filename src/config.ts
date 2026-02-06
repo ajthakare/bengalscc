@@ -2,16 +2,16 @@
 // This file contains centralized configuration values used throughout the website
 
 export const SITE_CONFIG = {
-    name: 'Bengals Cricket Club',
+    name: 'Golden State Cricket Club',
     location: 'Bay Area, California',
     email: 'bengalscc@gmail.com',
     phone: '+1 (555) 123-4567', // Update with actual phone number
     whatsapp: '+15551234567', // Update with actual WhatsApp number (format: country code + number, no spaces)
-    description: 'Bengals Cricket Club - Bay Area, California. NCCA T20 Division 1 Champions. Community-driven cricket organization.',
+    description: 'Golden State Cricket Club - Bay Area, California. NCCA T20 Division 1 Champions. Community-driven cricket organization.',
 
     // Non-Profit Information
     nonProfit: {
-        name: 'Bengals Cricket Foundation',
+        name: 'Golden State Cricket Foundation',
         ein: 'XX-XXXXXXX', // Update with actual EIN
         status: '501(c)(3) Tax-Exempt Non-Profit',
         founded: '2018',

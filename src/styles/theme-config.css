@@ -12,7 +12,8 @@
  */
 
 /* Active theme */
-@import './themes/theme-bengals.css';
+@import './themes/theme-golden-state-v2.css';
 
-/* To switch to Golden State theme (when created), change to: */
+/* Other available themes: */
+/* @import './themes/theme-bengals.css'; */
 /* @import './themes/theme-golden-state.css'; */

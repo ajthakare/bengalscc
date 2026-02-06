@@ -1,7 +1,8 @@
 /**
- * BENGALS CRICKET CLUB THEME - COMPLETE
- * Primary Color: Orange (#f97316)
- * Complementary: Blue (#355c7d)
+ * GOLDEN STATE CRICKET CLUB THEME - COMPLETE
+ * Primary Color: Golden (#ca890f)
+ * Complementary: Purple (#a76aba)
+ * Accent: Dark Brown (#623412)
  *
  * This is a complete standalone theme.
  * Change one @import in theme-config.css to switch themes.
@@ -9,17 +10,17 @@
 
 @theme {
     /* ===== BRAND COLORS ===== */
-    --color-primary: #f97316;
+    --color-primary: #ca890f;
     --color-primary-content: #ffffff;
-    --color-complementary: #355c7d;
+    --color-complementary: #a76aba;
 
     /* ===== BACKGROUND COLORS ===== */
     --color-bg-body: #ffffff;
     --color-bg-card: #f9fafb;          /* gray-50 */
     --color-bg-card-hover: #f3f4f6;    /* gray-100 */
     --color-bg-section-alt: #f9fafb;   /* gray-50 for alternate sections */
-    --color-bg-hero: #fff7ed;          /* orange-50 */
-    --color-bg-hero-dark: #ffedd5;     /* orange-100 */
+    --color-bg-hero: #fef8e7;          /* golden-50 - light golden cream */
+    --color-bg-hero-dark: #fdf3d7;     /* golden-100 - light golden yellow */
     --color-bg-input: #f9fafb;         /* gray-50 */
 
     /* ===== TEXT COLORS ===== */
@@ -41,14 +42,14 @@
     /* ===== SHADOWS & DEPTH ===== */
     --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
     --shadow-card-hover: 0 10px 25px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.06);
-    --shadow-button: 0 2px 4px rgba(249, 115, 22, 0.2), 0 1px 2px rgba(249, 115, 22, 0.1);
+    --shadow-button: 0 2px 4px rgba(202, 137, 15, 0.2), 0 1px 2px rgba(202, 137, 15, 0.1);
     --shadow-elevated: 0 20px 40px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(0, 0, 0, 0.06);
 
     /* ===== GRADIENTS ===== */
-    --gradient-hero: linear-gradient(135deg, #fff7ed 0%, #fed7aa 50%, #fdba74 100%);
+    --gradient-hero: linear-gradient(135deg, #fef8e7 0%, #fdf3d7 50%, #fcecc4 100%);
     --gradient-section: linear-gradient(to bottom, #ffffff 0%, #f9fafb 100%);
-    --gradient-card-header: linear-gradient(135deg, rgba(249, 115, 22, 0.1) 0%, rgba(249, 115, 22, 0.05) 100%);
-    --gradient-primary: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
+    --gradient-card-header: linear-gradient(135deg, rgba(202, 137, 15, 0.1) 0%, rgba(202, 137, 15, 0.05) 100%);
+    --gradient-primary: linear-gradient(135deg, #ca890f 0%, #e09d1a 100%);
 
     /* ===== TYPOGRAPHY ===== */
     --font-weight-display: 800;
@@ -131,9 +132,9 @@
     .animate-shine {
         background: linear-gradient(
             90deg,
-            rgba(249, 115, 22, 1) 0%,
+            rgba(202, 137, 15, 1) 0%,
             rgba(255, 255, 255, 0.8) 50%,
-            rgba(249, 115, 22, 1) 100%
+            rgba(202, 137, 15, 1) 100%
         );
         background-size: 200% auto;
         background-clip: text;
@@ -177,13 +178,13 @@
 
 /* ===== HEADER & FOOTER ENHANCEMENTS ===== */
 @layer components {
-    /* Header Navigation Styling */
+    /* Header Navigation Styling - Golden Gradient */
     nav {
-        background: linear-gradient(135deg, #fb923c 0%, #fdba74 50%, #fed7aa 100%);
+        background: linear-gradient(135deg, #e09d1a 0%, #f4b942 50%, #fdd685 100%);
         padding: 0.84rem 0.84rem 1.05rem 0.84rem !important;
         margin-bottom: 2rem;
         border-radius: 0.75rem;
-        box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3), 0 2px 6px rgba(249, 115, 22, 0.2);
+        box-shadow: 0 4px 12px rgba(202, 137, 15, 0.3), 0 2px 6px rgba(202, 137, 15, 0.2);
         position: relative;
         align-items: flex-end !important;
     }
@@ -247,14 +248,14 @@
         margin-top: 0.5rem;
     }
 
-    /* Footer Styling */
+    /* Footer Styling - Golden Gradient */
     footer {
-        background: linear-gradient(to bottom, #fff7ed 0%, #ffedd5 100%);
-        border-top: 2px solid #fdba74 !important;
+        background: linear-gradient(to bottom, #fef8e7 0%, #fdf3d7 100%);
+        border-top: 2px solid #f4b942 !important;
         padding: 2rem !important;
         margin-top: 2rem;
         border-radius: 0.75rem;
-        box-shadow: 0 -4px 12px rgba(249, 115, 22, 0.1);
+        box-shadow: 0 -4px 12px rgba(202, 137, 15, 0.1);
     }
 
     /* Footer text color */
@@ -263,7 +264,7 @@
         color: #374151 !important;
     }
 
-    /* Footer links */
+    /* Footer links - Purple hover */
     footer a {
         color: #374151 !important;
         font-weight: 600;
@@ -272,7 +273,7 @@
     }
 
     footer a:hover {
-        color: #f97316 !important;
+        color: #a76aba !important;
         opacity: 1 !important;
     }
 
@@ -296,17 +297,17 @@
 
 /* ===== FIXTURES CARDS - TEAM-SPECIFIC STYLING ===== */
 @layer components {
-    /* Bengal Tigers - Very light orange gradient */
+    /* Bengal Tigers - Golden gradient (matches new brand!) */
     .fixture-card[data-team="Bengal Tigers"] {
-        background: linear-gradient(135deg, #fffbf5 0%, #fff7ed 50%, #ffedd5 100%) !important;
-        border-color: #fed7aa !important;
+        background: linear-gradient(135deg, #fffdf8 0%, #fef8e7 50%, #fdf3d7 100%) !important;
+        border-color: #f4b942 !important;
         border-width: 2px;
     }
 
     .fixture-card[data-team="Bengal Tigers"]:hover {
-        background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 50%, #fed7aa 100%) !important;
-        border-color: #fdba74 !important;
-        box-shadow: 0 8px 20px rgba(249, 115, 22, 0.15) !important;
+        background: linear-gradient(135deg, #fef8e7 0%, #fdf3d7 50%, #fcecc4 100%) !important;
+        border-color: #e09d1a !important;
+        box-shadow: 0 8px 20px rgba(202, 137, 15, 0.15) !important;
     }
 
     /* Bengal Bulls - Very light blue gradient */
@@ -322,17 +323,17 @@
         box-shadow: 0 8px 20px rgba(59, 130, 246, 0.15) !important;
     }
 
-    /* Bengal Thunder Cats - Very light purple gradient */
+    /* Bengal Thunder Cats - Purple gradient (matches new complementary color!) */
     .fixture-card[data-team="Bengal Thunder Cats"] {
-        background: linear-gradient(135deg, #fdfaff 0%, #faf5ff 50%, #f3e8ff 100%) !important;
-        border-color: #e9d5ff !important;
+        background: linear-gradient(135deg, #fdfaff 0%, #f9f5ff 50%, #f3e8ff 100%) !important;
+        border-color: #d8b4fe !important;
         border-width: 2px;
     }
 
     .fixture-card[data-team="Bengal Thunder Cats"]:hover {
-        background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 50%, #e9d5ff 100%) !important;
-        border-color: #d8b4fe !important;
-        box-shadow: 0 8px 20px rgba(147, 51, 234, 0.15) !important;
+        background: linear-gradient(135deg, #f9f5ff 0%, #f3e8ff 50%, #e9d5ff 100%) !important;
+        border-color: #c084fc !important;
+        box-shadow: 0 8px 20px rgba(167, 106, 186, 0.15) !important;
     }
 
     /* Past fixtures - maintain subtle appearance */
@@ -346,14 +347,14 @@
 
     /* Team Filter Buttons - Match fixture card colors */
     .filter-btn[data-team="Bengal Tigers"] {
-        background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%) !important;
-        border-color: #fed7aa !important;
-        color: #c2410c !important;
+        background: linear-gradient(135deg, #fef8e7 0%, #fdf3d7 100%) !important;
+        border-color: #f4b942 !important;
+        color: #92610a !important;
     }
 
     .filter-btn[data-team="Bengal Tigers"]:hover {
-        background: linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%) !important;
-        border-color: #fdba74 !important;
+        background: linear-gradient(135deg, #fdf3d7 0%, #fcecc4 100%) !important;
+        border-color: #e09d1a !important;
     }
 
     .filter-btn[data-team="Bengal Bulls"] {
@@ -368,20 +369,20 @@
     }
 
     .filter-btn[data-team="Bengal Thunder Cats"] {
-        background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%) !important;
-        border-color: #e9d5ff !important;
-        color: #6b21a8 !important;
+        background: linear-gradient(135deg, #f9f5ff 0%, #f3e8ff 100%) !important;
+        border-color: #d8b4fe !important;
+        color: #7c3a8e !important;
     }
 
     .filter-btn[data-team="Bengal Thunder Cats"]:hover {
         background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%) !important;
-        border-color: #d8b4fe !important;
+        border-color: #c084fc !important;
     }
 
     /* Active/Selected Team Filter Buttons - Darker versions */
     .filter-btn[data-team="Bengal Tigers"].active {
-        background: linear-gradient(135deg, #fdba74 0%, #fb923c 100%) !important;
-        border-color: #f97316 !important;
+        background: linear-gradient(135deg, #f4b942 0%, #e09d1a 100%) !important;
+        border-color: #ca890f !important;
         color: white !important;
     }
 
@@ -392,26 +393,26 @@
     }
 
     .filter-btn[data-team="Bengal Thunder Cats"].active {
-        background: linear-gradient(135deg, #d8b4fe 0%, #c084fc 100%) !important;
-        border-color: #a855f7 !important;
+        background: linear-gradient(135deg, #c084fc 0%, #a76aba 100%) !important;
+        border-color: #9333ea !important;
         color: white !important;
     }
 }
 
 /* ===== PAGE TITLE ENHANCEMENTS ===== */
 @layer components {
-    /* Style for main page titles (h1 at start of pages) */
+    /* Style for main page titles (h1 at start of pages) - Purple & Brown Gradient */
     main > h1:first-child,
     .page-title {
-        background: linear-gradient(135deg, #2c4a64 0%, #355c7d 50%, #3d6b8f 100%);
+        background: linear-gradient(135deg, #7c3a8e 0%, #a76aba 50%, #c08ad1 100%);
         color: white;
         padding: 2rem 2.5rem;
         margin-bottom: 2.5rem;
         border-radius: 0.75rem;
-        box-shadow: 0 4px 12px rgba(44, 74, 100, 0.3), 0 2px 6px rgba(44, 74, 100, 0.2);
+        box-shadow: 0 4px 12px rgba(124, 58, 142, 0.3), 0 2px 6px rgba(124, 58, 142, 0.2);
         position: relative;
         overflow: hidden;
-        border: 2px solid rgba(249, 115, 22, 0.2);
+        border: 2px solid rgba(202, 137, 15, 0.2);
     }
 
     /* When there's a subtitle (p) after h1, reduce h1 bottom margin and adjust subtitle */
@@ -424,15 +425,15 @@
     /* Style the subtitle paragraph that comes after h1 */
     main > h1:first-child + p,
     .page-description {
-        background: linear-gradient(135deg, #1e3a50 0%, #2c4a64 100%);
-        color: #fed7aa !important;
+        background: linear-gradient(135deg, #623412 0%, #7c3a8e 100%);
+        color: #fcecc4 !important;
         padding: 1rem 2.5rem 1.75rem 2.5rem;
         margin-top: 0 !important;
         margin-bottom: 2.5rem;
         border-radius: 0 0 0.75rem 0.75rem;
-        box-shadow: 0 4px 12px rgba(44, 74, 100, 0.3), 0 2px 6px rgba(44, 74, 100, 0.2);
+        box-shadow: 0 4px 12px rgba(98, 52, 18, 0.3), 0 2px 6px rgba(98, 52, 18, 0.2);
         position: relative;
-        border: 2px solid rgba(249, 115, 22, 0.2);
+        border: 2px solid rgba(202, 137, 15, 0.2);
         border-top: none;
     }
 
@@ -444,7 +445,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: linear-gradient(135deg, rgba(249, 115, 22, 0.12) 0%, transparent 60%);
+        background: linear-gradient(135deg, rgba(202, 137, 15, 0.12) 0%, transparent 60%);
         pointer-events: none;
     }
 
@@ -456,7 +457,7 @@
         left: 0;
         right: 0;
         height: 4px;
-        background: linear-gradient(90deg, #f97316 0%, #fb923c 50%, #f97316 100%);
+        background: linear-gradient(90deg, #ca890f 0%, #f4b942 50%, #ca890f 100%);
         opacity: 0.6;
     }
 
@@ -474,7 +475,7 @@
         left: 0;
         right: 0;
         height: 4px;
-        background: linear-gradient(90deg, #f97316 0%, #fb923c 50%, #f97316 100%);
+        background: linear-gradient(90deg, #ca890f 0%, #f4b942 50%, #ca890f 100%);
         opacity: 0.6;
     }
 
@@ -513,8 +514,8 @@
     }
 
     .btn-primary:hover {
-        background: #ea580c;
-        box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+        background: #b37b0d;
+        box-shadow: 0 4px 12px rgba(202, 137, 15, 0.3);
     }
 
     .btn-secondary {
@@ -643,7 +644,7 @@
     .form-input:focus,
     .form-select:focus {
         border-color: var(--color-primary);
-        box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+        box-shadow: 0 0 0 3px rgba(202, 137, 15, 0.1);
     }
 
     /* Alerts */

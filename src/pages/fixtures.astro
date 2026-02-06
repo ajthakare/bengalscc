@@ -178,7 +178,7 @@ const pastByMonth = pastFixtures.reduce((acc: Record<string, Fixture[]>, fixture
 
 // Get team color based on team name
 function getTeamColor(teamName: string): string {
-    if (teamName.includes('Tigers')) return 'bg-orange-100 border-orange-300 text-orange-800';
+    if (teamName.includes('Tigers')) return 'bg-amber-100 border-amber-300 text-amber-900';
     if (teamName.includes('Bulls')) return 'bg-blue-100 border-blue-300 text-blue-800';
     if (teamName.includes('Thunder')) return 'bg-purple-100 border-purple-300 text-purple-800';
     return 'bg-gray-100 border-gray-300 text-gray-800';
@@ -196,14 +196,14 @@ function getResultBadge(result: string): { text: string; color: string; icon: st
         case 'abandoned':
             return { text: 'ABANDONED', color: 'bg-gray-400 text-white', icon: '⚠️' };
         case 'forfeit':
-            return { text: 'FORFEIT', color: 'bg-orange-500 text-white', icon: '🚫' };
+            return { text: 'FORFEIT', color: 'bg-red-600 text-white', icon: '🚫' };
         default:
             return { text: 'RESULT TBD', color: 'bg-gray-300 text-gray-700', icon: '❓' };
     }
 }
 ---
 
-<Layout title="Match Fixtures - Bengals Cricket Club">
+<Layout title="Match Fixtures - Golden State Cricket Club">
     <h1 class="text-4xl sm:text-5xl font-bold mb-3">Match Fixtures</h1>
     <p class="text-xl text-gray-600 mb-8">
         {activeSeason ? (
@@ -323,7 +323,7 @@ function getResultBadge(result: string): { text: string; color: string; icon: st
                 All Teams ({fixtures.length})
             </button>
             <button
-                class="filter-btn px-4 py-2 rounded-lg font-semibold transition-all border-2 bg-orange-100 border-orange-300 text-orange-800 hover:bg-orange-200"
+                class="filter-btn px-4 py-2 rounded-lg font-semibold transition-all border-2 bg-amber-100 border-amber-300 text-amber-900 hover:bg-amber-200"
                 data-team="Bengal Tigers"
             >
                 Bengal Tigers ({fixtures.filter(f => f.ourTeam === 'Bengal Tigers').length})
@@ -373,7 +373,7 @@ function getResultBadge(result: string): { text: string; color: string; icon: st
         <div class="mb-12">
             <button
                 id="upcoming-fixtures-toggle"
-                class="flex items-center justify-between w-full bg-orange-100 hover:bg-orange-200 rounded-lg p-6 transition-all mb-6"
+                class="flex items-center justify-between w-full bg-amber-100 hover:bg-amber-200 rounded-lg p-6 transition-all mb-6"
             >
                 <div class="flex items-center gap-3">
                     <h2 class="text-4xl font-bold text-gray-900">🏏 Upcoming Fixtures</h2>

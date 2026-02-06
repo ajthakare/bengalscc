@@ -20,7 +20,7 @@ const donationTiers = [
 ];
 ---
 
-<div class="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-8 border-2 border-orange-300">
+<div class="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl p-8 border-2" style="border-color: #E5C878;">
     <div class="text-center mb-8">
         <h2 class="text-3xl font-bold text-gray-900 mb-3">{title}</h2>
         <p class="text-lg text-gray-700 max-w-2xl mx-auto">{description}</p>
@@ -29,7 +29,7 @@ const donationTiers = [
     {/* Donation Tiers */}
     <div class="grid sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         {donationTiers.map(tier => (
-            <div class="bg-white rounded-lg p-4 border-2 border-orange-200 hover:border-orange-400 hover:shadow-lg transition-all text-center">
+            <div class="bg-white rounded-lg p-4 border-2 hover:shadow-lg transition-all text-center" style="border-color: #E5C878;" onmouseover="this.style.borderColor='#D4AF37'" onmouseout="this.style.borderColor='#E5C878'">
                 <div class="text-3xl mb-2">{tier.icon}</div>
                 <div class="font-bold text-gray-900 mb-1">{tier.name}</div>
                 <div class="text-2xl font-bold text-primary mb-2">${tier.amount}</div>

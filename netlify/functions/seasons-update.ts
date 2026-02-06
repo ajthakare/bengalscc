@@ -2,6 +2,7 @@ import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
 import { validateAdminSession } from '../../src/middleware/auth';
 import type { Season } from '../../src/types/player';
+import { addAuditLog } from '../../src/utils/auditLog';
 
 /**
  * Update a season (set active, edit dates, update teams)
@@ -133,6 +134,23 @@ export const handler: Handler = async (
     if (updatedSeason.isActive) {
       await store.setJSON('active-season', updatedSeason);
     }
+
+    // Add audit log (non-blocking)
+    const changedFields = Object.keys(updates);
+    let description = `Updated season ${existingSeason.name}`;
+    if (updates.isActive === true && !existingSeason.isActive) {
+      description = `Activated season ${existingSeason.name}`;
+    } else if (changedFields.length > 0) {
+      description = `Updated season ${existingSeason.name}: ${changedFields.join(', ')}`;
+    }
+
+    addAuditLog(
+      session.username,
+      'season_update',
+      description,
+      existingSeason.name,
+      { changedFields, wasActivated: updates.isActive === true && !existingSeason.isActive }
+    ).catch(err => console.error('Audit log failed:', err));
 
     return {
       statusCode: 200,

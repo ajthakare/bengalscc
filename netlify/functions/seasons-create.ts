@@ -3,6 +3,7 @@ import { getStore } from '@netlify/blobs';
 import { validateAdminSession } from '../../src/middleware/auth';
 import type { Season, TeamDefinition } from '../../src/types/player';
 import { randomUUID } from 'crypto';
+import { addAuditLog } from '../../src/utils/auditLog';
 
 /**
  * Create a new season
@@ -136,6 +137,16 @@ export const handler: Handler = async (
 
     // Save to Blobs
     await store.setJSON('seasons-list', seasons);
+
+    // Add audit log (non-blocking)
+    const teamNames = (teams as TeamDefinition[]).map(t => t.teamName).join(', ');
+    addAuditLog(
+      session.username,
+      'season_create',
+      `Created season ${name} with ${teams.length} team(s): ${teamNames}`,
+      name,
+      { startDate: start.toISOString(), endDate: end.toISOString(), teamCount: teams.length }
+    ).catch(err => console.error('Audit log failed:', err));
 
     return {
       statusCode: 201,

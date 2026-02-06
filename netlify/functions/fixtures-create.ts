@@ -3,6 +3,7 @@ import { getStore } from '@netlify/blobs';
 import { validateAdminSession } from '../../src/middleware/auth';
 import type { Fixture, Season } from '../../src/types/player';
 import { randomUUID } from 'crypto';
+import { addAuditLog } from '../../src/utils/auditLog';
 
 /**
  * Create a single fixture
@@ -146,6 +147,15 @@ export const handler: Handler = async (
 
     // Save to Blobs
     await fixturesStore.setJSON(`fixtures-${seasonId}`, fixtures);
+
+    // Add audit log (non-blocking)
+    addAuditLog(
+      session.username,
+      'fixture_create',
+      `Created fixture ${gameNumber} for ${team} vs ${opponent}`,
+      gameNumber,
+      { seasonId, team, opponent, date, venue }
+    ).catch(err => console.error('Audit log failed:', err));
 
     return {
       statusCode: 201,

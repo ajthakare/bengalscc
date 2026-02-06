@@ -71,8 +71,11 @@ export const handler: Handler = async (
       };
     }
 
+    // Get user role (with fallback for unmigrated users)
+    const userRole = user.role || (username === 'admin' ? 'super_admin' : 'admin');
+
     // Create session token
-    const token = createSession(username);
+    const token = createSession(username, userRole);
 
     // Determine if in production
     const isProduction = process.env.NODE_ENV === 'production';

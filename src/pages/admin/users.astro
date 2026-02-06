@@ -7,6 +7,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 const cookieHeader = Astro.request.headers.get('cookie');
 let authenticated = false;
 let username = '';
+let userRole = 'admin';
 
 if (cookieHeader) {
   try {
@@ -21,6 +22,7 @@ if (cookieHeader) {
     const data = await response.json();
     authenticated = data.authenticated;
     username = data.username || '';
+    userRole = data.role || (data.username === 'admin' ? 'super_admin' : 'admin');
   } catch (error) {
     authenticated = false;
   }
@@ -30,17 +32,91 @@ if (cookieHeader) {
 if (!authenticated) {
   return Astro.redirect('/admin/login');
 }
+
+// Check if user is super admin
+const isSuperAdmin = userRole === 'super_admin';
 ---
 
-<AdminLayout title="Manage Admin Users - Bengals CC Admin" username={username} activePage="users">
+<AdminLayout title="Manage Profile - Bengals CC Admin" username={username} userRole={userRole} activePage="users">
   <div class="users-page">
     <!-- Page Header -->
     <div class="page-header">
-      <h1 class="page-title">Manage Admin Users</h1>
-      <p class="page-description">Add or remove admin users for the dashboard</p>
+      <h1 class="page-title">Manage Profile</h1>
+      <p class="page-description">{isSuperAdmin ? 'Manage your profile and admin users for the dashboard' : 'Manage your account settings'}</p>
     </div>
 
-      <!-- Add User Form -->
+      <!-- Change Password Section (for all users) -->
+      <div class="card">
+        <h2 class="card-title">Change Password</h2>
+
+        <form id="change-password-form" class="form">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="current-password" class="form-label">
+                Current Password
+              </label>
+              <input
+                type="password"
+                id="current-password"
+                name="currentPassword"
+                required
+                class="form-input"
+                placeholder="Enter current password"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="new-password-change" class="form-label">
+                New Password
+              </label>
+              <input
+                type="password"
+                id="new-password-change"
+                name="newPassword"
+                required
+                minlength="8"
+                class="form-input"
+                placeholder="Minimum 8 characters"
+              />
+              <p class="form-hint">Minimum 8 characters</p>
+            </div>
+
+            <div class="form-group">
+              <label for="confirm-password" class="form-label">
+                Confirm New Password
+              </label>
+              <input
+                type="password"
+                id="confirm-password"
+                name="confirmPassword"
+                required
+                minlength="8"
+                class="form-input"
+                placeholder="Re-enter new password"
+              />
+            </div>
+          </div>
+
+          <div id="change-password-error" class="alert alert-error" style="display: none;">
+            <span id="change-password-error-text"></span>
+          </div>
+
+          <div id="change-password-success" class="alert alert-success" style="display: none;">
+            <span id="change-password-success-text"></span>
+          </div>
+
+          <button
+            type="submit"
+            id="change-password-button"
+            class="btn-primary"
+          >
+            Update Password
+          </button>
+        </form>
+      </div>
+
+      <!-- Add User Form (Super Admin Only) -->
+      {isSuperAdmin && (
       <div class="card">
         <h2 class="card-title">Add New Admin User</h2>
 
@@ -78,6 +154,22 @@ if (!authenticated) {
               />
               <p class="form-hint">Minimum 8 characters</p>
             </div>
+
+            <div class="form-group">
+              <label for="new-user-role" class="form-label">
+                Role
+              </label>
+              <select
+                id="new-user-role"
+                name="role"
+                required
+                class="form-input"
+              >
+                <option value="admin">Admin</option>
+                <option value="super_admin">Super Admin</option>
+              </select>
+              <p class="form-hint">Admin can only change their own password. Super Admin can manage all users.</p>
+            </div>
           </div>
 
           <div id="add-user-error" class="alert alert-error" style="display: none;">
@@ -98,7 +190,7 @@ if (!authenticated) {
         </form>
       </div>
 
-      <!-- Users List -->
+      <!-- Users List (Super Admin Only) -->
       <div class="card">
         <h2 class="card-title">Current Admin Users</h2>
 
@@ -123,6 +215,7 @@ if (!authenticated) {
               <thead>
                 <tr>
                   <th>Username</th>
+                  <th>Role</th>
                   <th>Created At</th>
                   <th>Actions</th>
                 </tr>
@@ -134,32 +227,92 @@ if (!authenticated) {
           </div>
         </div>
       </div>
+      )}
   </div>
 </AdminLayout>
 
-<script define:vars={{ currentUsername: username }}>
-  // Admin user: { username: string, createdAt: string }
-  let users = [];
+<script define:vars={{ currentUsername: username, isSuperAdmin: isSuperAdmin }}>
+  console.log('Admin users script loaded', { currentUsername, isSuperAdmin });
 
-  console.log('Admin users script loaded');
+  // Change Password Form
+  const changePasswordForm = document.getElementById('change-password-form');
+  const changePasswordButton = document.getElementById('change-password-button');
+  const changePasswordError = document.getElementById('change-password-error');
+  const changePasswordErrorText = document.getElementById('change-password-error-text');
+  const changePasswordSuccess = document.getElementById('change-password-success');
+  const changePasswordSuccessText = document.getElementById('change-password-success-text');
 
-  const loadingUsers = document.getElementById('loading-users');
-  const usersError = document.getElementById('users-error');
-  const usersErrorText = document.getElementById('users-error-text');
-  const usersTableContainer = document.getElementById('users-table-container');
-  const usersTbody = document.getElementById('users-tbody');
-  const addUserForm = document.getElementById('add-user-form');
-  const addUserButton = document.getElementById('add-user-button');
-  const addUserError = document.getElementById('add-user-error');
-  const addUserErrorText = document.getElementById('add-user-error-text');
-  const addUserSuccess = document.getElementById('add-user-success');
-  const addUserSuccessText = document.getElementById('add-user-success-text');
+  // Handle change password
+  changePasswordForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
 
-  console.log('All DOM elements found:', {
-    loadingUsers: !!loadingUsers,
-    usersError: !!usersError,
-    addUserForm: !!addUserForm
+    const currentPassword = document.getElementById('current-password').value;
+    const newPassword = document.getElementById('new-password-change').value;
+    const confirmPassword = document.getElementById('confirm-password').value;
+
+    // Validate passwords match
+    if (newPassword !== confirmPassword) {
+      changePasswordError.style.display = 'block';
+      changePasswordErrorText.textContent = 'New passwords do not match';
+      changePasswordSuccess.style.display = 'none';
+      return;
+    }
+
+    changePasswordButton.disabled = true;
+    changePasswordButton.textContent = 'Updating...';
+    changePasswordError.style.display = 'none';
+    changePasswordSuccess.style.display = 'none';
+
+    try {
+      const response = await fetch('/.netlify/functions/admin-change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          username: currentUsername,
+          currentPassword,
+          newPassword
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to change password');
+      }
+
+      changePasswordSuccess.style.display = 'block';
+      changePasswordSuccessText.textContent = 'Password updated successfully!';
+      changePasswordForm.reset();
+
+      // Hide success message after 3 seconds
+      setTimeout(() => {
+        changePasswordSuccess.style.display = 'none';
+      }, 3000);
+    } catch (error) {
+      changePasswordError.style.display = 'block';
+      changePasswordErrorText.textContent = error.message;
+    } finally {
+      changePasswordButton.disabled = false;
+      changePasswordButton.textContent = 'Update Password';
+    }
   });
+
+  // User management (super admin only)
+  if (isSuperAdmin) {
+    let users = [];
+
+    const loadingUsers = document.getElementById('loading-users');
+    const usersError = document.getElementById('users-error');
+    const usersErrorText = document.getElementById('users-error-text');
+    const usersTableContainer = document.getElementById('users-table-container');
+    const usersTbody = document.getElementById('users-tbody');
+    const addUserForm = document.getElementById('add-user-form');
+    const addUserButton = document.getElementById('add-user-button');
+    const addUserError = document.getElementById('add-user-error');
+    const addUserErrorText = document.getElementById('add-user-error-text');
+    const addUserSuccess = document.getElementById('add-user-success');
+    const addUserSuccessText = document.getElementById('add-user-success-text');
 
   async function loadUsers() {
     console.log('loadUsers called');
@@ -205,11 +358,23 @@ if (!authenticated) {
       const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
       const isCurrentUser = user.username === currentUsername;
       const isOnlyUser = users.length === 1;
+      const userRole = user.role || (user.username === 'admin' ? 'super_admin' : 'admin');
 
       row.innerHTML = `
         <td class="user-username">
           ${user.username}
           ${isCurrentUser ? '<span class="user-badge">(You)</span>' : ''}
+        </td>
+        <td class="user-role">
+          <select
+            class="role-dropdown"
+            data-username="${user.username}"
+            onchange="updateUserRole('${user.username}', this.value)"
+            ${isCurrentUser && userRole === 'super_admin' ? 'disabled' : ''}
+          >
+            <option value="admin" ${userRole === 'admin' ? 'selected' : ''}>Admin</option>
+            <option value="super_admin" ${userRole === 'super_admin' ? 'selected' : ''}>Super Admin</option>
+          </select>
         </td>
         <td class="user-date">
           ${formattedDate}
@@ -257,6 +422,40 @@ if (!authenticated) {
     }
   }
 
+  async function updateUserRole(username, newRole) {
+    try {
+      const response = await fetch('/.netlify/functions/admin-users-update-role', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, role: newRole }),
+        credentials: 'same-origin'
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update role');
+      }
+
+      // Reload users to reflect changes
+      await loadUsers();
+
+      // Show success message
+      showSuccess(`Role updated successfully for user "${username}"`);
+      setTimeout(() => hideMessages(), 3000);
+    } catch (error) {
+      alert('Failed to update role: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      // Reload to reset dropdown to original value
+      await loadUsers();
+    }
+  }
+
+  // Make functions globally available
+  window.deleteUser = deleteUser;
+  window.updateUserRole = updateUserRole;
+
   function hideMessages() {
     addUserError.style.display = 'none';
     addUserSuccess.style.display = 'none';
@@ -281,6 +480,7 @@ if (!authenticated) {
     const formData = new FormData(addUserForm);
     const username = formData.get('username');
     const password = formData.get('password');
+    const role = formData.get('role');
 
     addUserButton.disabled = true;
     addUserButton.textContent = 'Adding...';
@@ -291,7 +491,7 @@ if (!authenticated) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username, password, role }),
         credentials: 'same-origin'
       });
 
@@ -312,11 +512,9 @@ if (!authenticated) {
     }
   });
 
-  // Make deleteUser globally available
-  window.deleteUser = deleteUser;
-
-  // Load users on page load
-  loadUsers();
+    // Load users on page load
+    loadUsers();
+  } // end if (isSuperAdmin)
 </script>
 
 <style is:global>
@@ -598,6 +796,30 @@ if (!authenticated) {
     font-size: 12px;
     color: var(--color-primary);
     font-weight: 500;
+  }
+
+  .user-role {
+    min-width: 150px;
+  }
+
+  .role-dropdown {
+    padding: 6px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    background-color: white;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+
+  .role-dropdown:hover:not(:disabled) {
+    border-color: var(--color-primary);
+  }
+
+  .role-dropdown:disabled {
+    background-color: #f3f4f6;
+    cursor: not-allowed;
+    opacity: 0.6;
   }
 
   .user-date {

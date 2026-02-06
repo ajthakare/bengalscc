@@ -24,6 +24,19 @@ export const handler: Handler = async (
       };
     }
 
+    // Get user role (with fallback for old sessions without role)
+    const userRole = session.role || (session.username === 'admin' ? 'super_admin' : 'admin');
+
+    // Only super admin can list all users
+    if (userRole !== 'super_admin') {
+      return {
+        statusCode: 403,
+        body: JSON.stringify({
+          error: 'Forbidden: Only super admins can view all admin users'
+        }),
+      };
+    }
+
     // Get admin users from Netlify Blobs
     const store = getStore({
       name: 'admin-users',
@@ -46,6 +59,7 @@ export const handler: Handler = async (
     // Return users without password hashes
     const safeUsers = users.map((user) => ({
       username: user.username,
+      role: user.role || (user.username === 'admin' ? 'super_admin' : 'admin'),
       createdAt: user.createdAt,
     }));
 

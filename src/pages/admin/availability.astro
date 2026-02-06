@@ -7,6 +7,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 const cookieHeader = Astro.request.headers.get('cookie');
 let authenticated = false;
 let username = '';
+let userRole = 'admin';
 
 if (cookieHeader) {
   try {
@@ -21,6 +22,7 @@ if (cookieHeader) {
     const data = await response.json();
     authenticated = data.authenticated;
     username = data.username || '';
+    userRole = data.role || (data.username === 'admin' ? 'super_admin' : 'admin');
   } catch (error) {
     authenticated = false;
   }
@@ -32,7 +34,7 @@ if (!authenticated) {
 }
 ---
 
-<AdminLayout title="Fixtures & Availability - Bengals CC Admin" username={username} activePage="availability">
+<AdminLayout title="Fixtures & Availability - Bengals CC Admin" username={username} userRole={userRole} activePage="availability">
   <div class="availability-page">
     <!-- Page Header -->
     <div class="page-header">

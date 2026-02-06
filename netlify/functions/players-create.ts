@@ -4,6 +4,7 @@ import { validateAdminSession } from '../../src/middleware/auth';
 import type { Player } from '../../src/types/player';
 import { PLAYER_ROLES } from '../../src/types/player';
 import { randomUUID } from 'crypto';
+import { addAuditLog } from '../../src/utils/auditLog';
 
 /**
  * Create a new player in the global pool
@@ -162,6 +163,15 @@ export const handler: Handler = async (
 
     // Save to Blobs
     await store.setJSON('players-all', players);
+
+    // Add audit log (non-blocking)
+    addAuditLog(
+      session.username,
+      'player_create',
+      `Added player ${firstName} ${lastName} to player pool`,
+      `${firstName} ${lastName}`,
+      { email, usacId, role, isActive }
+    ).catch(err => console.error('Audit log failed:', err));
 
     return {
       statusCode: 201,

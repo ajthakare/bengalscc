@@ -1,12 +1,6 @@
 import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
-import { hashPassword } from '../../src/middleware/auth';
-
-interface AdminUser {
-  username: string;
-  passwordHash: string;
-  createdAt: string;
-}
+import { hashPassword, AdminUser, AdminRole } from '../../src/middleware/auth';
 
 /**
  * One-time setup function to create the first admin user
@@ -63,6 +57,7 @@ export const handler: Handler = async (
       const newUser: AdminUser = {
         username: firstAdminUsername,
         passwordHash,
+        role: 'super_admin' as AdminRole,
         createdAt: new Date().toISOString(),
       };
 
@@ -83,6 +78,7 @@ export const handler: Handler = async (
     const firstAdmin: AdminUser = {
       username: firstAdminUsername,
       passwordHash,
+      role: 'super_admin' as AdminRole,
       createdAt: new Date().toISOString(),
     };
 

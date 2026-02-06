@@ -146,5 +146,24 @@ if (cookieHeader) {
 </script>
 
 <style>
-  /* Additional styles if needed */
+  /* Override hardcoded colors with theme variables */
+  input:focus {
+    --tw-ring-color: var(--color-primary) !important;
+  }
+
+  button[type="submit"] {
+    background-color: var(--color-primary) !important;
+  }
+
+  button[type="submit"]:hover {
+    background-color: color-mix(in srgb, var(--color-primary) 90%, black) !important;
+  }
+
+  button[type="submit"]:focus {
+    --tw-ring-color: var(--color-primary) !important;
+  }
+
+  a:hover {
+    color: var(--color-primary) !important;
+  }
 </style>

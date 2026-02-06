@@ -661,8 +661,8 @@ function getResultBadge(result: string): { text: string; color: string; icon: st
 
     /* Active filter button */
     .filter-btn.active {
-        background-color: #f67280;
-        border-color: #f67280;
+        background-color: var(--color-primary);
+        border-color: var(--color-primary);
         color: white;
     }
 
@@ -673,7 +673,7 @@ function getResultBadge(result: string): { text: string; color: string; icon: st
     }
 
     .filter-btn:not(.active):hover {
-        border-color: #f67280;
+        border-color: var(--color-primary);
     }
 
     /* Hide filtered cards */

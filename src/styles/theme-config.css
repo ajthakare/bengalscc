@@ -1,16 +1,18 @@
 /**
  * THEME CONFIGURATION
  *
- * Switch between themes by changing the import below:
+ * Switch between themes by changing the import below.
+ * Each theme file is a complete standalone theme (colors + design).
  *
- * - theme-basic.css  = Current design (clean, minimal, flat)
- * - theme-rich.css   = Enhanced design (depth, shadows, gradients)
+ * Available themes:
+ * - theme-bengals.css       = Bengals Cricket Club (Orange/Blue)
+ * - theme-golden-state.css  = Golden State CC (TBD - awaiting brand colors)
  *
- * Change one line to switch the entire site's theme!
+ * TO SWITCH THEMES: Change the @import line below!
  */
 
-/* Active theme - change this import to switch themes */
-@import './themes/theme-rich.css';
+/* Active theme */
+@import './themes/theme-bengals.css';
 
-/* To use the basic theme instead, replace above with: */
-/* @import './themes/theme-basic.css'; */
+/* To switch to Golden State theme (when created), change to: */
+/* @import './themes/theme-golden-state.css'; */

@@ -12,7 +12,7 @@ const { name, role, image, bio } = Astro.props;
 <div class="card text-center">
     <div class="mb-4 flex justify-center">
         {image ? (
-            <img src={image} alt={name} class="w-24 h-24 rounded-full object-cover" />
+            <img src={image} alt={name} class="w-24 h-24 rounded-full object-cover" loading="lazy" />
         ) : (
             <div class="w-24 h-24 rounded-full hero-bg flex items-center justify-center text-3xl font-bold text-primary">
                 {name.split(' ').map(n => n[0]).join('')}

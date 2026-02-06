@@ -274,6 +274,7 @@
   border-radius: 8px;
   font-size: 0.875rem;
   transition: all 0.2s;
+  min-height: 44px; /* Touch-friendly height */
 }
 
 .form-input:focus,
@@ -494,9 +495,20 @@
     max-width: 90%;
   }
 
-  /* Stack form grid */
+  /* Stack form grid earlier for better mobile spacing */
   .form-grid {
     grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  /* Table action buttons - Touch-friendly */
+  .table-actions button,
+  .table-actions a {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 }
 
@@ -520,13 +532,39 @@
     font-size: 1.5rem;
   }
 
-  /* Buttons */
+  /* Buttons - Touch-friendly sizes */
   .btn-primary,
   .btn-secondary,
   .btn-success,
   .btn-danger-outline {
-    padding: 0.625rem 1rem;
-    font-size: 0.8125rem;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.875rem;
+    min-height: 48px; /* Apple HIG & Material Design recommendation */
+  }
+
+  .btn-icon {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0.625rem;
+  }
+
+  /* Form inputs - Touch-friendly */
+  .form-input,
+  .form-select,
+  .form-textarea {
+    min-height: 52px; /* Extra buffer for mobile touch */
+    font-size: 16px; /* Prevents iOS zoom on focus */
+    padding: 0.875rem 1rem;
+  }
+
+  /* Checkboxes and radios - Larger touch targets */
+  input[type="checkbox"],
+  input[type="radio"] {
+    min-width: 24px;
+    min-height: 24px;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
   }
 
   /* Make toolbars stack */
@@ -577,16 +615,63 @@
 
   .form {
     padding: 1rem;
+    /* Add bottom padding to ensure content isn't hidden behind footer */
+    padding-bottom: 2rem;
+  }
+
+  .modal-body {
+    padding-bottom: 2rem;
   }
 
   .modal-footer {
     padding: 1rem;
+    /* Add extra padding for mobile browser bottom UI + iOS safe area */
+    padding-bottom: max(2.5rem, calc(1rem + env(safe-area-inset-bottom, 0px) + 2rem));
     flex-direction: column;
     gap: 0.75rem;
+    background: white;
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
   }
 
   .modal-footer button {
     width: 100%;
+    min-height: 52px; /* Extra touch-friendly on mobile */
+  }
+
+  /* Bulk actions toolbar - Stack on mobile */
+  .bulk-actions-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .bulk-actions-toolbar button {
+    width: 100%;
+    min-height: 48px;
+  }
+
+  /* Code blocks in modals - Better readability */
+  .modal pre,
+  .modal code {
+    font-size: 0.875rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Table containers - Scroll indicators */
+  .table-container {
+    position: relative;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Stats grid - Single column on mobile */
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
 
   /* Table horizontal scroll with shadow indicator */
@@ -677,13 +762,25 @@
     font-size: 1.25rem;
   }
 
-  /* Extra compact buttons */
+  /* Maintain touch-friendly button sizes even on small screens */
   .btn-primary,
   .btn-secondary,
   .btn-success,
   .btn-danger-outline {
-    padding: 0.5rem 0.875rem;
-    font-size: 0.75rem;
+    padding: 0.625rem 1rem;
+    font-size: 0.8125rem;
+    min-height: 48px; /* Keep minimum touch target size */
+  }
+
+  /* Sidebar - Extra width on very small phones */
+  .sidebar {
+    width: 90vw;
+    max-width: 320px;
+  }
+
+  /* Upload zone - Reduced padding */
+  .upload-zone {
+    padding: 2rem 1rem;
   }
 
   .btn-sm {
@@ -739,4 +836,29 @@
 
 .scroll-wrapper::-webkit-scrollbar-thumb:hover {
   background: #9ca3af;
+}
+
+/* Extra small devices (iPhone SE, small Android - 375px and below) */
+@media (max-width: 375px) {
+  .sidebar {
+    width: 95vw; /* Even wider sidebar for very small phones */
+  }
+
+  .modal {
+    padding: 0; /* Remove modal padding on tiny screens */
+  }
+
+  .page-title {
+    font-size: 1.125rem; /* Slightly smaller for tiny screens */
+  }
+
+  /* Stats cards - Full width on tiny screens */
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .stat-card {
+    padding: 0.875rem;
+  }
 }

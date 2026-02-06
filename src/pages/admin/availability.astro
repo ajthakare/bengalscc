@@ -651,17 +651,14 @@ if (!authenticated) {
   }
 
   .duties-dropdown {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    z-index: 1000;
+    position: fixed;
+    z-index: 1001;
     background: white;
     border: 1px solid #d1d5db;
     border-radius: 8px;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     padding: 0.75rem;
     min-width: 220px;
-    margin-top: 0.25rem;
   }
 
   .duties-dropdown-header {
@@ -741,11 +738,10 @@ if (!authenticated) {
 
     /* Duties dropdown - full width on mobile */
     .duties-dropdown {
-      position: fixed;
-      top: auto;
-      bottom: 0;
-      left: 0;
-      right: 0;
+      top: auto !important;
+      bottom: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
       width: 100%;
       max-height: 70vh;
       border-radius: 12px 12px 0 0;
@@ -1448,7 +1444,40 @@ if (!authenticated) {
     });
 
     dropdown.innerHTML = dropdownHtml;
-    cell.appendChild(dropdown);
+    document.body.appendChild(dropdown); // Append to body for fixed positioning
+
+    // Position dropdown using fixed coordinates relative to viewport
+    requestAnimationFrame(() => {
+      const cellRect = cell.getBoundingClientRect();
+      const dropdownRect = dropdown.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const viewportWidth = window.innerWidth;
+
+      // Calculate available space
+      const spaceBelow = viewportHeight - cellRect.bottom;
+      const spaceAbove = cellRect.top;
+      const spaceRight = viewportWidth - cellRect.left;
+      const dropdownHeight = dropdownRect.height;
+      const dropdownWidth = dropdownRect.width;
+
+      // Vertical positioning
+      if (spaceBelow >= dropdownHeight + 8 || spaceBelow > spaceAbove) {
+        // Position below button
+        dropdown.style.top = `${cellRect.bottom + 4}px`;
+      } else {
+        // Position above button
+        dropdown.style.top = `${cellRect.top - dropdownHeight - 4}px`;
+      }
+
+      // Horizontal positioning
+      if (spaceRight >= dropdownWidth) {
+        // Align with left edge of cell
+        dropdown.style.left = `${cellRect.left}px`;
+      } else {
+        // Align with right edge of cell
+        dropdown.style.left = `${cellRect.right - dropdownWidth}px`;
+      }
+    });
   };
 
   window.handleDutyChange = (event) => {

@@ -4,6 +4,7 @@ import { validateAdminSession } from '../../src/middleware/auth';
 import type { Player } from '../../src/types/player';
 import { PLAYER_ROLES } from '../../src/types/player';
 import { addAuditLog } from '../../src/utils/auditLog';
+import { spawn } from 'child_process';
 
 /**
  * Update player details
@@ -205,6 +206,27 @@ export const handler: Handler = async (
       playerName,
       { changedFields, updates: cleanUpdates }
     ).catch(err => console.error('Audit log failed:', err));
+
+    // Auto-sync player name in availability records if name changed (non-blocking)
+    const nameChanged =
+      (cleanUpdates.firstName && cleanUpdates.firstName !== existingPlayer.firstName) ||
+      (cleanUpdates.lastName && cleanUpdates.lastName !== existingPlayer.lastName);
+
+    if (nameChanged) {
+      console.log(`[Auto-sync] Player name changed for ${updatedPlayer.id}, syncing availability records...`);
+
+      // Spawn sync script in background (detached, non-blocking)
+      const syncProcess = spawn('node', ['sync-player-names.js', updatedPlayer.id], {
+        detached: true,
+        stdio: 'ignore',
+        cwd: process.cwd(), // Run from project root
+      });
+
+      // Detach so it continues running after this function completes
+      syncProcess.unref();
+
+      console.log(`[Auto-sync] Background sync started for player ${updatedPlayer.id}`);
+    }
 
     return {
       statusCode: 200,

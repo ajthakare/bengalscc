@@ -137,25 +137,29 @@ export const handler: Handler = async (
     // Save to Blobs
     await store.setJSON(`availability-${fixtureId}`, availability);
 
-    // Add audit log (non-blocking)
+    // Wait for audit log to complete
     const availableCount = availability.playerAvailability.filter(p => p.wasAvailable).length;
     const selectedCount = availability.playerAvailability.filter(p => p.wasSelected).length;
     const description = `Updated availability for ${availability.gameNumber} (${availability.team} vs ${availability.opponent}): ${availableCount} available, ${selectedCount} selected`;
 
-    addAuditLog(
-      session.username,
-      'availability_update',
-      description,
-      availability.gameNumber,
-      {
-        fixtureId,
-        team: availability.team,
-        opponent: availability.opponent,
-        availableCount,
-        selectedCount,
-        updatesCount: updates.length
-      }
-    ).catch(err => console.error('Audit log failed:', err));
+    try {
+      await addAuditLog(
+        session.username,
+        'availability_update',
+        description,
+        availability.gameNumber,
+        {
+          fixtureId,
+          team: availability.team,
+          opponent: availability.opponent,
+          availableCount,
+          selectedCount,
+          updatesCount: updates.length
+        }
+      );
+    } catch (err) {
+      console.error('Audit log failed:', err);
+    }
 
     return {
       statusCode: 200,

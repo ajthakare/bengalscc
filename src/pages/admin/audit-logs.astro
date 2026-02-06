@@ -39,7 +39,7 @@ if (userRole !== 'super_admin') {
 }
 ---
 
-<AdminLayout title="Audit Logs - Bengals CC Admin" username={username} userRole={userRole} activePage="logs">
+<AdminLayout title="Audit Logs - GSCC Admin" username={username} userRole={userRole} activePage="logs">
   <div class="audit-logs-page">
     <!-- Page Header -->
     <div class="page-header">
@@ -207,6 +207,10 @@ if (userRole !== 'super_admin') {
       }
 
       allLogs = await response.json();
+
+      // Sort logs in descending order (latest first)
+      allLogs.sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
       filteredLogs = [...allLogs];
 
       loadingLogs.style.display = 'none';
@@ -312,17 +316,7 @@ if (userRole !== 'super_admin') {
     margin-bottom: 32px;
   }
 
-  .page-title {
-    font-size: 32px;
-    font-weight: 700;
-    color: #111827;
-    margin-bottom: 8px;
-  }
-
-  .page-description {
-    font-size: 16px;
-    color: #6b7280;
-  }
+  /* Note: .page-title and .page-description styles are now in theme file */
 
   .card {
     background: white;
@@ -368,8 +362,8 @@ if (userRole !== 'super_admin') {
 
   .form-input:focus {
     outline: none;
-    border-color: #f67280;
-    box-shadow: 0 0 0 3px rgba(246, 114, 128, 0.1);
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 10%, transparent);
   }
 
   .form-hint {
@@ -412,7 +406,7 @@ if (userRole !== 'super_admin') {
     width: 40px;
     height: 40px;
     border: 3px solid #f3f4f6;
-    border-top-color: #f67280;
+    border-top-color: var(--color-primary);
     border-radius: 50%;
     animation: spin 0.6s linear infinite;
   }
@@ -465,6 +459,8 @@ if (userRole !== 'super_admin') {
 
   .table-container {
     overflow-x: auto;
+    overflow-y: auto;
+    max-height: 600px;
     border: 1px solid #e5e7eb;
     border-radius: 8px;
   }
@@ -477,6 +473,9 @@ if (userRole !== 'super_admin') {
   .logs-table thead {
     background: #f9fafb;
     border-bottom: 1px solid #e5e7eb;
+    position: sticky;
+    top: 0;
+    z-index: 10;
   }
 
   .logs-table th {

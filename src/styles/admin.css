@@ -1,109 +1,54 @@
-/* Admin Panel Global Styles */
+/* Admin Panel Structural Styles (Theme-agnostic) */
+/* All colors, backgrounds, and theme-specific styles are in theme files */
 
-/* Page Structure */
+/* ============================================
+   PAGE STRUCTURE
+   ============================================ */
 .page-header {
   margin-bottom: 2rem;
   padding-bottom: 1.5rem;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid transparent; /* Thickness set here, color from theme */
 }
 
 .page-title {
   font-size: 2rem;
   font-weight: 700;
-  color: var(--color-text-heading);
   margin: 0 0 0.5rem 0;
+  /* Color and background are set in theme CSS */
 }
 
 .page-description {
-  color: var(--color-text-muted);
   font-size: 0.875rem;
   margin: 0;
+  /* Color and background are set in theme CSS */
 }
 
-/* Buttons */
-.btn-primary {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  background: var(--color-primary);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-primary:hover {
-  background: #ea580c;
-  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
-}
-
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  background: white;
-  color: var(--color-text-body);
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-secondary:hover {
-  background: var(--color-bg-card);
-  border-color: var(--color-border-strong);
-}
-
+/* ============================================
+   BUTTONS - Structure Only
+   ============================================ */
+.btn-primary,
+.btn-secondary,
+.btn-success,
 .btn-danger-outline {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
-  background: white;
-  color: #dc2626;
-  border: 1px solid #dc2626;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-danger-outline:hover {
-  background: #fef2f2;
-}
-
-.btn-success {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  background: #10b981;
-  color: white;
   border: none;
   border-radius: 8px;
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  /* Colors set in theme CSS */
 }
 
-.btn-success:hover {
-  background: #059669;
+.btn-secondary,
+.btn-danger-outline {
+  border: 1px solid transparent; /* Thickness set here, color from theme */
 }
 
+.btn-primary:disabled,
 .btn-success:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -114,7 +59,9 @@
   font-size: 0.875rem;
 }
 
-/* Stats Grid */
+/* ============================================
+   STATS GRID
+   ============================================ */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -123,42 +70,39 @@
 }
 
 .stat-card {
-  background: white;
   padding: 1.5rem;
   border-radius: 12px;
-  border: 1px solid var(--color-border);
+  border: 1px solid transparent; /* Thickness set here, color from theme */
+  /* Background and border color set in theme CSS */
 }
 
 .stat-label {
   font-size: 0.875rem;
-  color: var(--color-text-muted);
   margin-bottom: 0.5rem;
+  /* Color set in theme CSS */
 }
 
 .stat-value {
   font-size: 2rem;
   font-weight: 700;
-  color: var(--color-text-heading);
+  /* Color set in theme CSS */
 }
 
-.stat-success {
-  color: #16a34a;
-}
-
-.stat-primary {
-  color: var(--color-primary);
-}
-
+/* Stat color variants - colors defined in theme */
+.stat-success,
+.stat-primary,
 .stat-muted {
-  color: var(--color-text-muted);
+  /* Colors set in theme CSS */
 }
 
-/* Tables */
+/* ============================================
+   TABLES
+   ============================================ */
 .table-container {
-  background: white;
   border-radius: 12px;
-  border: 1px solid var(--color-border);
+  border: 1px solid transparent;
   overflow: hidden;
+  /* Background and border color set in theme CSS */
 }
 
 .data-table {
@@ -167,8 +111,8 @@
 }
 
 .data-table thead {
-  background: var(--color-bg-card);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid transparent;
+  /* Background and border color set in theme CSS */
 }
 
 .data-table th {
@@ -176,80 +120,81 @@
   text-align: left;
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--color-text-heading);
+  /* Color set in theme CSS */
 }
 
 .data-table td {
   padding: 1rem;
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid transparent;
   font-size: 0.875rem;
+  /* Border color set in theme CSS */
 }
 
 .data-table tbody tr:hover {
-  background: var(--color-bg-card);
+  /* Background set in theme CSS */
 }
 
-/* Modals */
+/* ============================================
+   MODALS
+   ============================================ */
 .modal {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
   padding: 1rem;
+  /* Background overlay set in theme CSS */
 }
 
 .modal-content {
-  background: white;
   border-radius: 12px;
   max-width: 600px;
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  /* Background set in theme CSS */
 }
 
 .modal-header {
   padding: 1.5rem;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid transparent;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  /* Border color set in theme CSS */
 }
 
 .modal-title {
   font-size: 1.25rem;
   font-weight: 700;
-  color: var(--color-text-heading);
   margin: 0;
+  /* Color set in theme CSS */
 }
 
 .modal-close {
-  background: none;
   border: none;
-  color: var(--color-text-muted);
   cursor: pointer;
   padding: 0.5rem;
   border-radius: 6px;
   transition: all 0.2s;
-}
-
-.modal-close:hover {
-  background: var(--color-bg-card);
-  color: var(--color-text-heading);
+  /* Background and color set in theme CSS */
 }
 
 .modal-footer {
   padding: 1.5rem;
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid transparent;
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
+  /* Border color set in theme CSS */
 }
 
-/* Forms */
+/* ============================================
+   FORMS
+   ============================================ */
 .form {
   padding: 1.5rem;
 }
@@ -262,26 +207,26 @@
   display: block;
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--color-text-heading);
   margin-bottom: 0.5rem;
+  /* Color set in theme CSS */
 }
 
 .form-input,
 .form-select {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid var(--color-border);
+  border: 1px solid transparent;
   border-radius: 8px;
   font-size: 0.875rem;
   transition: all 0.2s;
-  min-height: 44px; /* Touch-friendly height */
+  min-height: 44px;
+  /* Border color set in theme CSS */
 }
 
 .form-input:focus,
 .form-select:focus {
   outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+  /* Border color and box-shadow set in theme CSS */
 }
 
 .form-grid {
@@ -290,7 +235,9 @@
   gap: 1rem;
 }
 
-/* Alerts */
+/* ============================================
+   ALERTS
+   ============================================ */
 .alert {
   padding: 1rem 1.5rem;
   border-radius: 8px;
@@ -298,18 +245,13 @@
   display: flex;
   align-items: flex-start;
   gap: 1rem;
+  /* Background, border, and color set in theme CSS */
 }
 
-.alert-error {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #991b1b;
-}
-
+.alert-error,
 .alert-success {
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  color: #166534;
+  border: 1px solid transparent;
+  /* Colors set in theme CSS */
 }
 
 .alert-title {
@@ -317,7 +259,9 @@
   margin-bottom: 0.25rem;
 }
 
-/* States */
+/* ============================================
+   STATE CONTAINERS
+   ============================================ */
 .state-container {
   display: flex;
   flex-direction: column;
@@ -330,24 +274,26 @@
 .state-title {
   font-size: 1.25rem;
   font-weight: 700;
-  color: var(--color-text-heading);
   margin-bottom: 0.5rem;
+  /* Color set in theme CSS */
 }
 
 .state-text {
-  color: var(--color-text-muted);
   font-size: 0.875rem;
   margin-bottom: 1.5rem;
+  /* Color set in theme CSS */
 }
 
-/* Spinner */
+/* ============================================
+   SPINNER
+   ============================================ */
 .spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid var(--color-border);
-  border-top-color: var(--color-primary);
+  border: 3px solid transparent;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
+  /* Border colors set in theme CSS */
 }
 
 @keyframes spin {
@@ -356,7 +302,9 @@
   }
 }
 
-/* Season Management Styles */
+/* ============================================
+   SEASON MANAGEMENT
+   ============================================ */
 .seasons-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
@@ -365,17 +313,12 @@
 }
 
 .season-card {
-  background: white;
   border-radius: 12px;
   padding: 1.5rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   transition: all 0.2s ease;
   border: 2px solid transparent;
-}
-
-.season-card.active {
-  border-color: #10b981 !important;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2) !important;
+  /* Background and border colors set in theme CSS */
 }
 
 .season-card:hover {
@@ -392,8 +335,8 @@
 .season-name {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #1f2937;
   margin: 0;
+  /* Color set in theme CSS */
 }
 
 .active-badge {
@@ -401,17 +344,16 @@
   align-items: center;
   gap: 0.25rem;
   padding: 0.25rem 0.75rem;
-  background: #10b981 !important;
-  color: white !important;
   border-radius: 9999px;
   font-size: 0.75rem;
   font-weight: 600;
+  /* Background and color set in theme CSS */
 }
 
 .season-dates {
-  color: #6b7280;
   font-size: 0.875rem;
   margin-bottom: 1rem;
+  /* Color set in theme CSS */
 }
 
 .season-teams {
@@ -421,8 +363,8 @@
 .teams-label {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #374151;
   margin-bottom: 0.5rem;
+  /* Color set in theme CSS */
 }
 
 .team-badges {
@@ -433,11 +375,10 @@
 
 .team-badge {
   padding: 0.25rem 0.75rem;
-  background: #f3f4f6;
-  border: 1px solid #d1d5db;
+  border: 1px solid transparent;
   border-radius: 6px;
   font-size: 0.75rem;
-  color: #374151;
+  /* Background, border, and color set in theme CSS */
 }
 
 .season-actions {
@@ -445,10 +386,13 @@
   gap: 0.5rem;
   margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid transparent;
+  /* Border color set in theme CSS */
 }
 
-/* Utility Classes */
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
 .bg-noise {
   background-image: var(--background-image-noise);
   background-size: cover;
@@ -456,7 +400,7 @@
 }
 
 .text-body {
-  color: var(--color-text-body);
+  /* Color set in theme CSS */
 }
 
 .antialiased {
@@ -470,38 +414,32 @@
 
 /* Tablet and below (1024px and below) */
 @media (max-width: 1024px) {
-  /* Make table containers horizontally scrollable */
   .table-container {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
 
   .data-table {
-    min-width: 800px; /* Ensure table doesn't compress */
+    min-width: 800px;
   }
 
-  /* Adjust stats grid for tablets */
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  /* Adjust seasons grid */
   .seasons-grid {
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   }
 
-  /* Reduce modal width */
   .modal-content {
     max-width: 90%;
   }
 
-  /* Stack form grid earlier for better mobile spacing */
   .form-grid {
     grid-template-columns: 1fr;
     gap: 1rem;
   }
 
-  /* Table action buttons - Touch-friendly */
   .table-actions button,
   .table-actions a {
     min-width: 44px;
@@ -514,7 +452,6 @@
 
 /* Mobile devices (768px and below) */
 @media (max-width: 768px) {
-  /* Page header */
   .page-title {
     font-size: 1.5rem;
   }
@@ -523,7 +460,6 @@
     font-size: 0.8125rem;
   }
 
-  /* Stats grid - stack on mobile */
   .stats-grid {
     grid-template-columns: 1fr;
   }
@@ -532,14 +468,13 @@
     font-size: 1.5rem;
   }
 
-  /* Buttons - Touch-friendly sizes */
   .btn-primary,
   .btn-secondary,
   .btn-success,
   .btn-danger-outline {
     padding: 0.75rem 1.5rem;
     font-size: 0.875rem;
-    min-height: 48px; /* Apple HIG & Material Design recommendation */
+    min-height: 48px;
   }
 
   .btn-icon {
@@ -548,16 +483,14 @@
     padding: 0.625rem;
   }
 
-  /* Form inputs - Touch-friendly */
   .form-input,
   .form-select,
   .form-textarea {
-    min-height: 52px; /* Extra buffer for mobile touch */
+    min-height: 52px;
     font-size: 16px; /* Prevents iOS zoom on focus */
     padding: 0.875rem 1rem;
   }
 
-  /* Checkboxes and radios - Larger touch targets */
   input[type="checkbox"],
   input[type="radio"] {
     min-width: 24px;
@@ -567,7 +500,6 @@
     cursor: pointer;
   }
 
-  /* Make toolbars stack */
   .toolbar {
     flex-direction: column;
     align-items: stretch;
@@ -594,7 +526,6 @@
     flex: 1;
   }
 
-  /* Modal improvements */
   .modal {
     padding: 0.5rem;
   }
@@ -615,7 +546,6 @@
 
   .form {
     padding: 1rem;
-    /* Add bottom padding to ensure content isn't hidden behind footer */
     padding-bottom: 2rem;
   }
 
@@ -625,23 +555,21 @@
 
   .modal-footer {
     padding: 1rem;
-    /* Add extra padding for mobile browser bottom UI + iOS safe area */
     padding-bottom: max(2.5rem, calc(1rem + env(safe-area-inset-bottom, 0px) + 2rem));
     flex-direction: column;
     gap: 0.75rem;
-    background: white;
     position: sticky;
     bottom: 0;
     z-index: 10;
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+    /* Background set in theme CSS */
   }
 
   .modal-footer button {
     width: 100%;
-    min-height: 52px; /* Extra touch-friendly on mobile */
+    min-height: 52px;
   }
 
-  /* Bulk actions toolbar - Stack on mobile */
   .bulk-actions-toolbar {
     flex-direction: column;
     align-items: stretch;
@@ -653,7 +581,6 @@
     min-height: 48px;
   }
 
-  /* Code blocks in modals - Better readability */
   .modal pre,
   .modal code {
     font-size: 0.875rem;
@@ -661,24 +588,15 @@
     -webkit-overflow-scrolling: touch;
   }
 
-  /* Table containers - Scroll indicators */
   .table-container {
     position: relative;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
 
-  /* Stats grid - Single column on mobile */
   .stats-grid {
     grid-template-columns: 1fr;
     gap: 1rem;
-  }
-
-  /* Table horizontal scroll with shadow indicator */
-  .table-container {
-    position: relative;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
   }
 
   .table-container::after {
@@ -703,7 +621,6 @@
     white-space: nowrap;
   }
 
-  /* Seasons grid - single column on mobile */
   .seasons-grid {
     grid-template-columns: 1fr;
   }
@@ -720,24 +637,21 @@
     width: 100%;
   }
 
-  /* Form improvements */
   .form-group {
     margin-bottom: 1.25rem;
   }
 
   .form-input,
   .form-select {
-    font-size: 16px; /* Prevents zoom on iOS */
+    font-size: 16px;
     padding: 0.75rem;
   }
 
-  /* Alert adjustments */
   .alert {
     padding: 0.875rem 1rem;
     font-size: 0.8125rem;
   }
 
-  /* Reduce spacing */
   .page-header {
     margin-bottom: 1.5rem;
     padding-bottom: 1rem;
@@ -762,23 +676,20 @@
     font-size: 1.25rem;
   }
 
-  /* Maintain touch-friendly button sizes even on small screens */
   .btn-primary,
   .btn-secondary,
   .btn-success,
   .btn-danger-outline {
     padding: 0.625rem 1rem;
     font-size: 0.8125rem;
-    min-height: 48px; /* Keep minimum touch target size */
+    min-height: 48px;
   }
 
-  /* Sidebar - Extra width on very small phones */
   .sidebar {
     width: 90vw;
     max-width: 320px;
   }
 
-  /* Upload zone - Reduced padding */
   .upload-zone {
     padding: 2rem 1rem;
   }
@@ -788,7 +699,6 @@
     font-size: 0.75rem;
   }
 
-  /* Compact table */
   .data-table {
     min-width: 600px;
   }
@@ -799,7 +709,6 @@
     font-size: 0.75rem;
   }
 
-  /* Modal full screen on small devices */
   .modal-content {
     border-radius: 0;
     max-height: 100vh;
@@ -825,34 +734,29 @@
 }
 
 .scroll-wrapper::-webkit-scrollbar-track {
-  background: #f3f4f6;
   border-radius: 4px;
+  /* Background set in theme CSS */
 }
 
 .scroll-wrapper::-webkit-scrollbar-thumb {
-  background: #d1d5db;
   border-radius: 4px;
-}
-
-.scroll-wrapper::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
+  /* Background set in theme CSS */
 }
 
 /* Extra small devices (iPhone SE, small Android - 375px and below) */
 @media (max-width: 375px) {
   .sidebar {
-    width: 95vw; /* Even wider sidebar for very small phones */
+    width: 95vw;
   }
 
   .modal {
-    padding: 0; /* Remove modal padding on tiny screens */
+    padding: 0;
   }
 
   .page-title {
-    font-size: 1.125rem; /* Slightly smaller for tiny screens */
+    font-size: 1.125rem;
   }
 
-  /* Stats cards - Full width on tiny screens */
   .stats-grid {
     grid-template-columns: 1fr;
     gap: 0.75rem;

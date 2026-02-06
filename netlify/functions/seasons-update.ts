@@ -144,13 +144,18 @@ export const handler: Handler = async (
       description = `Updated season ${existingSeason.name}: ${changedFields.join(', ')}`;
     }
 
-    addAuditLog(
-      session.username,
-      'season_update',
-      description,
-      existingSeason.name,
-      { changedFields, wasActivated: updates.isActive === true && !existingSeason.isActive }
-    ).catch(err => console.error('Audit log failed:', err));
+    // Wait for audit log to complete
+    try {
+      await addAuditLog(
+        session.username,
+        'season_update',
+        description,
+        existingSeason.name,
+        { changedFields, wasActivated: updates.isActive === true && !existingSeason.isActive }
+      );
+    } catch (err) {
+      console.error('Audit log failed:', err);
+    }
 
     return {
       statusCode: 200,

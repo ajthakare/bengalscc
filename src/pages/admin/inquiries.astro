@@ -7,6 +7,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 const cookieHeader = Astro.request.headers.get('cookie');
 let authenticated = false;
 let username = '';
+let userRole = 'admin';
 
 if (cookieHeader) {
   try {
@@ -21,6 +22,7 @@ if (cookieHeader) {
     const data = await response.json();
     authenticated = data.authenticated;
     username = data.username || '';
+    userRole = data.role || (data.username === 'admin' ? 'super_admin' : 'admin');
   } catch (error) {
     authenticated = false;
   }
@@ -32,7 +34,7 @@ if (!authenticated) {
 }
 ---
 
-<AdminLayout title="Website Inquiries - Bengals CC Admin" username={username} activePage="inquiries">
+<AdminLayout title="Website Inquiries - GSCC Admin" username={username} userRole={userRole} activePage="inquiries">
   <div class="dashboard">
     <!-- Page Header -->
     <div class="page-header">
@@ -607,7 +609,8 @@ if (!authenticated) {
 
 <style is:global>
   .dashboard {
-    max-width: 1400px;
+    max-width: 1200px;
+    margin: 0 auto;
   }
 
   /* Page Header */
@@ -615,56 +618,7 @@ if (!authenticated) {
     margin-bottom: 32px;
   }
 
-  .page-title {
-    background: linear-gradient(135deg, #2c4a64 0%, #355c7d 50%, #3d6b8f 100%);
-    color: white;
-    padding: 2rem 2.5rem;
-    margin-bottom: 0;
-    padding-bottom: 1rem;
-    border-radius: 0.75rem 0.75rem 0 0;
-    box-shadow: 0 4px 12px rgba(44, 74, 100, 0.3), 0 2px 6px rgba(44, 74, 100, 0.2);
-    position: relative;
-    overflow: hidden;
-    border: 2px solid rgba(249, 115, 22, 0.2);
-    font-size: 28px;
-    font-weight: 700;
-  }
-
-  .page-title::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg, rgba(249, 115, 22, 0.12) 0%, transparent 60%);
-    pointer-events: none;
-  }
-
-  .page-description {
-    background: linear-gradient(135deg, #1e3a50 0%, #2c4a64 100%);
-    color: #fed7aa !important;
-    padding: 1rem 2.5rem 1.75rem 2.5rem;
-    margin-top: 0 !important;
-    margin-bottom: 2.5rem;
-    border-radius: 0 0 0.75rem 0.75rem;
-    box-shadow: 0 4px 12px rgba(44, 74, 100, 0.3), 0 2px 6px rgba(44, 74, 100, 0.2);
-    position: relative;
-    border: 2px solid rgba(249, 115, 22, 0.2);
-    border-top: none;
-    font-size: 14px;
-  }
-
-  .page-description::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, #f97316 0%, #fb923c 50%, #f97316 100%);
-    opacity: 0.6;
-  }
+  /* Note: .page-title and .page-description styles are now in theme file */
 
   /* Buttons */
   .btn-primary {

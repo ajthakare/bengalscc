@@ -111,18 +111,22 @@ export const handler: Handler = async (
     // Save to Blobs
     await store.setJSON('players-all', players);
 
-    // Add audit log (non-blocking)
+    // Wait for audit log to complete
     const description = deletedCount === 1
       ? `Deleted player ${deletedPlayerNames[0]}`
       : `Deleted ${deletedCount} players: ${deletedPlayerNames.join(', ')}`;
 
-    addAuditLog(
-      session.username,
-      'player_delete',
-      description,
-      deletedCount === 1 ? deletedPlayerNames[0] : `${deletedCount} players`,
-      { playerIds, deletedCount }
-    ).catch(err => console.error('Audit log failed:', err));
+    try {
+      await addAuditLog(
+        session.username,
+        'player_delete',
+        description,
+        deletedCount === 1 ? deletedPlayerNames[0] : `${deletedCount} players`,
+        { playerIds, deletedCount }
+      );
+    } catch (err) {
+      console.error('Audit log failed:', err);
+    }
 
     return {
       statusCode: 200,

@@ -119,13 +119,18 @@ export const handler: Handler = async (
       ? `Updated fixture ${existingFixture.gameNumber}: ${changedFields.join(', ')}`
       : `Updated fixture ${existingFixture.gameNumber}`;
 
-    addAuditLog(
-      session.username,
-      'fixture_update',
-      description,
-      existingFixture.gameNumber,
-      { seasonId, changedFields, updates }
-    ).catch(err => console.error('Audit log failed:', err));
+    // Wait for audit log to complete
+    try {
+      await addAuditLog(
+        session.username,
+        'fixture_update',
+        description,
+        existingFixture.gameNumber,
+        { seasonId, changedFields, updates }
+      );
+    } catch (err) {
+      console.error('Audit log failed:', err);
+    }
 
     return {
       statusCode: 200,

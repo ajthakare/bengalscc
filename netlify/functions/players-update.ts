@@ -190,7 +190,7 @@ export const handler: Handler = async (
     // Save to Blobs
     await store.setJSON('players-all', players);
 
-    // Add audit log (non-blocking)
+    // Wait for audit log to complete
     const changedFields = Object.keys(cleanUpdates).filter(key =>
       JSON.stringify(existingPlayer[key as keyof Player]) !== JSON.stringify(cleanUpdates[key])
     );
@@ -199,13 +199,17 @@ export const handler: Handler = async (
       ? `Updated player ${playerName}: ${changedFields.join(', ')}`
       : `Updated player ${playerName}`;
 
-    addAuditLog(
-      session.username,
-      'player_update',
-      description,
-      playerName,
-      { changedFields, updates: cleanUpdates }
-    ).catch(err => console.error('Audit log failed:', err));
+    try {
+      await addAuditLog(
+        session.username,
+        'player_update',
+        description,
+        playerName,
+        { changedFields, updates: cleanUpdates }
+      );
+    } catch (err) {
+      console.error('Audit log failed:', err);
+    }
 
     // Auto-sync player name in availability records if name changed (non-blocking)
     const nameChanged =

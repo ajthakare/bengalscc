@@ -3,7 +3,7 @@ import '../styles/globals.css';
 import '../styles/admin.css';
 import '@fontsource-variable/inter/wght.css';
 import interWoff2 from '@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url';
-import logo from '../assets/logo.svg';
+import logo from '../assets/GSCC.svg';
 
 interface Props {
   title: string;
@@ -43,10 +43,10 @@ const isSuperAdmin = userRole === 'super_admin';
       <!-- Sidebar -->
       <aside id="sidebar" class="sidebar">
         <div class="sidebar-header">
-          <a href="/" class="logo-link">
-            <img src={logo.src} alt="Bengals CC" class="logo-img" />
+          <a href="/admin/availability" class="logo-link">
+            <img src={logo.src} alt="GSCC" class="logo-img" />
             <div>
-              <div class="logo-text">Bengals CC</div>
+              <div class="logo-text">GSCC</div>
               <div class="logo-subtitle">Admin Panel</div>
             </div>
           </a>
@@ -439,7 +439,7 @@ const isSuperAdmin = userRole === 'super_admin';
       .main-content {
         flex: 1;
         margin-left: 280px;
-        padding: 32px;
+        padding: 16px 32px 32px 32px;
         min-height: 100vh;
       }
 
@@ -511,7 +511,7 @@ const isSuperAdmin = userRole === 'super_admin';
 
         .main-content {
           margin-left: 0;
-          padding: 72px 16px 16px 16px; /* Add top padding for mobile menu button */
+          padding: 60px 16px 16px 16px; /* Add top padding for mobile menu button */
         }
 
         .admin-container {
@@ -532,7 +532,7 @@ const isSuperAdmin = userRole === 'super_admin';
 
       @media (max-width: 480px) {
         .main-content {
-          padding: 72px 12px 12px 12px;
+          padding: 60px 12px 12px 12px;
         }
       }
     </style>

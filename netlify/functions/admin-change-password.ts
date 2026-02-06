@@ -124,13 +124,17 @@ export const handler: Handler = async (
     // Save updated users
     await adminUsersStore.setJSON('users', updatedUsers);
 
-    // Add audit log (non-blocking)
-    addAuditLog(
-      session.username,
-      'admin_password_change',
-      `Changed password for ${username}`,
-      username
-    ).catch(err => console.error('Audit log failed:', err));
+    // Wait for audit log to complete
+    try {
+      await addAuditLog(
+        session.username,
+        'admin_password_change',
+        `Changed password for ${username}`,
+        username
+      );
+    } catch (err) {
+      console.error('Audit log failed:', err);
+    }
 
     return {
       statusCode: 200,

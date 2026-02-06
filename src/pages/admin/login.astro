@@ -25,12 +25,12 @@ if (cookieHeader) {
 }
 ---
 
-<Layout title="Admin Login - Bengals Cricket Club">
-  <div class="min-h-screen flex items-center justify-center px-4 py-12">
+<Layout title="Admin Login - Golden State Cricket Club">
+  <div class="min-h-screen flex items-start justify-center px-4 pb-6 pt-8">
     <div class="max-w-md w-full space-y-8">
       <div class="text-center">
         <h1 class="text-4xl font-bold text-[#355c7d] mb-2">Admin Login</h1>
-        <p class="text-gray-600">Bengals Cricket Club</p>
+        <p class="text-gray-600">Golden State Cricket Club</p>
       </div>
 
       <div class="bg-white rounded-lg shadow-lg p-8">
@@ -146,5 +146,24 @@ if (cookieHeader) {
 </script>
 
 <style>
-  /* Additional styles if needed */
+  /* Override hardcoded colors with theme variables */
+  input:focus {
+    --tw-ring-color: var(--color-primary) !important;
+  }
+
+  button[type="submit"] {
+    background-color: var(--color-primary) !important;
+  }
+
+  button[type="submit"]:hover {
+    background-color: color-mix(in srgb, var(--color-primary) 90%, black) !important;
+  }
+
+  button[type="submit"]:focus {
+    --tw-ring-color: var(--color-primary) !important;
+  }
+
+  a:hover {
+    color: var(--color-primary) !important;
+  }
 </style>

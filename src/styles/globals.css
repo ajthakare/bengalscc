@@ -1,47 +1,12 @@
 @import 'tailwindcss';
 @import './theme-config.css';
 
+/* NOTE: All color variables are defined in theme files (theme-config.css imports the active theme).
+   Only non-color configuration remains here. */
+
 @theme {
-    /* Typography */
+    /* Typography - applies to all themes */
     --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-
-    /* Brand Colors */
-    --color-primary: #f97316;
-    --color-primary-content: #ffffff;
-    --color-complementary: #355c7d;
-
-    /* Background Colors */
-    --color-bg-body: #ffffff;
-    --color-bg-card: #f9fafb;          /* gray-50 */
-    --color-bg-card-hover: #f3f4f6;    /* gray-100 */
-    --color-bg-section-alt: #f9fafb;   /* gray-50 for alternate sections */
-    --color-bg-hero: #fff7ed;          /* orange-50 */
-    --color-bg-hero-dark: #ffedd5;     /* orange-100 */
-    --color-bg-input: #f9fafb;         /* gray-50 */
-
-    /* Text Colors */
-    --color-text-body: #111827;        /* gray-900 */
-    --color-text-heading: #111827;     /* gray-900 */
-    --color-text-muted: #4b5563;       /* gray-600 */
-    --color-text-subtle: #6b7280;      /* gray-500 */
-    --color-text-placeholder: #9ca3af; /* gray-400 */
-
-    /* Border Colors */
-    --color-border: #e5e7eb;           /* gray-200 */
-    --color-border-strong: #d1d5db;    /* gray-300 */
-
-    /* Secondary Button Colors */
-    --color-btn-secondary: #e5e7eb;    /* gray-200 */
-    --color-btn-secondary-hover: #d1d5db; /* gray-300 */
-    --color-btn-secondary-text: #111827;  /* gray-900 */
-
-    /* Noise Background */
-    --background-image-noise: linear-gradient(
-            to bottom,
-            color-mix(in oklab, var(--color-gray-50) 0%, transparent),
-            color-mix(in oklab, var(--color-gray-50) 100%, transparent)
-        ),
-        url('/images/noise.png');
 }
 
 @layer base {

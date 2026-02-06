@@ -27,21 +27,32 @@ const currentPath = Astro.url.pathname;
 
         {/* Column 2: Title + Menu */}
         <div class="flex flex-col gap-2">
-            {/* Row 1: Title */}
+            {/* Row 1: Title + Admin Link */}
             <div class="flex items-center justify-between">
                 <div class="flex flex-col">
                     <h1 class="text-lg sm:text-4xl font-extrabold uppercase tracking-tight" style="color: #D4AF37;">{SITE_CONFIG.name}</h1>
                     <p class="text-[10px] sm:text-base" style="color: #E5C878;">{SITE_CONFIG.location}</p>
                 </div>
 
-                {/* Mobile Menu Button */}
-                <button
-                    id="mobile-menu-toggle"
-                    class="lg:hidden p-2 rounded-lg hover:bg-white/10 transition-colors"
-                    aria-label="Toggle navigation menu"
-                    aria-expanded="false"
-                    style="color: #D4AF37;"
-                >
+                <div class="flex items-center gap-2">
+                    {/* Admin Login Link (Desktop Only) */}
+                    <a href="/admin/login" target="_blank" rel="noopener noreferrer" class="hidden lg:flex items-center p-2 rounded-lg hover:bg-white/10 transition-colors admin-login-btn" style="color: #D4AF37;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+                            <polyline points="10 17 15 12 10 7"></polyline>
+                            <line x1="15" y1="12" x2="3" y2="12"></line>
+                        </svg>
+                        <span class="admin-tooltip">Admin Login</span>
+                    </a>
+
+                    {/* Mobile Menu Button */}
+                    <button
+                        id="mobile-menu-toggle"
+                        class="lg:hidden p-2 rounded-lg hover:bg-white/10 transition-colors"
+                        aria-label="Toggle navigation menu"
+                        aria-expanded="false"
+                        style="color: #D4AF37;"
+                    >
                     <svg id="menu-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
                         <line x1="3" y1="6" x2="21" y2="6"></line>
                         <line x1="3" y1="12" x2="21" y2="12"></line>
@@ -62,6 +73,7 @@ const currentPath = Astro.url.pathname;
                         <line x1="6" y1="6" x2="18" y2="18"></line>
                     </svg>
                 </button>
+                </div>
             </div>
 
             {/* Row 2: Desktop Navigation Menu */}
@@ -123,6 +135,44 @@ const currentPath = Astro.url.pathname;
         font-family: 'Libre Baskerville', serif;
         font-weight: 700;
         padding-top: 0.5rem;
+    }
+
+    /* Admin Login Tooltip */
+    .admin-login-btn {
+        position: relative;
+    }
+
+    .admin-tooltip {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        margin-top: 8px;
+        padding: 6px 12px;
+        background: rgba(0, 0, 0, 0.9);
+        color: #D4AF37;
+        font-size: 12px;
+        font-weight: 500;
+        white-space: nowrap;
+        border-radius: 6px;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.15s ease, visibility 0.15s ease;
+        pointer-events: none;
+        z-index: 1000;
+    }
+
+    .admin-tooltip::before {
+        content: '';
+        position: absolute;
+        bottom: 100%;
+        right: 12px;
+        border: 5px solid transparent;
+        border-bottom-color: rgba(0, 0, 0, 0.9);
+    }
+
+    .admin-login-btn:hover .admin-tooltip {
+        opacity: 1;
+        visibility: visible;
     }
 
     /* Desktop Navigation Links */

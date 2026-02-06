@@ -25,8 +25,10 @@ export const handler: Handler = async (
 
   try {
     // Validate session
-    const session = await validateAdminSession(event);
-    if (!session.valid) {
+    const cookieHeader = event.headers.cookie;
+    const session = validateAdminSession(cookieHeader);
+
+    if (!session) {
       return {
         statusCode: 401,
         body: JSON.stringify({ error: 'Unauthorized' }),
@@ -75,8 +77,8 @@ export const handler: Handler = async (
 
     // Get all admin users
     const allUsers =
-      (await adminUsersStore.get('admin-users-all', { type: 'json' })) as
-        | Array<{ username: string; passwordHash: string; createdAt: string }>
+      (await adminUsersStore.get('users', { type: 'json' })) as
+        | Array<{ username: string; passwordHash: string; createdAt: string; role?: string }>
         | null;
 
     if (!allUsers || allUsers.length === 0) {
@@ -120,7 +122,7 @@ export const handler: Handler = async (
     );
 
     // Save updated users
-    await adminUsersStore.setJSON('admin-users-all', updatedUsers);
+    await adminUsersStore.setJSON('users', updatedUsers);
 
     // Add audit log (non-blocking)
     addAuditLog(

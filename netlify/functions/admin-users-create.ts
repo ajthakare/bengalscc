@@ -129,14 +129,18 @@ export const handler: Handler = async (
     // Save to Netlify Blobs
     await store.set('users', JSON.stringify(existingUsers));
 
-    // Add audit log (non-blocking)
-    addAuditLog(
-      session.username,
-      'admin_user_create',
-      `Created admin user ${username} with role ${userRole}`,
-      username,
-      { role: userRole }
-    ).catch(err => console.error('Audit log failed:', err));
+    // Wait for audit log to complete
+    try {
+      await addAuditLog(
+        session.username,
+        'admin_user_create',
+        `Created admin user ${username} with role ${userRole}`,
+        username,
+        { role: userRole }
+      );
+    } catch (err) {
+      console.error('Audit log failed:', err);
+    }
 
     return {
       statusCode: 201,

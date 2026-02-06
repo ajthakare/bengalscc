@@ -164,14 +164,18 @@ export const handler: Handler = async (
     // Save to Blobs
     await store.setJSON('players-all', players);
 
-    // Add audit log (non-blocking)
-    addAuditLog(
-      session.username,
-      'player_create',
-      `Added player ${firstName} ${lastName} to player pool`,
-      `${firstName} ${lastName}`,
-      { email, usacId, role, isActive }
-    ).catch(err => console.error('Audit log failed:', err));
+    // Wait for audit log to complete
+    try {
+      await addAuditLog(
+        session.username,
+        'player_create',
+        `Added player ${firstName} ${lastName} to player pool`,
+        `${firstName} ${lastName}`,
+        { email, usacId, role, isActive }
+      );
+    } catch (err) {
+      console.error('Audit log failed:', err);
+    }
 
     return {
       statusCode: 201,

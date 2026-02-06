@@ -108,14 +108,18 @@ export const handler: Handler = async (
     // Save updated users
     await store.set('users', JSON.stringify(users));
 
-    // Add audit log (non-blocking)
-    addAuditLog(
-      session.username,
-      'admin_user_role_change',
-      `Changed ${username}'s role from ${oldRole} to ${role}`,
-      username,
-      { oldRole, newRole: role }
-    ).catch(err => console.error('Audit log failed:', err));
+    // Wait for audit log to complete
+    try {
+      await addAuditLog(
+        session.username,
+        'admin_user_role_change',
+        `Changed ${username}'s role from ${oldRole} to ${role}`,
+        username,
+        { oldRole, newRole: role }
+      );
+    } catch (err) {
+      console.error('Audit log failed:', err);
+    }
 
     return {
       statusCode: 200,

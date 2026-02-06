@@ -207,6 +207,10 @@ if (userRole !== 'super_admin') {
       }
 
       allLogs = await response.json();
+
+      // Sort logs in descending order (latest first)
+      allLogs.sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
       filteredLogs = [...allLogs];
 
       loadingLogs.style.display = 'none';
@@ -455,6 +459,8 @@ if (userRole !== 'super_admin') {
 
   .table-container {
     overflow-x: auto;
+    overflow-y: auto;
+    max-height: 600px;
     border: 1px solid #e5e7eb;
     border-radius: 8px;
   }
@@ -467,6 +473,9 @@ if (userRole !== 'super_admin') {
   .logs-table thead {
     background: #f9fafb;
     border-bottom: 1px solid #e5e7eb;
+    position: sticky;
+    top: 0;
+    z-index: 10;
   }
 
   .logs-table th {

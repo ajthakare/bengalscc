@@ -138,15 +138,19 @@ export const handler: Handler = async (
     // Save to Blobs
     await store.setJSON('seasons-list', seasons);
 
-    // Add audit log (non-blocking)
+    // Wait for audit log to complete
     const teamNames = (teams as TeamDefinition[]).map(t => t.teamName).join(', ');
-    addAuditLog(
-      session.username,
-      'season_create',
-      `Created season ${name} with ${teams.length} team(s): ${teamNames}`,
-      name,
-      { startDate: start.toISOString(), endDate: end.toISOString(), teamCount: teams.length }
-    ).catch(err => console.error('Audit log failed:', err));
+    try {
+      await addAuditLog(
+        session.username,
+        'season_create',
+        `Created season ${name} with ${teams.length} team(s): ${teamNames}`,
+        name,
+        { startDate: start.toISOString(), endDate: end.toISOString(), teamCount: teams.length }
+      );
+    } catch (err) {
+      console.error('Audit log failed:', err);
+    }
 
     return {
       statusCode: 201,

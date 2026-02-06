@@ -46,7 +46,17 @@ const currentPath = Astro.url.pathname;
                         <line x1="3" y1="12" x2="21" y2="12"></line>
                         <line x1="3" y1="18" x2="21" y2="18"></line>
                     </svg>
-                    <svg id="close-icon" class="hidden" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <svg
+                        id="close-icon"
+                        class="hidden"
+                        width="28"
+                        height="28"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                    >
                         <line x1="18" y1="6" x2="6" y2="18"></line>
                         <line x1="6" y1="6" x2="18" y2="18"></line>
                     </svg>
@@ -62,7 +72,10 @@ const currentPath = Astro.url.pathname;
                             const isActive = item.href !== '/' && (currentPath === item.href || currentPath.startsWith(item.href));
                             return (
                                 <li>
-                                    <a href={item.href} class={`inline-block px-1.5 py-1 xl:px-3 xl:py-2 text-xs xl:text-sm font-bold whitespace-nowrap ${isActive ? 'nav-active' : ''}`}>
+                                    <a
+                                        href={item.href}
+                                        class={`inline-block px-1.5 py-1 xl:px-3 xl:py-2 text-xs xl:text-sm font-bold whitespace-nowrap ${isActive ? 'nav-active' : ''}`}
+                                    >
                                         {item.linkText}
                                     </a>
                                 </li>
@@ -77,19 +90,18 @@ const currentPath = Astro.url.pathname;
     {/* Mobile Navigation Menu */}
     <div id="mobile-menu" class="mobile-menu">
         <ul class="flex flex-col gap-2 p-6">
-            {navItems.map((item) => {
-                const isActive = item.href !== '/' && (currentPath === item.href || currentPath.startsWith(item.href));
-                return (
-                    <li>
-                        <a
-                            href={item.href}
-                            class={`mobile-nav-link ${isActive ? 'mobile-nav-active' : ''}`}
-                        >
-                            {item.linkText}
-                        </a>
-                    </li>
-                );
-            })}
+            {
+                navItems.map((item) => {
+                    const isActive = item.href !== '/' && (currentPath === item.href || currentPath.startsWith(item.href));
+                    return (
+                        <li>
+                            <a href={item.href} class={`mobile-nav-link ${isActive ? 'mobile-nav-active' : ''}`}>
+                                {item.linkText}
+                            </a>
+                        </li>
+                    );
+                })
+            }
         </ul>
     </div>
 
@@ -112,13 +124,13 @@ const currentPath = Astro.url.pathname;
     }
 
     nav a:hover {
-        color: #D4AF37; /* Gold */
+        color: #d4af37; /* Gold */
     }
 
     nav .nav-active {
-        color: #D4AF37; /* Gold */
+        color: #d4af37; /* Gold */
         text-decoration: underline;
-        text-decoration-color: #D4AF37;
+        text-decoration-color: #d4af37;
         text-decoration-thickness: 2px;
         text-underline-offset: 4px;
     }
@@ -150,7 +162,9 @@ const currentPath = Astro.url.pathname;
         background: rgba(0, 0, 0, 0.5);
         opacity: 0;
         visibility: hidden;
-        transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+        transition:
+            opacity 0.3s ease-in-out,
+            visibility 0.3s ease-in-out;
         z-index: 999;
     }
 
@@ -166,19 +180,21 @@ const currentPath = Astro.url.pathname;
         font-weight: 700;
         color: white;
         border-radius: 8px;
-        transition: background 0.2s, color 0.2s;
+        transition:
+            background 0.2s,
+            color 0.2s;
     }
 
     .mobile-nav-link:hover {
         background: rgba(255, 255, 255, 0.1);
-        color: #D4AF37;
+        color: #d4af37;
     }
 
     .mobile-nav-active {
         background: rgba(212, 175, 55, 0.2);
-        color: #D4AF37;
+        color: #d4af37;
         text-decoration: underline;
-        text-decoration-color: #D4AF37;
+        text-decoration-color: #d4af37;
         text-decoration-thickness: 2px;
         text-underline-offset: 4px;
     }
@@ -219,7 +235,7 @@ const currentPath = Astro.url.pathname;
 
     // Close menu on navigation
     const mobileNavLinks = mobileMenu?.querySelectorAll('a');
-    mobileNavLinks?.forEach(link => {
+    mobileNavLinks?.forEach((link) => {
         link.addEventListener('click', () => {
             mobileMenu.classList.remove('active');
             mobileMenuOverlay.classList.remove('active');

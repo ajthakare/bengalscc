@@ -403,10 +403,10 @@
 
 /* ===== PAGE TITLE ENHANCEMENTS ===== */
 @layer components {
-    /* Style for main page titles (h1 at start of pages) - CHARCOAL with Gold Accent */
+    /* Style for main page titles (h1 at start of pages) - RED TO BLACK with Gold Accent */
     main > h1:first-child,
     .page-title {
-        background: linear-gradient(135deg, #1F2937 0%, #111827 50%, #0F172A 100%);
+        background: linear-gradient(135deg, #8C1D18 0%, #5A1410 28%, #000000 45%);
         color: white !important;
         padding: 2rem 2.5rem;
         margin-bottom: 2.5rem;

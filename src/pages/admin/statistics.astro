@@ -38,7 +38,13 @@ if (!authenticated) {
     <!-- Page Header -->
     <div class="page-header">
       <h1 class="page-title">Statistics Dashboard</h1>
-      <p class="page-description">Player availability and performance statistics</p>
+      <div class="page-subheader">
+        <p class="page-description">Player availability and performance statistics</p>
+        <div id="last-calculated" class="last-calculated" style="display: none;">
+          <span class="last-calculated-label">Last calculated:</span>
+          <span id="last-calculated-time" class="last-calculated-time">-</span>
+        </div>
+      </div>
     </div>
 
     <!-- Filters Toolbar -->
@@ -254,6 +260,30 @@ if (!authenticated) {
     margin: 0 auto;
   }
 
+  .statistics-page .page-header {
+    margin-bottom: 2rem;
+  }
+
+  .page-subheader {
+    margin-bottom: 0.5rem;
+  }
+
+  .last-calculated {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+  }
+
+  .last-calculated-label {
+    font-weight: 400;
+    margin-right: 0.25rem;
+  }
+
+  .last-calculated-time {
+    color: #374151;
+    font-weight: 600;
+  }
+
   .toolbar {
     display: flex;
     gap: 1rem;
@@ -329,14 +359,24 @@ if (!authenticated) {
 
   .team-badge {
     display: inline-flex;
-    padding: 0.25rem 0.75rem;
+    padding: 0.125rem 0.375rem;
     background: #ede9fe;
     color: #5b21b6;
-    border-radius: 6px;
-    font-size: 0.75rem;
+    border-radius: 3px;
+    font-size: 0.5rem;
     font-weight: 500;
-    margin-right: 0.5rem;
-    margin-bottom: 0.25rem;
+    margin-right: 0.25rem;
+    margin-bottom: 0.125rem;
+    line-height: 1.1;
+  }
+
+  .team-badge:last-child {
+    margin-right: 0;
+  }
+
+  .data-table td:nth-child(2) {
+    white-space: normal;
+    min-width: 100px;
   }
 
   .rate-badge {
@@ -929,6 +969,39 @@ if (!authenticated) {
     }
   }
 
+  async function updateLastCalculatedTimestamp() {
+    try {
+      // Get the first player from statisticsData
+      if (statisticsData.length === 0) return;
+
+      const firstPlayerId = statisticsData[0].playerId;
+      const response = await fetch(
+        `/.netlify/functions/statistics-player-get?playerId=${firstPlayerId}`
+      );
+
+      if (response.ok) {
+        const playerStats = await response.json();
+        if (playerStats.lastUpdated) {
+          const lastUpdatedDate = new Date(playerStats.lastUpdated);
+          const formattedDate = lastUpdatedDate.toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+          });
+
+          document.getElementById('last-calculated-time').textContent = formattedDate;
+          document.getElementById('last-calculated').style.display = 'block';
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching last calculated timestamp:', error);
+      // Silently fail - timestamp is not critical
+    }
+  }
+
   async function loadStatistics() {
     try {
       loadingState.style.display = 'flex';
@@ -952,6 +1025,9 @@ if (!authenticated) {
         renderStatistics();
         statsGrid.style.display = 'grid';
         tableContainer.style.display = 'block';
+
+        // Update last calculated timestamp
+        await updateLastCalculatedTimestamp();
       }
 
       // Load advanced statistics for season view only
@@ -996,41 +1072,44 @@ if (!authenticated) {
         selectionRate: p.stats.selectionRate,
       }));
     } else {
-      // Load all teams' stats for season
-      const response = await fetch(
-        `/.netlify/functions/statistics-season-get?seasonId=${currentSeasonId}`
-      );
+      // Load all teams' stats - show consolidated stats per player
+      // Get all active players
+      const playersResponse = await fetch('/.netlify/functions/players-list?status=active');
+      if (!playersResponse.ok) throw new Error('Failed to load players');
 
-      if (response.status === 404) {
-        statisticsData = [];
-        return;
-      }
-
-      if (!response.ok) throw new Error('Failed to load season statistics');
-
-      const seasonStats = await response.json();
-
-      // Load individual team stats
+      const players = await playersResponse.json();
       const allPlayerStats = [];
-      for (const teamSummary of seasonStats.teamSummaries) {
-        const teamResponse = await fetch(
-          `/.netlify/functions/statistics-team-get?seasonId=${currentSeasonId}&teamName=${encodeURIComponent(teamSummary.teamName)}`
-        );
 
-        if (teamResponse.ok) {
-          const teamStats = await teamResponse.json();
-          teamStats.playerStats.forEach((p) => {
-            allPlayerStats.push({
-              playerId: p.playerId,
-              playerName: p.playerName,
-              team: teamSummary.teamName,
-              totalFixtures: p.stats.totalFixtures,
-              timesAvailable: p.stats.timesAvailable,
-              gamesPlayed: p.stats.gamesPlayed,
-              availabilityRate: p.stats.availabilityRate,
-              selectionRate: p.stats.selectionRate,
-            });
-          });
+      for (const player of players) {
+        try {
+          const response = await fetch(
+            `/.netlify/functions/statistics-player-get?playerId=${player.id}`
+          );
+
+          if (response.ok) {
+            const playerStats = await response.json();
+
+            // Check if player has stats for this season
+            const seasonStat = playerStats.seasonStats[currentSeasonId];
+            if (seasonStat) {
+              // Get all teams player participated in for this season
+              const teams = Object.keys(seasonStat.teamStats);
+
+              // Use club-level stats (consolidated across all teams)
+              allPlayerStats.push({
+                playerId: player.id,
+                playerName: playerStats.playerName,
+                team: teams.join(', '), // Show all teams player participated in
+                totalFixtures: seasonStat.clubStats.totalFixtures,
+                timesAvailable: seasonStat.clubStats.timesAvailable,
+                gamesPlayed: seasonStat.clubStats.gamesPlayed,
+                availabilityRate: seasonStat.clubStats.availabilityRate,
+                selectionRate: seasonStat.clubStats.selectionRate,
+              });
+            }
+          }
+        } catch (error) {
+          console.error(`Failed to load stats for player ${player.id}:`, error);
         }
       }
 
@@ -1125,10 +1204,17 @@ if (!authenticated) {
 
     statsTbody.innerHTML = sorted
       .map(
-        (stat) => `
+        (stat) => {
+          // Handle multiple teams - split by comma and create multiple badges
+          const teams = stat.team.split(',').map(t => t.trim());
+          const teamBadges = teams.map(team =>
+            `<span class="team-badge">${escapeHtml(team)}</span>`
+          ).join(' ');
+
+          return `
       <tr>
         <td><strong>${escapeHtml(stat.playerName)}</strong></td>
-        <td><span class="team-badge">${escapeHtml(stat.team)}</span></td>
+        <td>${teamBadges}</td>
         <td style="text-align: center;">${stat.totalFixtures}</td>
         <td style="text-align: center;">${stat.timesAvailable}</td>
         <td style="text-align: center;">${stat.gamesPlayed}</td>
@@ -1143,7 +1229,8 @@ if (!authenticated) {
           </span>
         </td>
       </tr>
-    `
+    `;
+        }
       )
       .join('');
 

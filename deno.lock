@@ -14,6 +14,7 @@
         "npm:@astrojs/netlify@^6.6.0",
         "npm:@astrojs/react@^4.4.0",
         "npm:@fontsource-variable/inter@^5.2.5",
+        "npm:@fontsource/libre-baskerville@^5.2.10",
         "npm:@netlify/blobs@^10.5.0",
         "npm:@netlify/functions@^5.1.2",
         "npm:@tailwindcss/vite@^4.1.16",

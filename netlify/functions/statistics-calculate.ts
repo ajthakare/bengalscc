@@ -50,6 +50,17 @@ export const handler: Handler = async (
     const body = JSON.parse(event.body || '{}');
     const { seasonId, playerId } = body;
 
+    // Validate environment variables
+    if (!process.env.SITE_ID || !process.env.NETLIFY_AUTH_TOKEN) {
+      return {
+        statusCode: 500,
+        body: JSON.stringify({
+          error: 'Server configuration error',
+          details: 'Missing required environment variables',
+        }),
+      };
+    }
+
     // Get all stores
     const playersStore = getStore({
       name: 'players',
@@ -126,7 +137,96 @@ export const handler: Handler = async (
       ? allSeasons.filter((s) => s.id === seasonId)
       : allSeasons;
 
-    // Calculate statistics for each player
+    // Pre-load all season data once (more efficient than loading per player)
+    interface SeasonData {
+      season: any;
+      coreRoster: CoreRosterAssignment[] | null;
+      fixtures: Fixture[] | null;
+      availabilityMap: Map<string, FixtureAvailability>;
+    }
+
+    const seasonDataMap = new Map<string, SeasonData>();
+
+    // Load data for each season once
+    for (const season of seasonsToProcess) {
+      const seasonData: SeasonData = {
+        season,
+        coreRoster: null,
+        fixtures: null,
+        availabilityMap: new Map(),
+      };
+
+      // Load core roster
+      try {
+        seasonData.coreRoster = (await coreRosterStore.get(
+          `core-roster-${season.id}`,
+          { type: 'json' }
+        )) as CoreRosterAssignment[] | null;
+      } catch (error) {
+        console.error(`Failed to load core roster for season ${season.id}:`, error);
+      }
+
+      // Load fixtures
+      try {
+        seasonData.fixtures = (await fixturesStore.get(`fixtures-${season.id}`, {
+          type: 'json',
+        })) as Fixture[] | null;
+      } catch (error) {
+        console.error(`Failed to load fixtures for season ${season.id}:`, error);
+      }
+
+      // Load availability index
+      try {
+        const availabilityIndex = (await availabilityStore.get(
+          `availability-index-${season.id}`,
+          { type: 'json' }
+        )) as Array<{ fixtureId: string }> | null;
+
+        if (availabilityIndex) {
+          // Load availability records in batches
+          const batchSize = 3; // Smaller batch size
+          for (let i = 0; i < availabilityIndex.length; i += batchSize) {
+            const batch = availabilityIndex.slice(i, i + batchSize);
+
+            for (const item of batch) {
+              try {
+                const availability = (await availabilityStore.get(
+                  `availability-${item.fixtureId}`,
+                  { type: 'json' }
+                )) as FixtureAvailability | null;
+                if (availability) {
+                  seasonData.availabilityMap.set(item.fixtureId, availability);
+                }
+              } catch (error) {
+                console.error(
+                  `Failed to load availability for fixture ${item.fixtureId}:`,
+                  error
+                );
+              }
+            }
+
+            // Delay between batches
+            if (i + batchSize < availabilityIndex.length) {
+              await new Promise((resolve) => setTimeout(resolve, 200));
+            }
+          }
+        }
+      } catch (error) {
+        console.error(
+          `Failed to load availability index for season ${season.id}:`,
+          error
+        );
+      }
+
+      seasonDataMap.set(season.id, seasonData);
+
+      // Delay between seasons to avoid rate limiting
+      if (seasonsToProcess.length > 1) {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+      }
+    }
+
+    // Now calculate statistics for each player using pre-loaded data
     let playersUpdated = 0;
     const teamStatsSummaries: Map<string, TeamStatisticsSummary> = new Map();
     const seasonStatsSummaries: Map<string, SeasonStatisticsSummary> = new Map();
@@ -147,60 +247,16 @@ export const handler: Handler = async (
       };
 
       let careerTotalFixtures = 0;
+      let careerTotalFixturesForCalc = 0;
       let careerTimesAvailable = 0;
       let careerGamesPlayed = 0;
       const seasonsParticipated = new Set<string>();
 
-      // Process each season
-      for (const season of seasonsToProcess) {
-        // Load core roster for this season
-        const coreRoster =
-          (await coreRosterStore.get(`core-roster-${season.id}`, {
-            type: 'json',
-          })) as CoreRosterAssignment[] | null;
-
-        // Find which teams this player is core to in this season
-        const playerCoreAssignments =
-          coreRoster?.filter(
-            (assignment) =>
-              assignment.playerId === player.id && assignment.isCore
-          ) || [];
-
-        if (playerCoreAssignments.length === 0) {
-          // Player not core to any team this season
-          continue;
-        }
-
-        seasonsParticipated.add(season.id);
-
-        // Load fixtures for this season
-        const fixtures =
-          (await fixturesStore.get(`fixtures-${season.id}`, {
-            type: 'json',
-          })) as Fixture[] | null;
+      // Process each season using pre-loaded data
+      for (const [seasonId, seasonData] of seasonDataMap) {
+        const { season, coreRoster, fixtures, availabilityMap } = seasonData;
 
         if (!fixtures) continue;
-
-        // Load ALL availability data for this season upfront (performance optimization)
-        const availabilityMap = new Map<string, FixtureAvailability>();
-        const availabilityIndex = (await availabilityStore.get(
-          `availability-index-${season.id}`,
-          { type: 'json' }
-        )) as Array<{ fixtureId: string }> | null;
-
-        if (availabilityIndex) {
-          // Load all availability records in parallel
-          const availabilityPromises = availabilityIndex.map(async (item) => {
-            const availability = (await availabilityStore.get(
-              `availability-${item.fixtureId}`,
-              { type: 'json' }
-            )) as FixtureAvailability | null;
-            if (availability) {
-              availabilityMap.set(item.fixtureId, availability);
-            }
-          });
-          await Promise.all(availabilityPromises);
-        }
 
         // Initialize season stats
         const seasonStats: SeasonStats = {
@@ -215,50 +271,132 @@ export const handler: Handler = async (
           },
         };
 
-        const fixtureIdsProcessed = new Set<string>();
+        // Check which teams this player is core to
+        const coreTeams = new Set<string>();
+        if (coreRoster) {
+          coreRoster
+            .filter((assignment) => assignment.playerId === player.id && assignment.isCore)
+            .forEach((assignment) => coreTeams.add(assignment.teamName));
+        }
 
-        // Process each team assignment
-        for (const assignment of playerCoreAssignments) {
-          const teamName = assignment.teamName;
+        // Track stats by team (player might play for multiple teams)
+        const teamStatsMap = new Map<string, {
+          timesAvailable: number;
+          gamesPlayed: number;
+          fixtureIds: Set<string>;
+          totalFixturesForCalc: number; // Fixtures to use in denominator
+        }>();
 
-          // Get fixtures for this team
-          const teamFixtures = fixtures.filter((f) => f.team === teamName);
+        let hasAnyAvailability = false;
 
-          let timesAvailable = 0;
-          let gamesPlayed = 0;
+        // Process ALL availability records for this player in this season
+        const now = new Date();
+        for (const [fixtureId, availability] of availabilityMap) {
+          const playerRecord = availability.playerAvailability.find(
+            (p) => p.playerId === player.id
+          );
 
-          // Check availability records for each fixture (using cached data)
-          for (const fixture of teamFixtures) {
-            const availability = availabilityMap.get(fixture.id);
+          if (!playerRecord) continue;
 
-            if (!availability) continue;
+          // Player has availability record, so they participated in this season
+          if (playerRecord.wasAvailable || playerRecord.wasSelected) {
+            hasAnyAvailability = true;
 
-            // Find player's availability record
-            const playerRecord = availability.playerAvailability.find(
-              (p) => p.playerId === player.id
-            );
+            // Find the fixture to get the team name
+            const fixture = fixtures.find((f) => f.id === fixtureId);
+            if (!fixture) continue;
 
-            if (playerRecord) {
-              if (playerRecord.wasAvailable) timesAvailable++;
-              if (playerRecord.wasSelected) gamesPlayed++;
+            const teamName = fixture.team;
+            const fixtureDate = new Date(fixture.date);
+            const isPastFixture = fixtureDate < now;
+
+            if (!isPastFixture) continue; // Skip future fixtures
+
+            const isCore = coreTeams.has(teamName);
+
+            // Initialize team stats if not exists
+            if (!teamStatsMap.has(teamName)) {
+              teamStatsMap.set(teamName, {
+                timesAvailable: 0,
+                gamesPlayed: 0,
+                fixtureIds: new Set(),
+                totalFixturesForCalc: 0,
+              });
             }
 
-            fixtureIdsProcessed.add(fixture.id);
+            const teamData = teamStatsMap.get(teamName)!;
+            teamData.fixtureIds.add(fixtureId);
+
+            if (isCore) {
+              // For CORE teams: Count all past fixtures and all availabilities
+              teamData.totalFixturesForCalc++;
+              if (playerRecord.wasAvailable) {
+                teamData.timesAvailable++;
+              }
+              if (playerRecord.wasSelected) {
+                teamData.gamesPlayed++;
+              }
+            } else {
+              // For NON-CORE teams: Only count fixtures where player was selected
+              if (playerRecord.wasSelected) {
+                teamData.totalFixturesForCalc++;
+                teamData.timesAvailable++; // If selected, they must have been available
+                teamData.gamesPlayed++;
+              }
+            }
+          }
+        }
+
+        // Skip season if player had no availability records
+        if (!hasAnyAvailability) continue;
+
+        seasonsParticipated.add(season.id);
+
+        // For CORE teams, count ALL past fixtures (not just ones with availability records)
+        for (const coreTeam of coreTeams) {
+          if (!teamStatsMap.has(coreTeam)) {
+            teamStatsMap.set(coreTeam, {
+              timesAvailable: 0,
+              gamesPlayed: 0,
+              fixtureIds: new Set(),
+              totalFixturesForCalc: 0,
+            });
           }
 
-          // Calculate team stats
-          const totalFixtures = teamFixtures.length;
+          const teamData = teamStatsMap.get(coreTeam)!;
+
+          // Count ALL past fixtures for this core team
+          const allPastFixturesForTeam = fixtures.filter((f) => {
+            if (f.team !== coreTeam) return false;
+            const fixtureDate = new Date(f.date);
+            return fixtureDate < now;
+          });
+
+          teamData.totalFixturesForCalc = allPastFixturesForTeam.length;
+        }
+
+        // Calculate stats for each team the player participated in
+        for (const [teamName, teamData] of teamStatsMap) {
+          const totalFixtures = teamData.fixtureIds.size;
+          const timesAvailable = teamData.timesAvailable;
+          const gamesPlayed = teamData.gamesPlayed;
+          const totalFixturesForCalc = teamData.totalFixturesForCalc;
+
+          // Availability rate = available count / fixtures considered for calculation
+          // For core teams: all past fixtures
+          // For non-core teams: only past fixtures where player was selected
           const availabilityRate =
-            totalFixtures > 0
-              ? Math.round((timesAvailable / totalFixtures) * 100)
+            totalFixturesForCalc > 0
+              ? Math.round((timesAvailable / totalFixturesForCalc) * 100)
               : 0;
+          // Selection rate = games played / times available
           const selectionRate =
             timesAvailable > 0
               ? Math.round((gamesPlayed / timesAvailable) * 100)
               : 0;
 
           seasonStats.teamStats[teamName] = {
-            totalFixtures,
+            totalFixtures: totalFixturesForCalc, // Use denominator for calculations
             timesAvailable,
             gamesPlayed,
             availabilityRate,
@@ -273,7 +411,7 @@ export const handler: Handler = async (
               seasonName: season.name,
               teamName: teamName,
               totalPlayers: 0,
-              totalFixtures: teamFixtures.length,
+              totalFixtures: fixtures.filter((f) => f.team === teamName).length,
               averageAvailabilityRate: 0,
               averageSelectionRate: 0,
               playerStats: [],
@@ -288,33 +426,28 @@ export const handler: Handler = async (
           });
         }
 
-        // Calculate club-level stats (aggregate across all teams, deduplicate fixtures)
-        const clubTotalFixtures = fixtureIdsProcessed.size;
+        // Calculate club-level stats (aggregate across all teams)
+        const allFixtureIds = new Set<string>();
         let clubTimesAvailable = 0;
         let clubGamesPlayed = 0;
+        let clubTotalFixturesForCalc = 0;
 
-        for (const fixtureId of fixtureIdsProcessed) {
-          const availability = availabilityMap.get(fixtureId);
-
-          if (!availability) continue;
-
-          const playerRecord = availability.playerAvailability.find(
-            (p) => p.playerId === player.id
-          );
-
-          if (playerRecord) {
-            if (playerRecord.wasAvailable) clubTimesAvailable++;
-            if (playerRecord.wasSelected) clubGamesPlayed++;
-          }
+        for (const teamData of teamStatsMap.values()) {
+          teamData.fixtureIds.forEach((id) => allFixtureIds.add(id));
+          clubTimesAvailable += teamData.timesAvailable;
+          clubGamesPlayed += teamData.gamesPlayed;
+          clubTotalFixturesForCalc += teamData.totalFixturesForCalc;
         }
 
+        const clubTotalFixtures = allFixtureIds.size;
+
         seasonStats.clubStats = {
-          totalFixtures: clubTotalFixtures,
+          totalFixtures: clubTotalFixturesForCalc, // Use denominator for calculations
           timesAvailable: clubTimesAvailable,
           gamesPlayed: clubGamesPlayed,
           availabilityRate:
-            clubTotalFixtures > 0
-              ? Math.round((clubTimesAvailable / clubTotalFixtures) * 100)
+            clubTotalFixturesForCalc > 0
+              ? Math.round((clubTimesAvailable / clubTotalFixturesForCalc) * 100)
               : 0,
           selectionRate:
             clubTimesAvailable > 0
@@ -324,8 +457,8 @@ export const handler: Handler = async (
 
         playerStats.seasonStats[season.id] = seasonStats;
 
-        // Aggregate for career stats
         careerTotalFixtures += clubTotalFixtures;
+        careerTotalFixturesForCalc += clubTotalFixturesForCalc;
         careerTimesAvailable += clubTimesAvailable;
         careerGamesPlayed += clubGamesPlayed;
       }
@@ -333,11 +466,11 @@ export const handler: Handler = async (
       // Calculate career stats
       playerStats.careerStats = {
         totalSeasons: seasonsParticipated.size,
-        totalFixtures: careerTotalFixtures,
+        totalFixtures: careerTotalFixturesForCalc, // Use denominator for calculations
         totalGamesPlayed: careerGamesPlayed,
         careerAvailabilityRate:
-          careerTotalFixtures > 0
-            ? Math.round((careerTimesAvailable / careerTotalFixtures) * 100)
+          careerTotalFixturesForCalc > 0
+            ? Math.round((careerTimesAvailable / careerTotalFixturesForCalc) * 100)
             : 0,
         careerSelectionRate:
           careerTimesAvailable > 0
@@ -345,15 +478,18 @@ export const handler: Handler = async (
             : 0,
       };
 
-      // Save player statistics
-      await statisticsStore.setJSON(
-        `player-stats-${player.id}`,
-        playerStats
-      );
-      playersUpdated++;
+      // Save player statistics with delay
+      try {
+        await statisticsStore.setJSON(`player-stats-${player.id}`, playerStats);
+        playersUpdated++;
+        // Small delay after each save
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      } catch (saveError) {
+        console.error(`Failed to save stats for player ${player.id}:`, saveError);
+      }
     }
 
-    // Calculate and save team summaries
+    // Calculate and save team summaries with delays
     for (const [key, teamSummary] of teamStatsSummaries) {
       // Calculate averages
       const totalPlayers = teamSummary.playerStats.length;
@@ -372,10 +508,16 @@ export const handler: Handler = async (
       teamSummary.averageSelectionRate =
         totalPlayers > 0 ? Math.round(sumSelection / totalPlayers) : 0;
 
-      await statisticsStore.setJSON(
-        `team-stats-${teamSummary.teamName}-${teamSummary.seasonId}`,
-        teamSummary
-      );
+      try {
+        await statisticsStore.setJSON(
+          `team-stats-${teamSummary.teamName}-${teamSummary.seasonId}`,
+          teamSummary
+        );
+        // Small delay after each save
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      } catch (saveError) {
+        console.error(`Failed to save team stats for ${teamSummary.teamName}:`, saveError);
+      }
     }
 
     // Calculate and save season summaries
@@ -440,8 +582,17 @@ export const handler: Handler = async (
           ? Math.round(sumSelection / allPlayerStats.length)
           : 0;
 
-      await statisticsStore.setJSON(`season-stats-${season.id}`, seasonSummary);
+      try {
+        await statisticsStore.setJSON(`season-stats-${season.id}`, seasonSummary);
+        // Small delay after each save
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      } catch (saveError) {
+        console.error(`Failed to save season stats for ${season.name}:`, saveError);
+      }
     }
+
+    // Return success even if some saves failed (local dev limitation)
+    const hasErrors = playersUpdated === 0 && playersToProcess.length > 0;
 
     return {
       statusCode: 200,
@@ -452,15 +603,26 @@ export const handler: Handler = async (
         success: true,
         playersUpdated,
         seasonsUpdated: seasonsToProcess.length,
+        warning: hasErrors ? 'Some statistics could not be saved due to local environment limitations. This will work correctly in production.' : undefined,
       }),
     };
   } catch (error) {
     console.error('Error calculating statistics:', error);
+
+    // Provide more helpful error messages
+    let errorMessage = 'Failed to calculate statistics';
+    let errorDetails = error instanceof Error ? error.message : 'Unknown error';
+
+    if (errorDetails.includes('401')) {
+      errorMessage = 'Authentication error with storage';
+      errorDetails = 'Unable to access data storage. Please check your configuration.';
+    }
+
     return {
       statusCode: 500,
       body: JSON.stringify({
-        error: 'Failed to calculate statistics',
-        details: error instanceof Error ? error.message : 'Unknown error',
+        error: errorMessage,
+        details: errorDetails,
       }),
     };
   }

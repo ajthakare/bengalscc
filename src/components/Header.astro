@@ -29,9 +29,9 @@ const currentPath = Astro.url.pathname;
         <div class="flex flex-col gap-2">
             {/* Row 1: Title + Admin Link */}
             <div class="flex items-center justify-between">
-                <div class="flex flex-col">
-                    <h1 class="text-lg sm:text-4xl font-extrabold uppercase tracking-tight" style="color: #D4AF37;">{SITE_CONFIG.name}</h1>
-                    <p class="text-[10px] sm:text-base" style="color: #E5C878;">{SITE_CONFIG.location}</p>
+                <div class="flex flex-col gap-0">
+                    <h1 class="text-lg sm:text-4xl font-extrabold uppercase tracking-tight leading-tight mb-0" style="color: #D4AF37;">{SITE_CONFIG.name}</h1>
+                    <p class="text-[10px] sm:text-base leading-tight" style="color: #E5C878;">{SITE_CONFIG.location}</p>
                 </div>
 
                 <div class="flex items-center gap-2">

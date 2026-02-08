@@ -8,9 +8,11 @@ import NonProfitBadge from '../components/NonProfitBadge.astro';
 import { SITE_CONFIG } from '../config';
 
 const ourStory = `
-Golden State Cricket Club was founded in 2018 with the vision of inspiring the next generation of cricketers in Northern California. Our members come from diverse ethnicities, professions, and age groups, united by a love for the game and a commitment to excellence.
+Golden State Cricket Club (GSCC) was founded in 2018 as Bengals Cricket Club with the vision of inspiring the next generation of cricketers in Northern California. In 2024, we officially became part of **Bengals Inc.**, a registered 501(c)(3) non-profit organization dedicated to fostering community connection through the power of sport.
 
-We currently compete in NCCA T20 leagues, recognized by USA Cricket and affiliated with the International Cricket Council (ICC).
+Our 160+ members come from diverse ethnicities, professions, and age groups, united by a love for the game and a commitment to excellence. We compete in leagues organized by the Bay Area Cricket Alliance (BACA) and Northern California Cricket Association (NCCA), sanctioned by USA Cricket and affiliated with the International Cricket Council (ICC).
+
+The evolution from Bengals Cricket Club to Golden State Cricket Club in 2026 reflects our broader vision: to unite diverse communities under one banner and use sport as a force for connection, growth, and positive social impact.
 `;
 
 const clubValues = [
@@ -33,31 +35,28 @@ const clubValues = [
 ];
 
 const executiveCommittee = [
-    { name: 'Prince Ahmed', role: 'President' },
-    { name: 'Anirban Paul', role: 'Vice President' },
-    { name: 'Devashish Ravindranath', role: 'General Secretary' },
-    { name: 'Shraddhan Sahula', role: 'Logistics Officer' },
-    { name: 'Sharan CK', role: 'Treasurer' }
+    { name: 'Abhimanyu Karthik', role: 'President' },
+    { name: 'Dev Ravindranath', role: 'General Secretary' },
+    { name: 'Sharan CK', role: 'Treasurer' },
+    { name: 'Likith Gowda', role: 'Membership Officer' }
 ];
 
 const boardMembers = [
-    { name: 'Ob Rashid', role: 'Board Member' },
-    { name: 'Razab Chowdhury', role: 'Board Member' },
-    { name: 'Raiyan Mainuddin', role: 'Board Member' }
+    { name: 'Raiyan M', role: 'Board Member' }
 ];
 ---
 
 <Layout title="About Us - Golden State Cricket Club">
-    <h1 class="text-4xl sm:text-5xl font-bold mb-8">About Us</h1>
+    <h1 class="page-title">About Us</h1>
 
     <Section title="Our Story">
-        <Markdown content={ourStory} class="text-lg text-muted max-w-3xl mx-auto" />
+        <Markdown content={ourStory} class="text-body-lg max-w-3xl mx-auto text-justified" />
     </Section>
 
     <Section variant="alternate">
-        <div class="accent-box text-center max-w-3xl mx-auto">
-            <h2 class="text-2xl sm:text-3xl font-bold mb-4 text-heading">Our Vision</h2>
-            <p class="text-lg text-body">
+        <div class="accent-box section-centered">
+            <h2 class="section-heading">Our Vision</h2>
+            <p class="text-body-lg">
                 To build a competitive yet inclusive cricketing ecosystem that promotes talent, teamwork, and community engagement across the Bay Area.
             </p>
         </div>
@@ -73,8 +72,8 @@ const boardMembers = [
 
     <Section title="Leadership & Management" variant="alternate">
         <div class="mb-12">
-            <h3 class="text-2xl font-bold mb-6 text-center">Executive Committee</h3>
-            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <h3 class="subsection-heading text-center">Executive Committee</h3>
+            <div class="member-grid-3 mx-auto">
                 {executiveCommittee.map(member => (
                     <MemberCard name={member.name} role={member.role} />
                 ))}
@@ -82,8 +81,8 @@ const boardMembers = [
         </div>
 
         <div>
-            <h3 class="text-2xl font-bold mb-6 text-center">Non-Profit Board Members</h3>
-            <div class="grid sm:grid-cols-3 gap-6 max-w-3xl mx-auto">
+            <h3 class="subsection-heading text-center">Non-Profit Board Members</h3>
+            <div class="member-grid mx-auto">
                 {boardMembers.map(member => (
                     <MemberCard name={member.name} role={member.role} />
                 ))}
@@ -94,21 +93,21 @@ const boardMembers = [
     <Section title="Our Non-Profit Foundation">
         <div class="max-w-4xl mx-auto">
             <div class="text-center mb-8">
-                <NonProfitBadge size="lg" showEIN={true} />
+                <NonProfitBadge size="lg" showEIN={false} />
             </div>
 
             <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-8 border-2 border-blue-200 mb-8">
-                <h3 class="text-2xl font-bold text-gray-900 mb-4 text-center">
+                <h3 class="subsection-heading text-center">
                     {SITE_CONFIG.nonProfit.name}
                 </h3>
-                <p class="text-lg text-gray-700 text-center max-w-3xl mx-auto mb-6">
+                <p class="text-body-lg text-center max-w-3xl mx-auto mb-6">
                     {SITE_CONFIG.nonProfit.mission}
                 </p>
-                <p class="text-gray-700 text-center">
-                    Through our foundation, we provide youth training programs, equipment donations,
-                    and scholarships to ensure cricket remains accessible to players from all backgrounds.
-                    Our mission extends beyond competitive cricket to fostering community engagement and
-                    cultural diversity through the sport.
+                <p class="text-body-base text-center text-justified max-w-3xl mx-auto">
+                    Golden State Cricket Club (GSCC) is proud to be part of Bengals Inc., fostering community connection through sport.
+                    Through our non-profit, we provide youth training programs, inclusive membership opportunities,
+                    and pathways for competitive cricket development. Our mission extends beyond the game to building
+                    strong community bonds and creating opportunities for all to participate in cricket.
                 </p>
             </div>
 
@@ -125,8 +124,8 @@ const boardMembers = [
 
             {/* CTA to Non-Profit Page */}
             <div class="text-center bg-amber-50 border-2 rounded-xl p-8" style="border-color: #E5C878;">
-                <h3 class="text-2xl font-bold mb-4 text-gray-900">Support Our Community Programs</h3>
-                <p class="text-gray-700 mb-6 max-w-2xl mx-auto">
+                <h3 class="subsection-heading">Support Our Community Programs</h3>
+                <p class="text-body-base mb-6 max-w-2xl mx-auto">
                     Learn more about our foundation's programs, see our impact in the community,
                     and discover how you can make a tax-deductible donation to support cricket in Northern California.
                 </p>

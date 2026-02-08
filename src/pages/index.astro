@@ -4,6 +4,8 @@ import HeroSection from '../components/HeroSection.astro';
 import StatsGrid from '../components/StatsGrid.astro';
 import Section from '../components/Section.astro';
 import Card from '../components/Card.astro';
+import { readdir } from 'node:fs/promises';
+import { join } from 'node:path';
 
 const highlights = [
     { label: 'Founded', value: '2018' },
@@ -20,6 +22,25 @@ const achievements = [
     { year: '2022', title: 'Quarter Finalists (T20)', icon: '🎖️' },
     { year: '2021', title: 'Winter Semi-Finalists (T25 BACA League)', icon: '⭐' }
 ];
+
+// Read images from public/media folder for carousel
+let carouselImages: { src: string; alt: string }[] = [];
+try {
+    const mediaDir = join(process.cwd(), 'public', 'media');
+    const files = await readdir(mediaDir);
+
+    carouselImages = files
+        .filter(file => /\.(jpg|jpeg|png|JPG|JPEG|PNG)$/i.test(file))
+        .filter(file => file !== '.DS_Store')
+        .sort()
+        .slice(0, 8)
+        .map(file => ({
+            src: `/media/${file}`,
+            alt: file.replace(/\.(jpg|jpeg|png|JPG|JPEG|PNG)$/i, '')
+        }));
+} catch (error) {
+    console.error('Error loading carousel images:', error);
+}
 ---
 
 <Layout title="Golden State Cricket Club - Bay Area, California">
@@ -79,17 +100,45 @@ const achievements = [
     </Section>
 
     <Section title="Media Gallery">
-        <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
-            {[1, 2, 3, 4, 5, 6].map(i => (
-                <div class="aspect-video bg-gray-100 border border-gray-200 rounded-lg overflow-hidden hover:opacity-80 transition-opacity">
-                    <div class="w-full h-full flex items-center justify-center text-gray-400">
-                        Photo {i}
+        <div class="relative mb-8">
+            {/* Horizontal scrolling container */}
+            <div class="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide" style="scroll-behavior: smooth;">
+                {carouselImages.map((image) => (
+                    <div
+                        class="flex-shrink-0 snap-center border-2 border-gray-200 rounded-lg overflow-hidden hover:border-primary hover:shadow-lg transition-all cursor-pointer"
+                        style="width: 200px; height: 200px;"
+                    >
+                        <img
+                            src={image.src}
+                            alt={image.alt}
+                            width="200"
+                            height="200"
+                            style="width: 100%; height: 100%; object-fit: cover; display: block;"
+                        />
                     </div>
-                </div>
-            ))}
+                ))}
+            </div>
+
+            {/* Scroll hint on mobile */}
+            <div class="text-center text-sm text-gray-500 mb-4 sm:hidden">
+                ← Swipe to see more →
+            </div>
         </div>
+
         <div class="text-center">
-            <a href="/gallery" class="btn">View Full Gallery</a>
+            <a href="/gallery" class="btn btn-lg">View Full Gallery</a>
         </div>
     </Section>
 </Layout>
+
+<style>
+    /* Hide scrollbar for horizontal scroll */
+    .scrollbar-hide {
+        -ms-overflow-style: none;  /* IE and Edge */
+        scrollbar-width: none;  /* Firefox */
+    }
+
+    .scrollbar-hide::-webkit-scrollbar {
+        display: none;  /* Chrome, Safari and Opera */
+    }
+</style>

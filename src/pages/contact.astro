@@ -5,12 +5,13 @@ import SocialMediaLinks from '../components/SocialMediaLinks.astro';
 import { SITE_CONFIG } from '../config';
 ---
 
-<Layout title="Contact Us - Golden State Cricket Club">
-    <h1 class="text-4xl sm:text-5xl font-bold mb-8">Contact Us</h1>
+<Layout title="Contact Us - Bengals Inc. / Golden State Cricket Club">
+    <h1 class="page-title heading-margin-sm">Contact Us</h1>
+    <p class="text-intro mb-8">Get in touch with Bengals Inc. / Golden State Cricket Club</p>
 
     <div class="grid md:grid-cols-2 gap-8 sm:gap-12">
         <Section>
-            <h2 class="text-2xl sm:text-3xl font-bold mb-6">Send Us a Message</h2>
+            <h2 class="section-heading">Send Us a Message</h2>
 
             {/* Success message */}
             <div id="success-message" class="hidden mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
@@ -89,7 +90,7 @@ import { SITE_CONFIG } from '../config';
 
         <div class="space-y-8">
             <Section>
-                <h2 class="text-2xl sm:text-3xl font-bold mb-6">Contact Information</h2>
+                <h2 class="section-heading">Contact Information</h2>
                 <div class="space-y-4">
                     <a
                         href={`mailto:${SITE_CONFIG.email}`}
@@ -99,17 +100,6 @@ import { SITE_CONFIG } from '../config';
                         <div>
                             <div class="font-semibold text-gray-900">Email</div>
                             <div class="text-sm text-gray-600">{SITE_CONFIG.email}</div>
-                        </div>
-                    </a>
-
-                    <a
-                        href={`tel:${SITE_CONFIG.phone}`}
-                        class="flex items-center gap-3 p-4 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 hover:border-primary transition-colors"
-                    >
-                        <span class="text-2xl">📞</span>
-                        <div>
-                            <div class="font-semibold text-gray-900">Phone</div>
-                            <div class="text-sm text-gray-600">{SITE_CONFIG.phone}</div>
                         </div>
                     </a>
 

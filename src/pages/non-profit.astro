@@ -8,56 +8,46 @@ import ZeffyDonation from '../components/ZeffyDonation.astro';
 import { SITE_CONFIG } from '../config';
 
 const boardMembers = [
-    { name: 'Ob Rashid', role: 'Board Chair' },
-    { name: 'Razab Chowdhury', role: 'Board Vice Chair' },
-    { name: 'Raiyan Mainuddin', role: 'Board Secretary' },
-    { name: 'Prince Ahmed', role: 'Board Member' },
-    { name: 'Anirban Paul', role: 'Board Member' }
+    { name: 'Raiyan M', role: 'Board Member' }
 ];
 
 const programs = [
     {
-        title: 'Youth Cricket Academy',
-        content: 'Free cricket training for ages 8-18, teaching fundamental skills, sportsmanship, and teamwork. Sessions held every weekend at local cricket grounds.',
+        title: 'Competitive Cricket Teams',
+        content: 'Three competitive teams (Bengal Tigers, Bengal Bulls, Bengal Thunder Cats) competing in NCCA and BACA leagues since 2018, representing Northern California.',
         icon: '🏏'
     },
     {
-        title: 'Equipment Donation Program',
-        content: 'Providing cricket gear to underprivileged players who cannot afford equipment. Ensuring financial barriers don\'t prevent participation.',
-        icon: '🎁'
-    },
-    {
-        title: 'Community Cricket Clinics',
-        content: 'Free clinics and workshops open to the community, introducing cricket to new players and promoting the sport across Northern California.',
-        icon: '🤝'
-    },
-    {
-        title: 'Scholarship Fund',
-        content: 'Financial assistance for talented young players to participate in advanced training, tournaments, and cricket development programs.',
+        title: 'Youth Cricket Development',
+        content: 'Youth academy welcoming players ages 8-18, with free membership for students and youth. Focus on reaching underrepresented communities.',
         icon: '🎓'
     },
     {
-        title: 'Women\'s Cricket Initiative',
-        content: 'Dedicated programs to grow women\'s cricket, providing coaching, equipment, and opportunities for female players of all skill levels.',
-        icon: '👥'
+        title: 'Player Pathway Program',
+        content: 'Supporting members\' participation in USA Masters League and USA Minor League, creating pathways for competitive cricket development.',
+        icon: '⭐'
     },
     {
-        title: 'School Partnerships',
-        content: 'Collaborating with local schools to introduce cricket as an after-school activity, building the next generation of cricket enthusiasts.',
-        icon: '🏫'
+        title: 'Community Engagement',
+        content: 'Building a diverse cricket community with 160+ members from 8 counties across the Bay Area, fostering inclusivity and sportsmanship.',
+        icon: '🤝'
+    },
+    {
+        title: 'Inclusive Membership',
+        content: 'Free membership for youth (under 18) and full-time students, ensuring financial barriers don\'t prevent participation in cricket.',
+        icon: '🎟️'
+    },
+    {
+        title: 'Northern California Cricket Association',
+        content: 'Active participation in NCCA leagues (established 1892) with 2200+ members, 54+ clubs, promoting cricket across Northern California.',
+        icon: '🏟️'
     }
 ];
 
-const financialBreakdown = [
-    { category: 'Youth Programs', percentage: 40, color: 'bg-blue-500' },
-    { category: 'Equipment & Facilities', percentage: 30, color: 'bg-green-500' },
-    { category: 'Scholarships', percentage: 20, color: 'bg-purple-500' },
-    { category: 'Administration', percentage: 10, color: 'bg-gray-500' }
-];
 ---
 
 <Layout title="Non-Profit Foundation - Golden State Cricket Club">
-    <h1 class="text-4xl sm:text-5xl font-bold mb-4">{SITE_CONFIG.nonProfit.name}</h1>
+    <h1 class="page-title heading-margin-sm">{SITE_CONFIG.nonProfit.name}</h1>
 
     {/* Centered Badge */}
     <div class="flex justify-center mb-4">
@@ -74,9 +64,10 @@ const financialBreakdown = [
 
     {/* Mission & Vision */}
     <Section>
-        <div class="accent-box text-center max-w-4xl mx-auto">
-            <h2 class="text-3xl font-bold mb-6 text-gray-900">Our Mission</h2>
-            <p class="text-xl text-gray-700 leading-relaxed">
+        <div class="accent-box section-centered-wide">
+            <h2 class="section-heading">Our Mission</h2>
+            <h3 class="subsection-heading text-primary">"Empowering Community and Excellence Through Sport"</h3>
+            <p class="text-body-lg text-justified">
                 {SITE_CONFIG.nonProfit.mission}
             </p>
         </div>
@@ -99,67 +90,59 @@ const financialBreakdown = [
         </p>
     </Section>
 
+    {/* Our Story Section */}
+    <Section title="Our Story">
+        <div class="max-w-5xl mx-auto">
+            <div class="grid md:grid-cols-3 gap-8 mb-8">
+                <div class="bg-white rounded-xl p-6 border-2 border-gray-200 hover:border-primary transition-all">
+                    <h3 class="subsection-heading text-primary">Why</h3>
+                    <p class="text-body-base text-justified">
+                        Bengals Inc. was established as a non-profit organization with a simple but powerful belief:
+                        sport is a universal language that builds community, character, and opportunity. In a fast-paced,
+                        digitally driven world, sports provide balance—nurturing physical health, mental resilience,
+                        discipline, teamwork, leadership, and respect.
+                    </p>
+                </div>
+                <div class="bg-white rounded-xl p-6 border-2 border-gray-200 hover:border-primary transition-all">
+                    <h3 class="subsection-heading text-primary">What</h3>
+                    <p class="text-body-base text-justified">
+                        At its core, Bengals Inc. promotes cricket across the Bay Area as both a competitive and community sport.
+                        Cricket is the foundation, but our vision goes far beyond one game. We aspire to evolve into a
+                        multi-sport community club—embracing running, volleyball, badminton, soccer, baseball, and more.
+                    </p>
+                </div>
+                <div class="bg-white rounded-xl p-6 border-2 border-gray-200 hover:border-primary transition-all">
+                    <h3 class="subsection-heading text-primary">How</h3>
+                    <p class="text-body-base text-justified">
+                        Bengals Inc. achieves this by building organized teams and leagues, partnering with schools and local districts,
+                        investing in youth development, and creating safe, well-governed pathways for participation. Golden State Cricket
+                        Club (GSCC) is Step 1 in this journey—a move driven by the desire for a larger, more inclusive brand identity.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </Section>
+
     {/* Programs */}
-    <Section title="Our Programs">
+    <Section title="Our Programs" variant="alternate">
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {programs.map(program => (
                 <div class="card-elevated">
                     <div class="text-4xl mb-4">{program.icon}</div>
-                    <h3 class="text-xl font-bold mb-3 text-gray-900">{program.title}</h3>
-                    <p class="text-gray-600">{program.content}</p>
+                    <h3 class="subsection-heading">{program.title}</h3>
+                    <p class="text-body-base text-justified">{program.content}</p>
                 </div>
             ))}
         </div>
     </Section>
 
-    {/* Financial Transparency */}
-    <Section title="Financial Transparency" variant="alternate">
-        <div class="max-w-4xl mx-auto">
-            <p class="text-center text-lg text-gray-700 mb-8">
-                We believe in complete transparency. Here's how your donations are allocated:
-            </p>
-
-            {/* Visual Breakdown */}
-            <div class="bg-white rounded-xl p-8 border-2 border-gray-200 mb-8">
-                <div class="space-y-6">
-                    {financialBreakdown.map(item => (
-                        <div>
-                            <div class="flex justify-between mb-2">
-                                <span class="font-semibold text-gray-900">{item.category}</span>
-                                <span class="font-bold text-primary">{item.percentage}%</span>
-                            </div>
-                            <div class="w-full bg-gray-200 rounded-full h-4">
-                                <div class={`${item.color} h-4 rounded-full transition-all`} style={`width: ${item.percentage}%`}></div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            <div class="grid sm:grid-cols-3 gap-6">
-                <Card
-                    title="Tax-Deductible"
-                    content="All donations are tax-deductible to the fullest extent allowed by law. You'll receive a receipt for your records."
-                />
-                <Card
-                    title="No Hidden Fees"
-                    content="We use Zeffy for donations, which is 100% free for non-profits. Your full donation goes directly to our programs."
-                />
-                <Card
-                    title="Annual Reports"
-                    content="We publish annual financial reports and program updates to keep our community informed of our impact."
-                />
-            </div>
-        </div>
-    </Section>
-
     {/* Board Members */}
     <Section title="Board of Directors">
-        <p class="text-center text-lg text-gray-700 mb-8 max-w-3xl mx-auto">
+        <p class="section-centered text-body-lg mb-8">
             Our foundation is governed by a dedicated board of directors committed to transparency,
             accountability, and advancing our mission.
         </p>
-        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+        <div class="member-grid mx-auto">
             {boardMembers.map(member => (
                 <MemberCard name={member.name} role={member.role} />
             ))}
@@ -189,9 +172,9 @@ const financialBreakdown = [
 
     {/* Call to Action */}
     <Section>
-        <div class="text-center max-w-3xl mx-auto bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl p-8 border-2" style="border-color: #E5C878;">
-            <h2 class="text-3xl font-bold mb-4 text-gray-900">Other Ways to Help</h2>
-            <p class="text-lg text-gray-700 mb-6">
+        <div class="section-centered bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl p-8 border-2" style="border-color: #E5C878;">
+            <h2 class="section-heading">Other Ways to Help</h2>
+            <p class="text-body-lg mb-6">
                 Can't donate right now? There are other ways to support our mission!
             </p>
             <div class="grid sm:grid-cols-3 gap-4">

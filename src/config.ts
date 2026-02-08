@@ -4,38 +4,37 @@
 export const SITE_CONFIG = {
     name: 'Golden State Cricket Club',
     location: 'Bay Area, California',
-    email: 'bengalscc@gmail.com',
-    phone: '+1 (555) 123-4567', // Update with actual phone number
-    whatsapp: '+15551234567', // Update with actual WhatsApp number (format: country code + number, no spaces)
+    email: 'gsbendalsinc@gmail.com',
     description: 'Golden State Cricket Club - Bay Area, California. NCCA T20 Division 1 Champions. Community-driven cricket organization.',
 
     // Non-Profit Information
     nonProfit: {
-        name: 'Golden State Cricket Foundation',
-        ein: 'XX-XXXXXXX', // Update with actual EIN
+        name: 'Bengals Inc.',
+        ein: '30-13XXXXX',
         status: '501(c)(3) Tax-Exempt Non-Profit',
         founded: '2018',
-        mission: 'To promote cricket in Northern California while fostering community engagement, youth development, and cultural diversity through the sport of cricket.',
+        mission: 'To foster a vibrant, inclusive community through the power of sport. We are dedicated to nurturing talent, promoting physical wellness, and inspiring a lifelong passion for excellence, both on and off the field. Our mission extends beyond competitive cricket to building community connections, youth development, and cultural unity.',
         zeffyUrl: 'https://www.zeffy.com/donation-form/XXXXX', // Update with actual Zeffy form URL
         programs: [
-            'Youth Cricket Academy (ages 8-18)',
-            'Equipment Donation Program',
-            'Community Cricket Clinics',
-            'Scholarship Fund for underprivileged players',
-            'Women\'s Cricket Initiative'
+            'Competitive Cricket Teams - Three teams competing in NCCA and BACA leagues since 2018',
+            'Youth Cricket Development - Free membership for ages 8-18 and full-time students',
+            'Player Pathway Program - Supporting members in USA Masters League and USA Minor League',
+            'Community Engagement - 160+ members from 8 counties across Bay Area',
+            'Inclusive Membership - Removing financial barriers for youth participation',
+            'Bay Area Cricket Alliance - Active participation in NCCA leagues (est. 1892)'
         ],
         impactStats: [
-            { label: 'Youth Trained Annually', value: '50+', icon: '🏏' },
-            { label: 'Equipment Donated', value: '$10,000+', icon: '🎁' },
-            { label: 'Community Members Reached', value: '200+', icon: '🤝' },
-            { label: 'Scholarships Awarded', value: '15+', icon: '🎓' }
+            { label: 'Active Members', value: '160+', icon: '🏏' },
+            { label: 'Youth & Students', value: '30+', icon: '🎓' },
+            { label: 'Counties Represented', value: '8', icon: '🏘️' },
+            { label: 'Years of Service', value: '7+', icon: '⏳' }
         ]
     },
 
     // Social Media Links
     social: {
         instagram: {
-            url: 'https://www.instagram.com/bengalsinc_org/',
+            url: 'https://www.instagram.com/goldenstate_cc',
             label: 'Instagram',
             description: 'Photos and highlights',
             icon: '📷'

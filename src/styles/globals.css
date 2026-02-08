@@ -19,18 +19,26 @@
         padding-bottom: env(safe-area-inset-bottom, 0px);
     }
 
+    /* Typography System - Standardized Heading Sizes */
     h1 {
-        @apply text-4xl tracking-tight sm:text-5xl;
-        font-weight: var(--font-weight-display);
+        @apply text-4xl tracking-tight sm:text-5xl font-bold mb-6;
+        color: var(--color-text-heading);
     }
 
     h2 {
-        @apply text-2xl sm:text-3xl;
-        font-weight: var(--font-weight-heading);
+        @apply text-2xl sm:text-3xl font-bold mb-6;
+        color: var(--color-text-heading);
     }
 
     h3 {
-        font-weight: var(--font-weight-subheading);
+        @apply text-xl sm:text-2xl font-bold mb-4;
+        color: var(--color-text-heading);
+    }
+
+    /* Body Text Standardization */
+    p {
+        @apply text-base leading-relaxed mb-4;
+        color: var(--color-text-body);
     }
 
     a:not(.btn) {
@@ -304,5 +312,130 @@
         border-radius: var(--border-radius-card);
         box-shadow: var(--shadow-elevated);
         padding: 2rem;
+    }
+
+    /* ========================================
+       TYPOGRAPHY UTILITIES - Standardized Text Sizes
+       ======================================== */
+
+    /* Page Titles (H1 equivalent) */
+    .page-title {
+        @apply text-4xl sm:text-5xl font-bold mb-6 tracking-tight;
+        color: var(--color-text-heading);
+    }
+
+    /* Section Headings (H2 equivalent) */
+    .section-heading {
+        @apply text-2xl sm:text-3xl font-bold mb-6;
+        color: var(--color-text-heading);
+    }
+
+    /* Subsection Headings (H3 equivalent) */
+    .subsection-heading {
+        @apply text-xl sm:text-2xl font-bold mb-4;
+        color: var(--color-text-heading);
+    }
+
+    /* Body Text Sizes */
+    .text-intro {
+        @apply text-xl leading-relaxed;
+        color: var(--color-text-muted);
+    }
+
+    .text-body-lg {
+        @apply text-lg leading-relaxed;
+        color: var(--color-text-body);
+    }
+
+    .text-body-base {
+        @apply text-base leading-relaxed;
+        color: var(--color-text-body);
+    }
+
+    /* ========================================
+       SECTION ALIGNMENT UTILITIES
+       ======================================== */
+
+    /* Centered Section Content */
+    .section-centered {
+        @apply text-center max-w-3xl mx-auto;
+    }
+
+    .section-centered-wide {
+        @apply text-center max-w-5xl mx-auto;
+    }
+
+    /* Justified Text for Long Content */
+    .text-justified {
+        @apply text-justify;
+    }
+
+    /* ========================================
+       SPACING SCALE UTILITIES
+       ======================================== */
+
+    /* Consistent spacing for sections */
+    .section-spacing {
+        @apply py-12 sm:py-16;
+    }
+
+    .section-spacing-sm {
+        @apply py-8 sm:py-12;
+    }
+
+    /* Heading margins (override defaults when needed) */
+    .heading-margin-none {
+        @apply mb-0;
+    }
+
+    .heading-margin-sm {
+        @apply mb-3;
+    }
+
+    .heading-margin-base {
+        @apply mb-6;
+    }
+
+    .heading-margin-lg {
+        @apply mb-8;
+    }
+
+    /* ========================================
+       MEMBER/AVATAR CARD UTILITIES
+       ======================================== */
+
+    /* Member card with consistent sizing */
+    .member-card-wrapper {
+        @apply w-full max-w-xs mx-auto;
+        min-height: 200px;
+    }
+
+    /* Centered member card container - uses flexbox for better centering when wrapping */
+    .member-grid {
+        @apply flex flex-wrap gap-6 justify-center items-start;
+    }
+
+    .member-grid-2 {
+        @apply flex flex-wrap gap-6 justify-center items-start;
+    }
+
+    .member-grid-2 > * {
+        @apply w-full sm:w-[calc(50%-0.75rem)] max-w-xs;
+    }
+
+    .member-grid-3 {
+        @apply flex flex-wrap gap-6 justify-center items-start;
+    }
+
+    .member-grid-3 > * {
+        @apply w-full sm:w-[calc(50%-0.75rem)] lg:w-[calc(33.333%-1rem)] max-w-xs;
+    }
+
+    .member-grid-4 {
+        @apply flex flex-wrap gap-6 justify-center items-start;
+    }
+
+    .member-grid-4 > * {
+        @apply w-full sm:w-[calc(50%-0.75rem)] lg:w-[calc(25%-1.125rem)] max-w-xs;
     }
 }

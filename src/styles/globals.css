@@ -365,9 +365,9 @@
         @apply text-center max-w-5xl mx-auto;
     }
 
-    /* Justified Text for Long Content */
+    /* Justified Text for Long Content - Only on larger screens */
     .text-justified {
-        @apply text-justify;
+        @apply text-left sm:text-justify;
     }
 
     /* ========================================

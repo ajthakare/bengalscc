@@ -1,0 +1,733 @@
+/**
+ * GOLDEN STATE CRICKET CLUB THEME - COMPLETE
+ * Primary Color: Golden (#ca890f)
+ * Complementary: Purple (#a76aba)
+ * Accent: Dark Brown (#623412)
+ *
+ * This is a complete standalone theme.
+ * Change one @import in theme-config.css to switch themes.
+ */
+
+@theme {
+    /* ===== BRAND COLORS ===== */
+    --color-primary: #ca890f;
+    --color-primary-content: #ffffff;
+    --color-complementary: #a76aba;
+
+    /* ===== BACKGROUND COLORS ===== */
+    --color-bg-body: #ffffff;
+    --color-bg-card: #f9fafb;          /* gray-50 */
+    --color-bg-card-hover: #f3f4f6;    /* gray-100 */
+    --color-bg-section-alt: #f9fafb;   /* gray-50 for alternate sections */
+    --color-bg-hero: #fef8e7;          /* golden-50 - light golden cream */
+    --color-bg-hero-dark: #fdf3d7;     /* golden-100 - light golden yellow */
+    --color-bg-input: #f9fafb;         /* gray-50 */
+
+    /* ===== TEXT COLORS ===== */
+    --color-text-body: #111827;        /* gray-900 */
+    --color-text-heading: #111827;     /* gray-900 */
+    --color-text-muted: #4b5563;       /* gray-600 */
+    --color-text-subtle: #6b7280;      /* gray-500 */
+    --color-text-placeholder: #9ca3af; /* gray-400 */
+
+    /* ===== BORDER COLORS ===== */
+    --color-border: #e5e7eb;           /* gray-200 */
+    --color-border-strong: #d1d5db;    /* gray-300 */
+
+    /* ===== BUTTON COLORS ===== */
+    --color-btn-secondary: #e5e7eb;    /* gray-200 */
+    --color-btn-secondary-hover: #d1d5db; /* gray-300 */
+    --color-btn-secondary-text: #111827;  /* gray-900 */
+
+    /* ===== SHADOWS & DEPTH ===== */
+    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-card-hover: 0 10px 25px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.06);
+    --shadow-button: 0 2px 4px rgba(202, 137, 15, 0.2), 0 1px 2px rgba(202, 137, 15, 0.1);
+    --shadow-elevated: 0 20px 40px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(0, 0, 0, 0.06);
+
+    /* ===== GRADIENTS ===== */
+    --gradient-hero: linear-gradient(135deg, #fef8e7 0%, #fdf3d7 50%, #fcecc4 100%);
+    --gradient-section: linear-gradient(to bottom, #ffffff 0%, #f9fafb 100%);
+    --gradient-card-header: linear-gradient(135deg, rgba(202, 137, 15, 0.1) 0%, rgba(202, 137, 15, 0.05) 100%);
+    --gradient-primary: linear-gradient(135deg, #ca890f 0%, #e09d1a 100%);
+
+    /* ===== TYPOGRAPHY ===== */
+    --font-weight-display: 800;
+    --font-weight-heading: 700;
+    --font-weight-subheading: 600;
+
+    /* ===== TRANSITIONS ===== */
+    --transition-base: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-hover: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* ===== BORDER RADIUS ===== */
+    --border-radius-card: 0.75rem;
+    --border-radius-button: 0.5rem;
+
+    /* ===== TEXTURE ===== */
+    --texture-opacity: 0.05;
+    --background-image-noise: linear-gradient(
+            to bottom,
+            color-mix(in oklab, var(--color-gray-50) 0%, transparent),
+            color-mix(in oklab, var(--color-gray-50) 100%, transparent)
+        ),
+        url('/images/noise.png');
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse-subtle {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.02);
+    }
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes shine {
+    0% {
+        background-position: -200% center;
+    }
+    100% {
+        background-position: 200% center;
+    }
+}
+
+/* ===== UTILITY CLASSES ===== */
+@layer utilities {
+    .animate-fade-in {
+        animation: fadeIn 0.6s ease-out forwards;
+    }
+
+    .animate-slide-in-up {
+        animation: slideInUp 0.8s ease-out forwards;
+    }
+
+    .animate-pulse-subtle {
+        animation: pulse-subtle 2s ease-in-out infinite;
+    }
+
+    .animate-shine {
+        background: linear-gradient(
+            90deg,
+            rgba(202, 137, 15, 1) 0%,
+            rgba(255, 255, 255, 0.8) 50%,
+            rgba(202, 137, 15, 1) 100%
+        );
+        background-size: 200% auto;
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: shine 3s linear infinite;
+    }
+
+    .shadow-card {
+        box-shadow: var(--shadow-card);
+    }
+
+    .shadow-card-hover {
+        box-shadow: var(--shadow-card-hover);
+    }
+
+    .shadow-button {
+        box-shadow: var(--shadow-button);
+    }
+
+    .shadow-elevated {
+        box-shadow: var(--shadow-elevated);
+    }
+
+    .gradient-primary {
+        background: var(--gradient-primary);
+    }
+
+    .gradient-hero-rich {
+        background: var(--gradient-hero);
+    }
+
+    .gradient-section {
+        background: var(--gradient-section);
+    }
+
+    .gradient-card-header {
+        background: var(--gradient-card-header);
+    }
+}
+
+/* ===== HEADER & FOOTER ENHANCEMENTS ===== */
+@layer components {
+    /* Header Navigation Styling - Golden Gradient */
+    nav {
+        background: linear-gradient(135deg, #e09d1a 0%, #f4b942 50%, #fdd685 100%);
+        padding: 0.84rem 0.84rem 1.05rem 0.84rem !important;
+        margin-bottom: 2rem;
+        border-radius: 0.75rem;
+        box-shadow: 0 4px 12px rgba(202, 137, 15, 0.3), 0 2px 6px rgba(202, 137, 15, 0.2);
+        position: relative;
+        align-items: flex-end !important;
+    }
+
+    /* White text for nav links with larger font */
+    nav a {
+        color: white !important;
+        text-decoration: none !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        font-size: 1rem !important;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3), 0px 1px 3px rgba(0, 0, 0, 0.2);
+        position: relative;
+        padding: 0.5rem 0.75rem;
+        border-radius: 0.5rem;
+    }
+
+    nav a:hover {
+        transform: translateY(-3px) scale(1.05);
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4), 0px 2px 6px rgba(0, 0, 0, 0.3);
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+    }
+
+    nav a::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%) scaleX(0);
+        width: 80%;
+        height: 2px;
+        background: white;
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    nav a:hover::after {
+        transform: translateX(-50%) scaleX(1);
+    }
+
+    /* Active/Current page highlight */
+    nav a.nav-active {
+        background: rgba(255, 255, 255, 0.3) !important;
+        backdrop-filter: blur(10px);
+        font-weight: 900 !important;
+        transform: scale(1.05);
+    }
+
+    nav a.nav-active::after {
+        transform: translateX(-50%) scaleX(1);
+        height: 3px;
+        background: white;
+    }
+
+    /* Logo visibility - remove filter to keep original colors */
+    nav a:first-child {
+        filter: none;
+    }
+
+    /* Nav list alignment */
+    nav ul {
+        margin-top: 0.5rem;
+    }
+
+    /* Footer Styling - Golden Gradient */
+    footer {
+        background: linear-gradient(to bottom, #fef8e7 0%, #fdf3d7 100%);
+        border-top: 2px solid #f4b942 !important;
+        padding: 2rem !important;
+        margin-top: 2rem;
+        border-radius: 0.75rem;
+        box-shadow: 0 -4px 12px rgba(202, 137, 15, 0.1);
+    }
+
+    /* Footer text color */
+    footer,
+    footer p {
+        color: #374151 !important;
+    }
+
+    /* Footer links - Purple hover */
+    footer a {
+        color: #374151 !important;
+        font-weight: 600;
+        text-decoration: none !important;
+        transition: all 0.2s ease;
+    }
+
+    footer a:hover {
+        color: #a76aba !important;
+        opacity: 1 !important;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 640px) {
+        nav {
+            padding: 0.63rem 0.63rem 0.84rem 0.63rem !important;
+            margin-bottom: 1.5rem;
+        }
+
+        nav a {
+            font-size: 0.875rem !important;
+        }
+
+        footer {
+            padding: 1.5rem !important;
+            margin-top: 1.5rem;
+        }
+    }
+}
+
+/* ===== FIXTURES CARDS - TEAM-SPECIFIC STYLING ===== */
+@layer components {
+    /* Bengal Tigers - Golden gradient (matches new brand!) */
+    .fixture-card[data-team="Bengal Tigers"] {
+        background: linear-gradient(135deg, #fffdf8 0%, #fef8e7 50%, #fdf3d7 100%) !important;
+        border-color: #f4b942 !important;
+        border-width: 2px;
+    }
+
+    .fixture-card[data-team="Bengal Tigers"]:hover {
+        background: linear-gradient(135deg, #fef8e7 0%, #fdf3d7 50%, #fcecc4 100%) !important;
+        border-color: #e09d1a !important;
+        box-shadow: 0 8px 20px rgba(202, 137, 15, 0.15) !important;
+    }
+
+    /* Bengal Bulls - Very light blue gradient */
+    .fixture-card[data-team="Bengal Bulls"] {
+        background: linear-gradient(135deg, #f8fbff 0%, #eff6ff 50%, #dbeafe 100%) !important;
+        border-color: #bfdbfe !important;
+        border-width: 2px;
+    }
+
+    .fixture-card[data-team="Bengal Bulls"]:hover {
+        background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 50%, #bfdbfe 100%) !important;
+        border-color: #93c5fd !important;
+        box-shadow: 0 8px 20px rgba(59, 130, 246, 0.15) !important;
+    }
+
+    /* Bengal Thunder Cats - Purple gradient (matches new complementary color!) */
+    .fixture-card[data-team="Bengal Thunder Cats"] {
+        background: linear-gradient(135deg, #fdfaff 0%, #f9f5ff 50%, #f3e8ff 100%) !important;
+        border-color: #d8b4fe !important;
+        border-width: 2px;
+    }
+
+    .fixture-card[data-team="Bengal Thunder Cats"]:hover {
+        background: linear-gradient(135deg, #f9f5ff 0%, #f3e8ff 50%, #e9d5ff 100%) !important;
+        border-color: #c084fc !important;
+        box-shadow: 0 8px 20px rgba(167, 106, 186, 0.15) !important;
+    }
+
+    /* Past fixtures - maintain subtle appearance */
+    .fixture-card[data-is-past="true"] {
+        opacity: 0.7;
+    }
+
+    .fixture-card[data-is-past="true"]:hover {
+        opacity: 0.85;
+    }
+
+    /* Team Filter Buttons - Match fixture card colors */
+    .filter-btn[data-team="Bengal Tigers"] {
+        background: linear-gradient(135deg, #fef8e7 0%, #fdf3d7 100%) !important;
+        border-color: #f4b942 !important;
+        color: #92610a !important;
+    }
+
+    .filter-btn[data-team="Bengal Tigers"]:hover {
+        background: linear-gradient(135deg, #fdf3d7 0%, #fcecc4 100%) !important;
+        border-color: #e09d1a !important;
+    }
+
+    .filter-btn[data-team="Bengal Bulls"] {
+        background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%) !important;
+        border-color: #bfdbfe !important;
+        color: #1e40af !important;
+    }
+
+    .filter-btn[data-team="Bengal Bulls"]:hover {
+        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%) !important;
+        border-color: #93c5fd !important;
+    }
+
+    .filter-btn[data-team="Bengal Thunder Cats"] {
+        background: linear-gradient(135deg, #f9f5ff 0%, #f3e8ff 100%) !important;
+        border-color: #d8b4fe !important;
+        color: #7c3a8e !important;
+    }
+
+    .filter-btn[data-team="Bengal Thunder Cats"]:hover {
+        background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%) !important;
+        border-color: #c084fc !important;
+    }
+
+    /* Active/Selected Team Filter Buttons - Darker versions */
+    .filter-btn[data-team="Bengal Tigers"].active {
+        background: linear-gradient(135deg, #f4b942 0%, #e09d1a 100%) !important;
+        border-color: #ca890f !important;
+        color: white !important;
+    }
+
+    .filter-btn[data-team="Bengal Bulls"].active {
+        background: linear-gradient(135deg, #93c5fd 0%, #60a5fa 100%) !important;
+        border-color: #3b82f6 !important;
+        color: white !important;
+    }
+
+    .filter-btn[data-team="Bengal Thunder Cats"].active {
+        background: linear-gradient(135deg, #c084fc 0%, #a76aba 100%) !important;
+        border-color: #9333ea !important;
+        color: white !important;
+    }
+}
+
+/* ===== PAGE TITLE ENHANCEMENTS ===== */
+@layer components {
+    /* Style for main page titles (h1 at start of pages) - Purple & Brown Gradient */
+    main > h1:first-child,
+    .page-title {
+        background: linear-gradient(135deg, #7c3a8e 0%, #a76aba 50%, #c08ad1 100%);
+        color: white;
+        padding: 2rem 2.5rem;
+        margin-bottom: 2.5rem;
+        border-radius: 0.75rem;
+        box-shadow: 0 4px 12px rgba(124, 58, 142, 0.3), 0 2px 6px rgba(124, 58, 142, 0.2);
+        position: relative;
+        overflow: hidden;
+        border: 2px solid rgba(202, 137, 15, 0.2);
+    }
+
+    /* When there's a subtitle (p) after h1, reduce h1 bottom margin and adjust subtitle */
+    main > h1:first-child:has(+ p) {
+        margin-bottom: 0;
+        padding-bottom: 1rem;
+        border-radius: 0.75rem 0.75rem 0 0;
+    }
+
+    /* Style the subtitle paragraph that comes after h1 */
+    main > h1:first-child + p,
+    .page-description {
+        background: linear-gradient(135deg, #623412 0%, #7c3a8e 100%);
+        color: #fcecc4 !important;
+        padding: 1rem 2.5rem 1.75rem 2.5rem;
+        margin-top: 0 !important;
+        margin-bottom: 2.5rem;
+        border-radius: 0 0 0.75rem 0.75rem;
+        box-shadow: 0 4px 12px rgba(98, 52, 18, 0.3), 0 2px 6px rgba(98, 52, 18, 0.2);
+        position: relative;
+        border: 2px solid rgba(202, 137, 15, 0.2);
+        border-top: none;
+    }
+
+    main > h1:first-child::before,
+    .page-title::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, rgba(202, 137, 15, 0.12) 0%, transparent 60%);
+        pointer-events: none;
+    }
+
+    main > h1:first-child::after,
+    .page-title::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #ca890f 0%, #f4b942 50%, #ca890f 100%);
+        opacity: 0.6;
+    }
+
+    /* Hide the accent bar when there's a subtitle */
+    main > h1:first-child:has(+ p)::after {
+        display: none;
+    }
+
+    /* Add accent bar to subtitle instead */
+    main > h1:first-child + p::after,
+    .page-description::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #ca890f 0%, #f4b942 50%, #ca890f 100%);
+        opacity: 0.6;
+    }
+
+    /* Responsive adjustments for page titles */
+    @media (max-width: 640px) {
+        main > h1:first-child,
+        .page-title {
+            padding: 1.5rem 1.5rem;
+            margin-bottom: 2rem;
+            font-size: 1.875rem;
+        }
+
+        main > h1:first-child:has(+ p) {
+            padding-bottom: 0.75rem;
+        }
+
+        main > h1:first-child + p,
+        .page-description {
+            padding: 0.75rem 1.5rem 1.25rem 1.5rem;
+            margin-bottom: 2rem;
+            font-size: 1.125rem;
+        }
+    }
+
+    /* ===== ADMIN COMPONENT COLORS ===== */
+
+    /* Page Header */
+    .page-header {
+        border-bottom-color: var(--color-border);
+    }
+
+    /* Buttons */
+    .btn-primary {
+        background: var(--color-primary);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #b37b0d;
+        box-shadow: 0 4px 12px rgba(202, 137, 15, 0.3);
+    }
+
+    .btn-secondary {
+        background: white;
+        color: var(--color-text-body);
+        border-color: var(--color-border);
+    }
+
+    .btn-secondary:hover {
+        background: var(--color-bg-card);
+        border-color: var(--color-border-strong);
+    }
+
+    .btn-danger-outline {
+        background: white;
+        color: #dc2626;
+        border-color: #dc2626;
+    }
+
+    .btn-danger-outline:hover {
+        background: #fef2f2;
+    }
+
+    .btn-success {
+        background: #10b981;
+        color: white;
+    }
+
+    .btn-success:hover {
+        background: #059669;
+    }
+
+    /* Stats Grid */
+    .stat-card {
+        background: white;
+        border-color: var(--color-border);
+    }
+
+    .stat-label {
+        color: var(--color-text-muted);
+    }
+
+    .stat-value {
+        color: var(--color-text-heading);
+    }
+
+    .stat-success {
+        color: #16a34a;
+    }
+
+    .stat-primary {
+        color: var(--color-primary);
+    }
+
+    .stat-muted {
+        color: var(--color-text-muted);
+    }
+
+    /* Tables */
+    .table-container {
+        background: white;
+        border-color: var(--color-border);
+    }
+
+    .data-table thead {
+        background: var(--color-bg-card);
+        border-bottom-color: var(--color-border);
+    }
+
+    .data-table th {
+        color: var(--color-text-heading);
+    }
+
+    .data-table td {
+        border-top-color: var(--color-border);
+    }
+
+    .data-table tbody tr:hover {
+        background: var(--color-bg-card);
+    }
+
+    /* Modals */
+    .modal {
+        background: rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-content {
+        background: white;
+    }
+
+    .modal-header {
+        border-bottom-color: var(--color-border);
+    }
+
+    .modal-title {
+        color: var(--color-text-heading);
+    }
+
+    .modal-close {
+        background: none;
+        color: var(--color-text-muted);
+    }
+
+    .modal-close:hover {
+        background: var(--color-bg-card);
+        color: var(--color-text-heading);
+    }
+
+    .modal-footer {
+        border-top-color: var(--color-border);
+        background: white;
+    }
+
+    /* Forms */
+    .form-label {
+        color: var(--color-text-heading);
+    }
+
+    .form-input,
+    .form-select {
+        border-color: var(--color-border);
+        background: white;
+        color: var(--color-text-body);
+    }
+
+    .form-input:focus,
+    .form-select:focus {
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px rgba(202, 137, 15, 0.1);
+    }
+
+    /* Alerts */
+    .alert-error {
+        background: #fef2f2;
+        border-color: #fecaca;
+        color: #991b1b;
+    }
+
+    .alert-success {
+        background: #f0fdf4;
+        border-color: #bbf7d0;
+        color: #166534;
+    }
+
+    /* States */
+    .state-title {
+        color: var(--color-text-heading);
+    }
+
+    .state-text {
+        color: var(--color-text-muted);
+    }
+
+    /* Spinner */
+    .spinner {
+        border-color: var(--color-border);
+        border-top-color: var(--color-primary);
+    }
+
+    /* Season Cards */
+    .season-card {
+        background: white;
+        border-color: transparent;
+    }
+
+    .season-card.active {
+        border-color: #10b981 !important;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2) !important;
+    }
+
+    .season-name {
+        color: #1f2937;
+    }
+
+    .active-badge {
+        background: #10b981 !important;
+        color: white !important;
+    }
+
+    .season-dates {
+        color: #6b7280;
+    }
+
+    .teams-label {
+        color: #374151;
+    }
+
+    .team-badge {
+        background: #f3f4f6;
+        border-color: #d1d5db;
+        color: #374151;
+    }
+
+    .season-actions {
+        border-top-color: #e5e7eb;
+    }
+
+    /* Utility Classes */
+    .text-body {
+        color: var(--color-text-body);
+    }
+
+    /* Scrollbar */
+    .scroll-wrapper::-webkit-scrollbar-track {
+        background: #f3f4f6;
+    }
+
+    .scroll-wrapper::-webkit-scrollbar-thumb {
+        background: #d1d5db;
+    }
+
+    .scroll-wrapper::-webkit-scrollbar-thumb:hover {
+        background: #9ca3af;
+    }
+}

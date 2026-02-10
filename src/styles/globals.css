@@ -1,59 +1,49 @@
 @import 'tailwindcss';
+@import './theme-config.css';
+
+/* NOTE: All color variables are defined in theme files (theme-config.css imports the active theme).
+   Only non-color configuration remains here. */
 
 @theme {
-    /* Typography */
+    /* Typography - applies to all themes */
     --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-
-    /* Brand Colors */
-    --color-primary: #f97316;
-    --color-primary-content: #ffffff;
-    --color-complementary: #355c7d;
-
-    /* Background Colors */
-    --color-bg-body: #ffffff;
-    --color-bg-card: #f9fafb;          /* gray-50 */
-    --color-bg-card-hover: #f3f4f6;    /* gray-100 */
-    --color-bg-section-alt: #f9fafb;   /* gray-50 for alternate sections */
-    --color-bg-hero: #fff7ed;          /* orange-50 */
-    --color-bg-hero-dark: #ffedd5;     /* orange-100 */
-    --color-bg-input: #f9fafb;         /* gray-50 */
-
-    /* Text Colors */
-    --color-text-body: #111827;        /* gray-900 */
-    --color-text-heading: #111827;     /* gray-900 */
-    --color-text-muted: #4b5563;       /* gray-600 */
-    --color-text-subtle: #6b7280;      /* gray-500 */
-    --color-text-placeholder: #9ca3af; /* gray-400 */
-
-    /* Border Colors */
-    --color-border: #e5e7eb;           /* gray-200 */
-    --color-border-strong: #d1d5db;    /* gray-300 */
-
-    /* Secondary Button Colors */
-    --color-btn-secondary: #e5e7eb;    /* gray-200 */
-    --color-btn-secondary-hover: #d1d5db; /* gray-300 */
-    --color-btn-secondary-text: #111827;  /* gray-900 */
-
-    /* Noise Background */
-    --background-image-noise: linear-gradient(
-            to bottom,
-            color-mix(in oklab, var(--color-gray-50) 0%, transparent),
-            color-mix(in oklab, var(--color-gray-50) 100%, transparent)
-        ),
-        url('/images/noise.png');
 }
 
 @layer base {
+    html {
+        scroll-behavior: smooth;
+    }
+
+    /* Support iOS safe area insets and mobile browser UI */
+    body {
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    /* Typography System - Standardized Heading Sizes */
     h1 {
-        @apply text-4xl font-bold tracking-tight sm:text-5xl;
+        @apply text-4xl tracking-tight sm:text-5xl font-bold mb-6;
+        color: var(--color-text-heading);
     }
 
     h2 {
-        @apply text-2xl font-bold sm:text-3xl;
+        @apply text-2xl sm:text-3xl font-bold mb-6;
+        color: var(--color-text-heading);
+    }
+
+    h3 {
+        @apply text-xl sm:text-2xl font-bold mb-4;
+        color: var(--color-text-heading);
+    }
+
+    /* Body Text Standardization */
+    p {
+        @apply text-base leading-relaxed mb-4;
+        color: var(--color-text-body);
     }
 
     a:not(.btn) {
-        @apply underline transition hover:opacity-80;
+        @apply underline hover:opacity-80;
+        transition: all var(--transition-base);
     }
 
     pre {
@@ -67,6 +57,70 @@
 }
 
 @layer components {
+    /* Mobile browser safe area utilities */
+    .safe-bottom {
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    .safe-bottom-lg {
+        /* Extra padding for mobile browser UI + iOS safe area */
+        padding-bottom: max(2.5rem, calc(1rem + env(safe-area-inset-bottom, 0px) + 2rem));
+    }
+
+    /* Loading Skeletons */
+    .skeleton {
+        background: linear-gradient(
+            90deg,
+            #f0f0f0 25%,
+            #e0e0e0 50%,
+            #f0f0f0 75%
+        );
+        background-size: 200% 100%;
+        animation: loading 1.5s ease-in-out infinite;
+        border-radius: 4px;
+    }
+
+    .skeleton-text {
+        height: 1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .skeleton-title {
+        height: 1.5rem;
+        margin-bottom: 1rem;
+        width: 60%;
+    }
+
+    .skeleton-card {
+        height: 200px;
+        border-radius: 12px;
+    }
+
+    .skeleton-button {
+        height: 48px;
+        width: 120px;
+        border-radius: 8px;
+    }
+
+    @keyframes loading {
+        0% {
+            background-position: 200% 0;
+        }
+        100% {
+            background-position: -200% 0;
+        }
+    }
+
+    /* Image lazy loading */
+    img[loading="lazy"] {
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+
+    img[loading="lazy"].loaded {
+        opacity: 1;
+    }
+
     .markdown {
         > * {
             @apply my-6;
@@ -87,17 +141,29 @@
 
     /* Button Styles */
     .btn {
-        @apply inline-flex items-center justify-center gap-2 bg-primary text-primary-content cursor-pointer text-center font-semibold no-underline transition-colors;
+        @apply inline-flex items-center justify-center gap-2 text-primary-content cursor-pointer text-center font-semibold no-underline;
+        background: var(--gradient-primary);
         padding: var(--btn-py, 0.875rem) var(--btn-px, 1.25rem);
         font-size: var(--btn-font-size, 0.875rem);
-        border-radius: var(--btn-border-radius, 0.25rem);
+        border-radius: var(--border-radius-button);
+        box-shadow: var(--shadow-button);
+        transition: all var(--transition-hover);
 
         &:hover {
             @apply bg-primary/85;
+            box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+            transform: translateY(-2px);
+        }
+
+        &:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 2px rgba(249, 115, 22, 0.2);
         }
 
         &:disabled {
             @apply text-gray-400 bg-gray-700;
+            box-shadow: none;
+            transform: none;
         }
     }
 
@@ -120,16 +186,22 @@
     .card {
         background-color: var(--color-bg-card);
         border: 1px solid var(--color-border);
-        @apply rounded-lg p-6 transition-colors;
+        padding: 1.5rem;
+        border-radius: var(--border-radius-card);
+        box-shadow: var(--shadow-card);
+        transition: all var(--transition-hover);
 
         &:hover {
             background-color: var(--color-bg-card-hover);
+            box-shadow: var(--shadow-card-hover);
+            transform: translateY(-4px);
+            border-color: var(--color-primary);
         }
     }
 
     /* Hero Section Styles */
     .hero-bg {
-        background: linear-gradient(to bottom right, var(--color-bg-hero), var(--color-bg-hero-dark));
+        background: var(--gradient-hero);
     }
 
     /* Text Styles */
@@ -171,8 +243,199 @@
 
     /* Accent Box Styles */
     .accent-box {
-        background: linear-gradient(to bottom right, var(--color-bg-hero), var(--color-bg-hero-dark));
+        background: var(--gradient-card-header);
         border: 2px solid var(--color-primary);
-        @apply rounded-lg p-8;
+        padding: 2rem;
+        border-radius: var(--border-radius-card);
+        box-shadow: var(--shadow-card);
+    }
+
+    /* Enhanced Section Styles */
+    .section-gradient {
+        background: var(--gradient-section);
+    }
+
+    /* Stats & Feature Boxes */
+    .stat-box {
+        background-color: var(--color-bg-card);
+        border: 1px solid var(--color-border);
+        padding: 1.5rem;
+        border-radius: var(--border-radius-card);
+        box-shadow: var(--shadow-card);
+        transition: all var(--transition-hover);
+
+        &:hover {
+            box-shadow: var(--shadow-card-hover);
+            transform: translateY(-2px);
+        }
+    }
+
+    /* Team Cards Enhancement */
+    .team-card {
+        background: white;
+        border: 1px solid var(--color-border);
+        border-radius: var(--border-radius-card);
+        box-shadow: var(--shadow-card);
+        transition: all var(--transition-hover);
+        overflow: hidden;
+
+        &:hover {
+            box-shadow: var(--shadow-elevated);
+            transform: translateY(-6px);
+            border-color: var(--color-primary);
+        }
+    }
+
+    .team-card-header {
+        background: var(--gradient-card-header);
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--color-border);
+    }
+
+    /* Badge Enhancement */
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 9999px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        background: linear-gradient(135deg, rgba(249, 115, 22, 0.1) 0%, rgba(249, 115, 22, 0.05) 100%);
+        color: var(--color-primary);
+        border: 1px solid rgba(249, 115, 22, 0.2);
+    }
+
+    /* Elevated Card */
+    .card-elevated {
+        background: white;
+        border-radius: var(--border-radius-card);
+        box-shadow: var(--shadow-elevated);
+        padding: 2rem;
+    }
+
+    /* ========================================
+       TYPOGRAPHY UTILITIES - Standardized Text Sizes
+       ======================================== */
+
+    /* Page Titles (H1 equivalent) */
+    .page-title {
+        @apply text-4xl sm:text-5xl font-bold mb-6 tracking-tight;
+        color: var(--color-text-heading);
+    }
+
+    /* Section Headings (H2 equivalent) */
+    .section-heading {
+        @apply text-2xl sm:text-3xl font-bold mb-6;
+        color: var(--color-text-heading);
+    }
+
+    /* Subsection Headings (H3 equivalent) */
+    .subsection-heading {
+        @apply text-xl sm:text-2xl font-bold mb-4;
+        color: var(--color-text-heading);
+    }
+
+    /* Body Text Sizes */
+    .text-intro {
+        @apply text-xl leading-relaxed;
+        color: var(--color-text-muted);
+    }
+
+    .text-body-lg {
+        @apply text-lg leading-relaxed;
+        color: var(--color-text-body);
+    }
+
+    .text-body-base {
+        @apply text-base leading-relaxed;
+        color: var(--color-text-body);
+    }
+
+    /* ========================================
+       SECTION ALIGNMENT UTILITIES
+       ======================================== */
+
+    /* Centered Section Content */
+    .section-centered {
+        @apply text-center max-w-3xl mx-auto;
+    }
+
+    .section-centered-wide {
+        @apply text-center max-w-5xl mx-auto;
+    }
+
+    /* Justified Text for Long Content - Only on larger screens */
+    .text-justified {
+        @apply text-left sm:text-justify;
+    }
+
+    /* ========================================
+       SPACING SCALE UTILITIES
+       ======================================== */
+
+    /* Consistent spacing for sections */
+    .section-spacing {
+        @apply py-12 sm:py-16;
+    }
+
+    .section-spacing-sm {
+        @apply py-8 sm:py-12;
+    }
+
+    /* Heading margins (override defaults when needed) */
+    .heading-margin-none {
+        @apply mb-0;
+    }
+
+    .heading-margin-sm {
+        @apply mb-3;
+    }
+
+    .heading-margin-base {
+        @apply mb-6;
+    }
+
+    .heading-margin-lg {
+        @apply mb-8;
+    }
+
+    /* ========================================
+       MEMBER/AVATAR CARD UTILITIES
+       ======================================== */
+
+    /* Member card with consistent sizing */
+    .member-card-wrapper {
+        @apply w-full max-w-xs mx-auto;
+        min-height: 200px;
+    }
+
+    /* Centered member card container - uses flexbox for better centering when wrapping */
+    .member-grid {
+        @apply flex flex-wrap gap-6 justify-center items-start;
+    }
+
+    .member-grid-2 {
+        @apply flex flex-wrap gap-6 justify-center items-start;
+    }
+
+    .member-grid-2 > * {
+        @apply w-full sm:w-[calc(50%-0.75rem)] max-w-xs;
+    }
+
+    .member-grid-3 {
+        @apply flex flex-wrap gap-6 justify-center items-start;
+    }
+
+    .member-grid-3 > * {
+        @apply w-full sm:w-[calc(50%-0.75rem)] lg:w-[calc(33.333%-1rem)] max-w-xs;
+    }
+
+    .member-grid-4 {
+        @apply flex flex-wrap gap-6 justify-center items-start;
+    }
+
+    .member-grid-4 > * {
+        @apply w-full sm:w-[calc(50%-0.75rem)] lg:w-[calc(25%-1.125rem)] max-w-xs;
     }
 }

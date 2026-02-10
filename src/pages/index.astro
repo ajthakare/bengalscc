@@ -4,47 +4,64 @@ import HeroSection from '../components/HeroSection.astro';
 import StatsGrid from '../components/StatsGrid.astro';
 import Section from '../components/Section.astro';
 import Card from '../components/Card.astro';
+import { readdir } from 'node:fs/promises';
+import { join } from 'node:path';
 
 const highlights = [
     { label: 'Founded', value: '2018' },
-    { label: 'Active Members', value: '130+' },
-    { label: 'Teams', value: '2+' },
-    { label: 'Counties', value: '6+' }
+    { label: 'Active Members', value: '160+' },
+    { label: 'Teams', value: '4' },
+    { label: 'Counties', value: '8' }
 ];
 
 const achievements = [
-    { year: '2024', title: 'Summer League – Winners (T20 Division 1)' },
-    { year: '2024', title: 'Winter League – Runners Up (T20)' },
-    { year: '2023', title: 'Summer League Stage 1st Place (T20)' },
-    { year: '2022', title: 'Semi-Finalists (T30)' },
-    { year: '2022', title: 'Quarter Finalists (T20)' },
-    { year: '2021', title: 'Winter Semi-Finalists (T25 BACA League)' }
+    { year: '2025', title: 'Summer League – Winners (T20 Division 1)', icon: '🏆' },
+    { year: '2024', title: 'Winter League – Runners Up (T20)', icon: '🥈' },
+    { year: '2023', title: 'Summer League Stage 1st Place (T20)', icon: '🥇' },
+    { year: '2022', title: 'Semi-Finalists (T30)', icon: '🏅' },
+    { year: '2022', title: 'Quarter Finalists (T20)', icon: '🎖️' },
+    { year: '2021', title: 'Winter Semi-Finalists (T25 BACA League)', icon: '⭐' }
 ];
+
+// Read images from public/media folder for carousel
+let carouselImages: { src: string; alt: string }[] = [];
+try {
+    const mediaDir = join(process.cwd(), 'public', 'media');
+    const files = await readdir(mediaDir);
+
+    carouselImages = files
+        .filter(file => /\.(jpg|jpeg|png|JPG|JPEG|PNG)$/i.test(file))
+        .filter(file => file !== '.DS_Store')
+        .sort()
+        .slice(0, 8)
+        .map(file => ({
+            src: `/media/${file}`,
+            alt: file.replace(/\.(jpg|jpeg|png|JPG|JPEG|PNG)$/i, '')
+        }));
+} catch (error) {
+    console.error('Error loading carousel images:', error);
+}
 ---
 
-<Layout title="Bengals Cricket Club - Bay Area, California">
-    <HeroSection
-        title="Bengals Cricket Club"
-        subtitle="Bay Area, California"
-    >
-        <div class="mt-6 inline-block bg-primary/20 border-2 border-primary px-6 py-2 rounded-full text-sm sm:text-base font-semibold">
-            2024 Summer League – T20 Division 1 Champions
+<Layout title="Golden State Cricket Club - Bay Area, California">
+    <section class="relative py-8 sm:py-12 -mx-4 sm:-mx-6 lg:-mx-8 mb-16">
+        <div class="absolute inset-0 hero-bg"></div>
+        <div class="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <div class="inline-block bg-primary/20 border-2 border-primary px-6 py-2 rounded-full text-base sm:text-lg font-semibold uppercase">
+                <span class="animate-shine">🏆 2025 Summer League – T20 Division 1 Champions 🏆</span>
+            </div>
         </div>
-        <div class="mt-8 flex flex-wrap gap-4 justify-center">
-            <a href="/members" class="btn btn-lg">Join the Club</a>
-            <a href="/contact" class="btn btn-secondary btn-lg">Contact Us</a>
-        </div>
-    </HeroSection>
+    </section>
 
     <Section title="Quick Highlights">
         <StatsGrid stats={highlights} />
     </Section>
 
     <Section variant="alternate">
-        <div class="text-center max-w-3xl mx-auto">
-            <h2 class="text-3xl sm:text-4xl font-bold mb-6">About Bengals CC</h2>
-            <p class="text-lg text-muted mb-6">
-                Founded in 2018, Bengals Cricket Club is a community-driven cricket organization competing in Northern California Cricket Association (NCCA) leagues. We bring together players from diverse backgrounds with a shared passion for competitive cricket, sportsmanship, and continuous growth.
+        <div class="section-centered">
+            <h2 class="section-heading">About GSCC</h2>
+            <p class="text-body-lg text-justified mb-6">
+                Founded in 2018, Golden State Cricket Club (GSCC) is part of Bengals Inc., a 501(c)(3) non-profit organization. We bring together 160+ players from diverse backgrounds with a shared passion for competitive cricket, sportsmanship, and continuous growth. We compete in Northern California Cricket Association (NCCA) and Bay Area Cricket Alliance (BACA) leagues.
             </p>
             <a href="/about" class="btn">Learn More About Us</a>
         </div>
@@ -54,7 +71,10 @@ const achievements = [
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {achievements.map(achievement => (
                 <div class="card">
-                    <div class="text-2xl font-bold text-primary mb-2">{achievement.year}</div>
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="text-3xl">{achievement.icon}</span>
+                        <div class="text-2xl font-bold text-primary">{achievement.year}</div>
+                    </div>
                     <p class="text-body">{achievement.title}</p>
                 </div>
             ))}
@@ -62,8 +82,8 @@ const achievements = [
     </Section>
 
     <Section title="Where We Play" variant="alternate">
-        <div class="text-center max-w-3xl mx-auto">
-            <p class="text-lg text-muted mb-6">
+        <div class="section-centered">
+            <p class="text-body-lg mb-6">
                 Our teams compete across the Bay Area at premier cricket grounds:
             </p>
             <div class="flex flex-wrap justify-center gap-3">
@@ -80,17 +100,45 @@ const achievements = [
     </Section>
 
     <Section title="Media Gallery">
-        <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
-            {[1, 2, 3, 4, 5, 6].map(i => (
-                <div class="aspect-video bg-gray-100 border border-gray-200 rounded-lg overflow-hidden hover:opacity-80 transition-opacity">
-                    <div class="w-full h-full flex items-center justify-center text-gray-400">
-                        Photo {i}
+        <div class="relative mb-8">
+            {/* Horizontal scrolling container */}
+            <div class="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide" style="scroll-behavior: smooth;">
+                {carouselImages.map((image) => (
+                    <div
+                        class="flex-shrink-0 snap-center border-2 border-gray-200 rounded-lg overflow-hidden hover:border-primary hover:shadow-lg transition-all cursor-pointer"
+                        style="width: 200px; height: 200px;"
+                    >
+                        <img
+                            src={image.src}
+                            alt={image.alt}
+                            width="200"
+                            height="200"
+                            style="width: 100%; height: 100%; object-fit: cover; display: block;"
+                        />
                     </div>
-                </div>
-            ))}
+                ))}
+            </div>
+
+            {/* Scroll hint on mobile */}
+            <div class="text-center text-sm text-gray-500 mb-4 sm:hidden">
+                ← Swipe to see more →
+            </div>
         </div>
+
         <div class="text-center">
-            <a href="/gallery" class="btn">View Full Gallery</a>
+            <a href="/gallery" class="btn btn-lg">View Full Gallery</a>
         </div>
     </Section>
 </Layout>
+
+<style>
+    /* Hide scrollbar for horizontal scroll */
+    .scrollbar-hide {
+        -ms-overflow-style: none;  /* IE and Edge */
+        scrollbar-width: none;  /* Firefox */
+    }
+
+    .scrollbar-hide::-webkit-scrollbar {
+        display: none;  /* Chrome, Safari and Opera */
+    }
+</style>

@@ -1,31 +1,312 @@
 ---
 import Logo from '../components/Logo.astro';
+import { SITE_CONFIG } from '../config';
+import '@fontsource/libre-baskerville/700.css';
 
 const navItems = [
     { linkText: 'Home', href: '/' },
     { linkText: 'About Us', href: '/about' },
+    { linkText: 'Non-Profit', href: '/non-profit' },
     { linkText: 'Teams', href: '/teams' },
+    { linkText: 'Fixtures', href: '/fixtures' },
     { linkText: 'Members', href: '/members' },
     { linkText: 'Gallery', href: '/gallery' },
-    { linkText: 'Contact', href: '/contact' }
+    { linkText: 'Contact Us', href: '/contact' }
 ];
+
+// Get current path to highlight active page
+const currentPath = Astro.url.pathname;
 ---
 
-<nav class="flex flex-wrap items-center gap-4 pt-6 pb-16 sm:pt-12 sm:pb-24">
-    <a href="/">
-        <Logo />
-    </a>
-    {
-        !!navItems?.length && (
-            <ul class="flex flex-wrap gap-x-4 gap-y-1">
-                {navItems.map((item) => (
-                    <li>
-                        <a href={item.href} class="inline-block px-1.5 py-1 sm:px-3 sm:py-2">
-                            {item.linkText}
-                        </a>
-                    </li>
-                ))}
-            </ul>
-        )
-    }
+<nav class="header-gradient py-3 sm:py-4">
+    <div class="grid grid-cols-[auto_1fr] gap-4 items-stretch">
+        {/* Column 1: Logo (full height) */}
+        <a href="/" class="flex items-center self-stretch">
+            <Logo />
+        </a>
+
+        {/* Column 2: Title + Menu */}
+        <div class="flex flex-col gap-2">
+            {/* Row 1: Title + Admin Link */}
+            <div class="flex items-center justify-between">
+                <div class="flex flex-col gap-0">
+                    <h1 class="text-lg sm:text-4xl font-extrabold uppercase tracking-tight leading-tight mb-0" style="color: #D4AF37;">{SITE_CONFIG.name}</h1>
+                    <p class="text-[10px] sm:text-base leading-tight" style="color: #E5C878;">{SITE_CONFIG.location}</p>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    {/* Admin Login Link (Desktop Only) */}
+                    <a href="/admin/login" target="_blank" rel="noopener noreferrer" class="hidden lg:flex items-center p-2 rounded-lg hover:bg-white/10 transition-colors admin-login-btn" style="color: #D4AF37;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+                            <polyline points="10 17 15 12 10 7"></polyline>
+                            <line x1="15" y1="12" x2="3" y2="12"></line>
+                        </svg>
+                        <span class="admin-tooltip">Admin Login</span>
+                    </a>
+
+                    {/* Mobile Menu Button */}
+                    <button
+                        id="mobile-menu-toggle"
+                        class="lg:hidden p-2 rounded-lg hover:bg-white/10 transition-colors"
+                        aria-label="Toggle navigation menu"
+                        aria-expanded="false"
+                        style="color: #D4AF37;"
+                    >
+                    <svg id="menu-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                    <svg
+                        id="close-icon"
+                        class="hidden"
+                        width="28"
+                        height="28"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                    >
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+                </div>
+            </div>
+
+            {/* Row 2: Desktop Navigation Menu */}
+            {
+                !!navItems?.length && (
+                    <ul class="hidden lg:flex gap-x-2 xl:gap-x-4 items-center">
+                        {navItems.map((item) => {
+                            // Highlight all pages except Home
+                            const isActive = item.href !== '/' && (currentPath === item.href || currentPath.startsWith(item.href));
+                            return (
+                                <li>
+                                    <a
+                                        href={item.href}
+                                        class={`inline-block px-1.5 py-1 xl:px-3 xl:py-2 text-xs xl:text-sm font-bold whitespace-nowrap ${isActive ? 'nav-active' : ''}`}
+                                    >
+                                        {item.linkText}
+                                    </a>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                )
+            }
+        </div>
+    </div>
+
+    {/* Mobile Navigation Menu */}
+    <div id="mobile-menu" class="mobile-menu">
+        <ul class="flex flex-col gap-2 p-6">
+            {
+                navItems.map((item) => {
+                    const isActive = item.href !== '/' && (currentPath === item.href || currentPath.startsWith(item.href));
+                    return (
+                        <li>
+                            <a href={item.href} class={`mobile-nav-link ${isActive ? 'mobile-nav-active' : ''}`}>
+                                {item.linkText}
+                            </a>
+                        </li>
+                    );
+                })
+            }
+        </ul>
+    </div>
+
+    {/* Mobile Menu Overlay */}
+    <div id="mobile-menu-overlay" class="mobile-menu-overlay"></div>
 </nav>
+
+<style>
+    /* Header Gradient */
+    .header-gradient {
+        background: linear-gradient(135deg, #8c1d18 0%, #5a1410 28%, #000000 45%);
+        border-radius: 0 0 1rem 1rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Club Name Font */
+    .header-gradient h1 {
+        font-family: 'Libre Baskerville', serif;
+        font-weight: 700;
+        padding-top: 0.5rem;
+    }
+
+    /* Admin Login Tooltip */
+    .admin-login-btn {
+        position: relative;
+    }
+
+    .admin-tooltip {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        margin-top: 8px;
+        padding: 6px 12px;
+        background: rgba(0, 0, 0, 0.9);
+        color: #D4AF37;
+        font-size: 12px;
+        font-weight: 500;
+        white-space: nowrap;
+        border-radius: 6px;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.15s ease, visibility 0.15s ease;
+        pointer-events: none;
+        z-index: 1000;
+    }
+
+    .admin-tooltip::before {
+        content: '';
+        position: absolute;
+        bottom: 100%;
+        right: 12px;
+        border: 5px solid transparent;
+        border-bottom-color: rgba(0, 0, 0, 0.9);
+    }
+
+    .admin-login-btn:hover .admin-tooltip {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    /* Desktop Navigation Links */
+    nav a {
+        color: white;
+        transition: color 0.2s;
+    }
+
+    nav a:hover {
+        color: #d4af37; /* Gold */
+    }
+
+    nav .nav-active {
+        color: #d4af37; /* Gold */
+        text-decoration: underline;
+        text-decoration-color: #d4af37;
+        text-decoration-thickness: 2px;
+        text-underline-offset: 4px;
+    }
+
+    /* Mobile Menu Styles */
+    .mobile-menu {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 280px;
+        max-width: 85vw;
+        background: linear-gradient(135deg, #8c1d18 0%, #5a1410 28%, #000000 45%);
+        box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3);
+        border-left: 4px solid #d4af37;
+        transform: translateX(100%);
+        transition: transform 0.3s ease-in-out;
+        z-index: 1000;
+        overflow-y: auto;
+    }
+
+    .mobile-menu.active {
+        transform: translateX(0);
+    }
+
+    .mobile-menu-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        opacity: 0;
+        visibility: hidden;
+        transition:
+            opacity 0.3s ease-in-out,
+            visibility 0.3s ease-in-out;
+        z-index: 999;
+    }
+
+    .mobile-menu-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .mobile-nav-link {
+        display: block;
+        padding: 1rem 1.5rem;
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: white;
+        border-radius: 8px;
+        transition:
+            background 0.2s,
+            color 0.2s;
+    }
+
+    .mobile-nav-link:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #d4af37;
+    }
+
+    .mobile-nav-active {
+        background: rgba(212, 175, 55, 0.2);
+        color: #d4af37;
+        text-decoration: underline;
+        text-decoration-color: #d4af37;
+        text-decoration-thickness: 2px;
+        text-underline-offset: 4px;
+    }
+
+    @media (min-width: 1024px) {
+        .mobile-menu,
+        .mobile-menu-overlay {
+            display: none;
+        }
+    }
+</style>
+
+<script>
+    // Mobile menu toggle
+    const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+    const mobileMenu = document.getElementById('mobile-menu');
+    const mobileMenuOverlay = document.getElementById('mobile-menu-overlay');
+    const menuIcon = document.getElementById('menu-icon');
+    const closeIcon = document.getElementById('close-icon');
+
+    function toggleMobileMenu() {
+        const isActive = mobileMenu.classList.toggle('active');
+        mobileMenuOverlay.classList.toggle('active');
+        menuIcon.classList.toggle('hidden');
+        closeIcon.classList.toggle('hidden');
+        mobileMenuToggle.setAttribute('aria-expanded', isActive.toString());
+
+        // Prevent body scroll when menu is open
+        if (isActive) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+    }
+
+    mobileMenuToggle?.addEventListener('click', toggleMobileMenu);
+    mobileMenuOverlay?.addEventListener('click', toggleMobileMenu);
+
+    // Close menu on navigation
+    const mobileNavLinks = mobileMenu?.querySelectorAll('a');
+    mobileNavLinks?.forEach((link) => {
+        link.addEventListener('click', () => {
+            mobileMenu.classList.remove('active');
+            mobileMenuOverlay.classList.remove('active');
+            menuIcon.classList.remove('hidden');
+            closeIcon.classList.add('hidden');
+            document.body.style.overflow = '';
+        });
+    });
+
+    // Close menu on escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && mobileMenu?.classList.contains('active')) {
+            toggleMobileMenu();
+        }
+    });
+</script>

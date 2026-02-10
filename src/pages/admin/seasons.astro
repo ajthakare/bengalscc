@@ -1,0 +1,643 @@
+---
+export const prerender = false;
+
+import AdminLayout from '../../layouts/AdminLayout.astro';
+
+// Check authentication
+const cookieHeader = Astro.request.headers.get('cookie');
+let authenticated = false;
+let username = '';
+
+if (cookieHeader) {
+  try {
+    const response = await fetch(
+      `${Astro.url.origin}/.netlify/functions/auth-check`,
+      {
+        headers: {
+          cookie: cookieHeader,
+        },
+      }
+    );
+    const data = await response.json();
+    authenticated = data.authenticated;
+    username = data.username || '';
+  } catch (error) {
+    authenticated = false;
+  }
+}
+
+// Redirect to login if not authenticated
+if (!authenticated) {
+  return Astro.redirect('/admin/login');
+}
+---
+
+<AdminLayout title="Season Management - GSCC Admin" username={username} activePage="seasons">
+  <div class="seasons-page">
+    <!-- Page Header -->
+    <div class="page-header">
+      <h1 class="page-title">Season Management</h1>
+      <p class="page-description">Create and manage cricket seasons</p>
+    </div>
+
+    <!-- Create Season Button -->
+    <div class="actions-bar">
+      <button id="create-season-btn" class="btn-primary">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="10" y1="5" x2="10" y2="15"/>
+          <line x1="5" y1="10" x2="15" y2="10"/>
+        </svg>
+        Create New Season
+      </button>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loading-state" class="state-container">
+      <div class="spinner"></div>
+      <p class="state-text">Loading seasons...</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="error-state" class="alert alert-error" style="display: none;">
+      <div>
+        <p class="alert-title">Error loading seasons</p>
+        <p id="error-text"></p>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div id="empty-state" class="state-container" style="display: none;">
+      <div class="empty-icon">📅</div>
+      <p class="state-title">No seasons yet</p>
+      <p class="state-text">Create your first season to get started</p>
+      <button class="btn-primary" onclick="document.getElementById('create-season-btn').click()">
+        Create Season
+      </button>
+    </div>
+
+    <!-- Seasons Grid -->
+    <div id="seasons-grid" class="seasons-grid" style="display: none;">
+      <!-- Seasons will be inserted here -->
+    </div>
+  </div>
+
+  <!-- Create/Edit Season Modal -->
+  <div id="season-modal" class="modal" style="display: none;">
+    <div class="modal-content modal-large">
+      <div class="modal-header">
+        <h2 id="modal-title" class="modal-title">Create New Season</h2>
+        <button class="modal-close" onclick="closeSeasonModal()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <form id="season-form" class="form">
+        <input type="hidden" id="season-id" name="id" />
+
+        <!-- Basic Info -->
+        <div class="form-section">
+          <h3 class="form-section-title">Basic Information</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="season-name" class="form-label">Season Name*</label>
+              <input
+                type="text"
+                id="season-name"
+                name="name"
+                required
+                placeholder="e.g., 2025-2026"
+                class="form-input"
+              />
+            </div>
+            <div class="form-group">
+              <label for="season-start-date" class="form-label">Start Date*</label>
+              <input
+                type="date"
+                id="season-start-date"
+                name="startDate"
+                required
+                class="form-input"
+              />
+            </div>
+            <div class="form-group">
+              <label for="season-end-date" class="form-label">End Date*</label>
+              <input
+                type="date"
+                id="season-end-date"
+                name="endDate"
+                required
+                class="form-input"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Teams Configuration -->
+        <div class="form-section">
+          <h3 class="form-section-title">Teams Configuration</h3>
+          <div id="teams-container">
+            <!-- Teams will be dynamically added here -->
+          </div>
+          <button type="button" class="btn-secondary btn-sm" onclick="addTeamField()">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="8" y1="4" x2="8" y2="12"/>
+              <line x1="4" y1="8" x2="12" y2="8"/>
+            </svg>
+            Add Team
+          </button>
+        </div>
+
+        <div id="form-error" class="alert alert-error" style="display: none;">
+          <span id="form-error-text"></span>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="closeSeasonModal()">Cancel</button>
+          <button type="submit" id="submit-btn" class="btn-primary">Create Season</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</AdminLayout>
+
+<style>
+  .seasons-page {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .actions-bar {
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .seasons-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+  }
+
+  .season-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+  }
+
+  .season-card.active {
+    border-color: #10b981;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+  }
+
+  .season-card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  }
+
+  .season-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 1rem;
+  }
+
+  .season-name {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0;
+  }
+
+  .active-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.75rem;
+    background: #10b981;
+    color: white;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .season-dates {
+    color: #6b7280;
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+  }
+
+  .season-teams {
+    margin: 1rem 0;
+  }
+
+  .teams-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+  }
+
+  .team-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .team-badge {
+    padding: 0.25rem 0.75rem;
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    color: #374151;
+  }
+
+  .season-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5e7eb;
+  }
+
+  .btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .btn-success {
+    background: #10b981;
+    color: white;
+  }
+
+  .btn-success:hover {
+    background: #059669;
+  }
+
+  .btn-success:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .form-section {
+    margin-bottom: 2rem;
+  }
+
+  .form-section-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 1rem;
+  }
+
+  .team-field {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .team-field-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .team-field-title {
+    font-weight: 600;
+    color: #374151;
+  }
+
+  .btn-remove {
+    background: none;
+    border: none;
+    color: #ef4444;
+    cursor: pointer;
+    padding: 0.25rem;
+    display: flex;
+    align-items: center;
+  }
+
+  .btn-remove:hover {
+    color: #dc2626;
+  }
+
+  .modal-large {
+    max-width: 800px;
+  }
+
+  .empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+  }
+</style>
+
+<script>
+  let seasons = [];
+  let editingSeasonId = null;
+  let teamFieldCount = 0;
+
+  // DOM elements
+  const loadingState = document.getElementById('loading-state');
+  const errorState = document.getElementById('error-state');
+  const errorText = document.getElementById('error-text');
+  const emptyState = document.getElementById('empty-state');
+  const seasonsGrid = document.getElementById('seasons-grid');
+  const seasonModal = document.getElementById('season-modal');
+  const seasonForm = document.getElementById('season-form');
+  const formError = document.getElementById('form-error');
+  const formErrorText = document.getElementById('form-error-text');
+  const teamsContainer = document.getElementById('teams-container');
+
+  // Load seasons on page load
+  loadSeasons();
+
+  async function loadSeasons() {
+    try {
+      loadingState.style.display = 'flex';
+      errorState.style.display = 'none';
+      emptyState.style.display = 'none';
+      seasonsGrid.style.display = 'none';
+
+      const response = await fetch('/.netlify/functions/seasons-list');
+      if (!response.ok) throw new Error('Failed to load seasons');
+
+      seasons = await response.json();
+
+      if (seasons.length === 0) {
+        loadingState.style.display = 'none';
+        emptyState.style.display = 'flex';
+      } else {
+        renderSeasons();
+        loadingState.style.display = 'none';
+        seasonsGrid.style.display = 'grid';
+      }
+    } catch (error) {
+      console.error('Error loading seasons:', error);
+      loadingState.style.display = 'none';
+      errorState.style.display = 'flex';
+      errorText.textContent = error.message;
+    }
+  }
+
+  function renderSeasons() {
+    seasonsGrid.innerHTML = seasons
+      .map(
+        (season) => `
+      <div class="season-card ${season.isActive ? 'active' : ''}">
+        <div class="season-header">
+          <h3 class="season-name">${escapeHtml(season.name)}</h3>
+          ${
+            season.isActive
+              ? '<span class="active-badge"><svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><circle cx="6" cy="6" r="6"/></svg> Active</span>'
+              : ''
+          }
+        </div>
+        <div class="season-dates">
+          ${formatDate(season.startDate)} - ${formatDate(season.endDate)}
+        </div>
+        <div class="season-teams">
+          <div class="teams-label">${season.teams.length} Team(s):</div>
+          <div class="team-badges">
+            ${season.teams.map((team) => `<span class="team-badge">${escapeHtml(team.teamName)} (${escapeHtml(team.division)})</span>`).join('')}
+          </div>
+        </div>
+        <div class="season-actions">
+          ${
+            !season.isActive
+              ? `<button class="btn-success btn-sm" onclick="setActiveSeason('${season.id}')">Set Active</button>`
+              : '<button class="btn-success btn-sm" disabled>Active Season</button>'
+          }
+          <button class="btn-secondary btn-sm" onclick="editSeason('${season.id}')">Edit</button>
+          ${
+            !season.isActive
+              ? `<button class="btn-danger-outline btn-sm" onclick="deleteSeason('${season.id}')">Delete</button>`
+              : ''
+          }
+        </div>
+      </div>
+    `
+      )
+      .join('');
+  }
+
+  // Open create season modal
+  document.getElementById('create-season-btn').addEventListener('click', () => {
+    editingSeasonId = null;
+    document.getElementById('modal-title').textContent = 'Create New Season';
+    document.getElementById('submit-btn').textContent = 'Create Season';
+    seasonForm.reset();
+    document.getElementById('season-id').value = '';
+    teamsContainer.innerHTML = '';
+    teamFieldCount = 0;
+    // Add 3 default team fields
+    addTeamField('Bengal Tigers', 'WB-D2');
+    addTeamField('Bengal Bulls', 'WB-D3');
+    addTeamField('Bengal Thunder Cats', 'PB-D1');
+    formError.style.display = 'none';
+    seasonModal.style.display = 'flex';
+  });
+
+  // Edit season
+  window.editSeason = (seasonId) => {
+    const season = seasons.find((s) => s.id === seasonId);
+    if (!season) return;
+
+    editingSeasonId = seasonId;
+    document.getElementById('modal-title').textContent = 'Edit Season';
+    document.getElementById('submit-btn').textContent = 'Update Season';
+    document.getElementById('season-id').value = season.id;
+    document.getElementById('season-name').value = season.name;
+    document.getElementById('season-start-date').value = season.startDate.split('T')[0];
+    document.getElementById('season-end-date').value = season.endDate.split('T')[0];
+
+    // Populate teams
+    teamsContainer.innerHTML = '';
+    teamFieldCount = 0;
+    season.teams.forEach((team) => {
+      addTeamField(team.teamName, team.division, team.captain, team.viceCaptain);
+    });
+
+    formError.style.display = 'none';
+    seasonModal.style.display = 'flex';
+  };
+
+  // Set active season
+  window.setActiveSeason = async (seasonId) => {
+    if (!confirm('Set this season as active? This will deactivate all other seasons.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/.netlify/functions/seasons-update', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: seasonId, isActive: true }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to set active season');
+      }
+
+      window.toast.success('Season set as active successfully');
+      await loadSeasons();
+    } catch (error) {
+      window.toast.error('Error: ' + error.message);
+    }
+  };
+
+  // Delete season
+  window.deleteSeason = async (seasonId) => {
+    const season = seasons.find((s) => s.id === seasonId);
+    if (!season) return;
+
+    if (!confirm(`Are you sure you want to delete the season "${season.name}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/.netlify/functions/seasons-delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: seasonId }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to delete season');
+      }
+
+      window.toast.success('Season deleted successfully');
+      await loadSeasons();
+    } catch (error) {
+      window.toast.error('Error: ' + error.message);
+    }
+  };
+
+  // Add team field
+  window.addTeamField = (teamName = '', division = '', captain = '', viceCaptain = '') => {
+    teamFieldCount++;
+    const fieldId = `team-${teamFieldCount}`;
+
+    const teamFieldHTML = `
+      <div class="team-field" id="${fieldId}">
+        <div class="team-field-header">
+          <span class="team-field-title">Team ${teamFieldCount}</span>
+          <button type="button" class="btn-remove" onclick="removeTeamField('${fieldId}')">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="10" cy="10" r="8"/>
+              <line x1="7" y1="10" x2="13" y2="10"/>
+            </svg>
+          </button>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Team Name*</label>
+            <input type="text" name="teamName" required value="${escapeHtml(teamName)}" class="form-input" placeholder="e.g., Bengal Tigers" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Division*</label>
+            <input type="text" name="division" required value="${escapeHtml(division)}" class="form-input" placeholder="e.g., WB-D2, T20, T30" />
+          </div>
+        </div>
+      </div>
+    `;
+
+    teamsContainer.insertAdjacentHTML('beforeend', teamFieldHTML);
+  };
+
+  window.removeTeamField = (fieldId) => {
+    document.getElementById(fieldId).remove();
+  };
+
+  // Submit form
+  seasonForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    formError.style.display = 'none';
+
+    const formData = new FormData(seasonForm);
+    const seasonId = formData.get('id');
+
+    // Collect teams
+    const teamFields = teamsContainer.querySelectorAll('.team-field');
+    const teams = Array.from(teamFields).map((field) => ({
+      teamName: field.querySelector('[name="teamName"]').value,
+      division: field.querySelector('[name="division"]').value,
+    }));
+
+    if (teams.length === 0) {
+      formError.style.display = 'block';
+      formErrorText.textContent = 'At least one team is required';
+      return;
+    }
+
+    const data = {
+      name: formData.get('name'),
+      startDate: formData.get('startDate'),
+      endDate: formData.get('endDate'),
+      teams,
+    };
+
+    try {
+      const url = seasonId
+        ? '/.netlify/functions/seasons-update'
+        : '/.netlify/functions/seasons-create';
+      const method = seasonId ? 'PUT' : 'POST';
+
+      if (seasonId) {
+        data.id = seasonId;
+      }
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to save season');
+      }
+
+      closeSeasonModal();
+      await loadSeasons();
+    } catch (error) {
+      formError.style.display = 'block';
+      formErrorText.textContent = error.message;
+    }
+  });
+
+  window.closeSeasonModal = () => {
+    seasonModal.style.display = 'none';
+    seasonForm.reset();
+    editingSeasonId = null;
+  };
+
+  // Helper functions
+  function formatDate(dateStr) {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  // Close modal on outside click
+  seasonModal?.addEventListener('click', (e) => {
+    if (e.target === seasonModal) {
+      closeSeasonModal();
+    }
+  });
+</script>

@@ -1,0 +1,169 @@
+---
+export const prerender = false;
+
+import Layout from '../../layouts/Layout.astro';
+
+// Check if already logged in
+const cookieHeader = Astro.request.headers.get('cookie');
+if (cookieHeader) {
+  try {
+    const response = await fetch(
+      `${Astro.url.origin}/.netlify/functions/auth-check`,
+      {
+        headers: {
+          cookie: cookieHeader,
+        },
+      }
+    );
+    const data = await response.json();
+    if (data.authenticated) {
+      return Astro.redirect('/admin');
+    }
+  } catch (error) {
+    // Continue to login page
+  }
+}
+---
+
+<Layout title="Admin Login - Golden State Cricket Club">
+  <div class="min-h-screen flex items-start justify-center px-4 pb-6 pt-8">
+    <div class="max-w-md w-full space-y-8">
+      <div class="text-center">
+        <h1 class="text-4xl font-bold text-[#355c7d] mb-2">Admin Login</h1>
+        <p class="text-gray-600">Golden State Cricket Club</p>
+      </div>
+
+      <div class="bg-white rounded-lg shadow-lg p-8">
+        <form id="login-form" class="space-y-6">
+          <div>
+            <label for="username" class="block text-sm font-medium text-gray-700 mb-2">
+              Username
+            </label>
+            <input
+              type="text"
+              id="username"
+              name="username"
+              required
+              autocomplete="username"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#f67280] focus:border-transparent"
+              placeholder="Enter your username"
+            />
+          </div>
+
+          <div>
+            <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+              Password
+            </label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              required
+              autocomplete="current-password"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#f67280] focus:border-transparent"
+              placeholder="Enter your password"
+            />
+          </div>
+
+          <div id="error-message" class="hidden">
+            <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+              <span id="error-text"></span>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            id="submit-button"
+            class="w-full bg-[#f67280] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#e55a6a] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#f67280]"
+          >
+            Sign In
+          </button>
+        </form>
+      </div>
+
+      <div class="text-center text-sm text-gray-600">
+        <a href="/" class="hover:text-[#f67280] transition-colors">
+          &larr; Back to Website
+        </a>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  const form = document.getElementById('login-form') as HTMLFormElement;
+  const submitButton = document.getElementById('submit-button') as HTMLButtonElement;
+  const errorMessage = document.getElementById('error-message') as HTMLDivElement;
+  const errorText = document.getElementById('error-text') as HTMLSpanElement;
+
+  function showError(message: string) {
+    errorText.textContent = message;
+    errorMessage.classList.remove('hidden');
+  }
+
+  function hideError() {
+    errorMessage.classList.add('hidden');
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideError();
+
+    const formData = new FormData(form);
+    const username = formData.get('username') as string;
+    const password = formData.get('password') as string;
+
+    // Disable submit button
+    submitButton.disabled = true;
+    submitButton.textContent = 'Signing in...';
+
+    try {
+      const response = await fetch('/.netlify/functions/auth-login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Login successful, redirect to admin dashboard
+        window.location.href = '/admin';
+      } else {
+        // Show error message
+        showError(data.error || 'Login failed. Please try again.');
+        submitButton.disabled = false;
+        submitButton.textContent = 'Sign In';
+      }
+    } catch (error) {
+      showError('Network error. Please try again.');
+      submitButton.disabled = false;
+      submitButton.textContent = 'Sign In';
+    }
+  });
+</script>
+
+<style>
+  /* Override hardcoded colors with theme variables */
+  input:focus {
+    --tw-ring-color: var(--color-primary) !important;
+  }
+
+  button[type="submit"] {
+    background-color: var(--color-primary) !important;
+  }
+
+  button[type="submit"]:hover {
+    background-color: color-mix(in srgb, var(--color-primary) 90%, black) !important;
+  }
+
+  button[type="submit"]:focus {
+    --tw-ring-color: var(--color-primary) !important;
+  }
+
+  a:hover {
+    color: var(--color-primary) !important;
+  }
+</style>

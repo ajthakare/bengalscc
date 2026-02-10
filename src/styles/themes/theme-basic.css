@@ -1,0 +1,34 @@
+/**
+ * BASIC THEME
+ * This is the current/original design - clean, minimal, flat
+ */
+
+@theme {
+    /* Shadows - minimal */
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-card-hover: 0 2px 4px rgba(0, 0, 0, 0.08);
+    --shadow-button: none;
+    --shadow-elevated: 0 4px 6px rgba(0, 0, 0, 0.07);
+
+    /* Gradients - subtle */
+    --gradient-hero: linear-gradient(to bottom right, var(--color-bg-hero), var(--color-bg-hero-dark));
+    --gradient-section: none;
+    --gradient-card-header: none;
+    --gradient-primary: var(--color-primary);
+
+    /* Typography weights - standard */
+    --font-weight-display: 700;
+    --font-weight-heading: 700;
+    --font-weight-subheading: 600;
+
+    /* Transitions - basic */
+    --transition-base: 150ms ease;
+    --transition-hover: 150ms ease;
+
+    /* Border radius - standard */
+    --border-radius-card: 0.5rem;
+    --border-radius-button: 0.25rem;
+
+    /* Texture opacity - subtle */
+    --texture-opacity: 0.02;
+}

@@ -1,0 +1,11 @@
+---
+export const prerender = false;
+
+// Clear session cookie using Astro's cookie API
+Astro.cookies.delete('bengals_admin_session', {
+  path: '/'
+});
+
+// Redirect to login page
+return Astro.redirect('/admin/login');
+---

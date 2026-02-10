@@ -5,9 +5,9 @@ import StatsGrid from '../components/StatsGrid.astro';
 import Card from '../components/Card.astro';
 
 const membershipStats = [
-    { label: 'Total Members', value: '130+' },
+    { label: 'Total Members', value: '160+' },
     { label: 'Youth & Students', value: '30+' },
-    { label: 'Counties Covered', value: '6+' }
+    { label: 'Counties Covered', value: '8' }
 ];
 
 const eligibleMembers = [
@@ -49,10 +49,26 @@ const joinSteps = [
 ];
 ---
 
-<Layout title="Membership - Bengals Cricket Club">
-    <h1 class="text-4xl sm:text-5xl font-bold mb-8">Become a Member</h1>
+<Layout title="Membership - Golden State Cricket Club">
+    <h1 class="page-title">Become a Member</h1>
 
-    <Section title="Who Can Join">
+    <Section>
+        <div class="accent-box section-centered mb-8">
+            <h2 class="subsection-heading">Join Bengals Inc. Through GSCC</h2>
+            <p class="text-body-base text-justified mb-4">
+                When you become a member of Golden State Cricket Club (GSCC), you're joining
+                <strong>Bengals Inc.</strong>, a 501(c)(3) non-profit organization. Your membership
+                dues support not just competitive cricket, but also youth development, community programs,
+                and cricket growth across Northern California.
+            </p>
+            <p class="text-body-base">
+                We currently have <strong>160+ active members</strong> including <strong>30+ youth and students</strong>
+                from 8 counties across the Bay Area, united by a shared passion for cricket and community.
+            </p>
+        </div>
+    </Section>
+
+    <Section title="Who Can Join" variant="alternate">
         <div class="grid md:grid-cols-3 gap-6">
             {eligibleMembers.map(item => (
                 <Card title={item.title} content={item.content} />
@@ -61,12 +77,14 @@ const joinSteps = [
     </Section>
 
     <Section variant="alternate">
-        <h2 class="text-3xl sm:text-4xl font-bold mb-8 text-center">Membership Overview</h2>
-        <StatsGrid stats={membershipStats} />
+        <div class="section-centered-wide">
+            <h2 class="section-heading text-center">Membership Overview</h2>
+            <StatsGrid stats={membershipStats} />
+        </div>
     </Section>
 
     <Section title="How to Join">
-        <div class="grid sm:grid-cols-2 gap-6 mb-12">
+        <div class="grid sm:grid-cols-2 gap-6 mb-12 max-w-5xl mx-auto">
             {joinSteps.map(step => (
                 <div class="bg-gray-50 border border-gray-200 rounded-lg p-6 hover:bg-gray-100 transition-colors">
                     <div class="flex items-start gap-4">
@@ -74,18 +92,18 @@ const joinSteps = [
                             {step.number}
                         </div>
                         <div class="flex-1">
-                            <h3 class="text-xl font-bold mb-2 text-gray-900">{step.title}</h3>
-                            <p class="text-gray-700">{step.content}</p>
+                            <h3 class="subsection-heading heading-margin-sm">{step.title}</h3>
+                            <p class="text-body-base">{step.content}</p>
                         </div>
                     </div>
                 </div>
             ))}
         </div>
 
-        <div class="accent-box text-center max-w-2xl mx-auto">
-            <h3 class="text-2xl font-bold mb-4 text-heading">Ready to Join?</h3>
-            <p class="text-lg text-body mb-6">
-                Get in touch with us to start your membership journey with Bengals Cricket Club.
+        <div class="accent-box section-centered">
+            <h3 class="subsection-heading">Ready to Join?</h3>
+            <p class="text-body-lg mb-6">
+                Get in touch with us to start your membership journey with Golden State Cricket Club.
             </p>
             <a href="/contact" class="btn btn-lg">Contact Us Now</a>
         </div>

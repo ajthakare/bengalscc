@@ -1,0 +1,19 @@
+/**
+ * THEME CONFIGURATION
+ *
+ * Switch between themes by changing the import below.
+ * Each theme file is a complete standalone theme (colors + design).
+ *
+ * Available themes:
+ * - theme-bengals.css       = Bengals Cricket Club (Orange/Blue)
+ * - theme-golden-state.css  = Golden State CC (TBD - awaiting brand colors)
+ *
+ * TO SWITCH THEMES: Change the @import line below!
+ */
+
+/* Active theme */
+@import './themes/theme-golden-state-v2.css';
+
+/* Other available themes: */
+/* @import './themes/theme-bengals.css'; */
+/* @import './themes/theme-golden-state.css'; */

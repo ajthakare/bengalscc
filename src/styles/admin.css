@@ -1,0 +1,768 @@
+/* Admin Panel Structural Styles (Theme-agnostic) */
+/* All colors, backgrounds, and theme-specific styles are in theme files */
+
+/* ============================================
+   PAGE STRUCTURE
+   ============================================ */
+.page-header {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid transparent; /* Thickness set here, color from theme */
+}
+
+.page-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+  /* Color and background are set in theme CSS */
+}
+
+.page-description {
+  font-size: 0.875rem;
+  margin: 0;
+  /* Color and background are set in theme CSS */
+}
+
+/* ============================================
+   BUTTONS - Structure Only
+   ============================================ */
+.btn-primary,
+.btn-secondary,
+.btn-success,
+.btn-danger-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  /* Colors set in theme CSS */
+}
+
+.btn-secondary,
+.btn-danger-outline {
+  border: 1px solid transparent; /* Thickness set here, color from theme */
+}
+
+.btn-primary:disabled,
+.btn-success:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+/* ============================================
+   STATS GRID
+   ============================================ */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid transparent; /* Thickness set here, color from theme */
+  /* Background and border color set in theme CSS */
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+  /* Color set in theme CSS */
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  /* Color set in theme CSS */
+}
+
+/* Stat color variants - colors defined in theme */
+.stat-success,
+.stat-primary,
+.stat-muted {
+  /* Colors set in theme CSS */
+}
+
+/* ============================================
+   TABLES
+   ============================================ */
+.table-container {
+  border-radius: 12px;
+  border: 1px solid transparent;
+  overflow: hidden;
+  /* Background and border color set in theme CSS */
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table thead {
+  border-bottom: 1px solid transparent;
+  /* Background and border color set in theme CSS */
+}
+
+.data-table th {
+  padding: 1rem;
+  text-align: left;
+  font-size: 0.875rem;
+  font-weight: 600;
+  /* Color set in theme CSS */
+}
+
+.data-table td {
+  padding: 1rem;
+  border-top: 1px solid transparent;
+  font-size: 0.875rem;
+  /* Border color set in theme CSS */
+}
+
+.data-table tbody tr:hover {
+  /* Background set in theme CSS */
+}
+
+/* ============================================
+   MODALS
+   ============================================ */
+.modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  /* Background overlay set in theme CSS */
+}
+
+.modal-content {
+  border-radius: 12px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  /* Background set in theme CSS */
+}
+
+.modal-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid transparent;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  /* Border color set in theme CSS */
+}
+
+.modal-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+  /* Color set in theme CSS */
+}
+
+.modal-close {
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 6px;
+  transition: all 0.2s;
+  /* Background and color set in theme CSS */
+}
+
+.modal-footer {
+  padding: 1.5rem;
+  border-top: 1px solid transparent;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  /* Border color set in theme CSS */
+}
+
+/* ============================================
+   FORMS
+   ============================================ */
+.form {
+  padding: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  /* Color set in theme CSS */
+}
+
+.form-input,
+.form-select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  min-height: 44px;
+  /* Border color set in theme CSS */
+}
+
+.form-input:focus,
+.form-select:focus {
+  outline: none;
+  /* Border color and box-shadow set in theme CSS */
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+/* ============================================
+   ALERTS
+   ============================================ */
+.alert {
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  /* Background, border, and color set in theme CSS */
+}
+
+.alert-error,
+.alert-success {
+  border: 1px solid transparent;
+  /* Colors set in theme CSS */
+}
+
+.alert-title {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+/* ============================================
+   STATE CONTAINERS
+   ============================================ */
+.state-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+}
+
+.state-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  /* Color set in theme CSS */
+}
+
+.state-text {
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+  /* Color set in theme CSS */
+}
+
+/* ============================================
+   SPINNER
+   ============================================ */
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  /* Border colors set in theme CSS */
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================
+   SEASON MANAGEMENT
+   ============================================ */
+.seasons-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.season-card {
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+  /* Background and border colors set in theme CSS */
+}
+
+.season-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.season-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 1rem;
+}
+
+.season-name {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+  /* Color set in theme CSS */
+}
+
+.active-badge {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  /* Background and color set in theme CSS */
+}
+
+.season-dates {
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+  /* Color set in theme CSS */
+}
+
+.season-teams {
+  margin: 1rem 0;
+}
+
+.teams-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  /* Color set in theme CSS */
+}
+
+.team-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.team-badge {
+  padding: 0.25rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  /* Background, border, and color set in theme CSS */
+}
+
+.season-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid transparent;
+  /* Border color set in theme CSS */
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+.bg-noise {
+  background-image: var(--background-image-noise);
+  background-size: cover;
+  background-position: center;
+}
+
+.text-body {
+  /* Color set in theme CSS */
+}
+
+.antialiased {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============================================
+   MOBILE RESPONSIVE STYLES
+   ============================================ */
+
+/* Tablet and below (1024px and below) */
+@media (max-width: 1024px) {
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .data-table {
+    min-width: 800px;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .seasons-grid {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+
+  .modal-content {
+    max-width: 90%;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .table-actions button,
+  .table-actions a {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* Mobile devices (768px and below) */
+@media (max-width: 768px) {
+  .page-title {
+    font-size: 1.5rem;
+  }
+
+  .page-description {
+    font-size: 0.8125rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-value {
+    font-size: 1.5rem;
+  }
+
+  .btn-primary,
+  .btn-secondary,
+  .btn-success,
+  .btn-danger-outline {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.875rem;
+    min-height: 48px;
+  }
+
+  .btn-icon {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0.625rem;
+  }
+
+  .form-input,
+  .form-select,
+  .form-textarea {
+    min-height: 52px;
+    font-size: 16px; /* Prevents iOS zoom on focus */
+    padding: 0.875rem 1rem;
+  }
+
+  input[type="checkbox"],
+  input[type="radio"] {
+    min-width: 24px;
+    min-height: 24px;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+  }
+
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .toolbar-actions {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .toolbar-actions button {
+    flex: 1;
+  }
+
+  .filter-select {
+    min-width: 100%;
+  }
+
+  .view-mode-toggle {
+    width: 100%;
+  }
+
+  .toggle-btn {
+    flex: 1;
+  }
+
+  .modal {
+    padding: 0.5rem;
+  }
+
+  .modal-content {
+    max-width: 100%;
+    max-height: 95vh;
+    border-radius: 8px;
+  }
+
+  .modal-header {
+    padding: 1rem;
+  }
+
+  .modal-title {
+    font-size: 1.125rem;
+  }
+
+  .form {
+    padding: 1rem;
+    padding-bottom: 2rem;
+  }
+
+  .modal-body {
+    padding-bottom: 2rem;
+  }
+
+  .modal-footer {
+    padding: 1rem;
+    padding-bottom: max(2.5rem, calc(1rem + env(safe-area-inset-bottom, 0px) + 2rem));
+    flex-direction: column;
+    gap: 0.75rem;
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+    /* Background set in theme CSS */
+  }
+
+  .modal-footer button {
+    width: 100%;
+    min-height: 52px;
+  }
+
+  .bulk-actions-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .bulk-actions-toolbar button {
+    width: 100%;
+    min-height: 48px;
+  }
+
+  .modal pre,
+  .modal code {
+    font-size: 0.875rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table-container {
+    position: relative;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .table-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 20px;
+    background: linear-gradient(to left, rgba(0, 0, 0, 0.05), transparent);
+    pointer-events: none;
+  }
+
+  .data-table {
+    min-width: 700px;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.8125rem;
+    white-space: nowrap;
+  }
+
+  .seasons-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .season-card {
+    padding: 1.25rem;
+  }
+
+  .season-actions {
+    flex-direction: column;
+  }
+
+  .season-actions button {
+    width: 100%;
+  }
+
+  .form-group {
+    margin-bottom: 1.25rem;
+  }
+
+  .form-input,
+  .form-select {
+    font-size: 16px;
+    padding: 0.75rem;
+  }
+
+  .alert {
+    padding: 0.875rem 1rem;
+    font-size: 0.8125rem;
+  }
+
+  .page-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+  }
+}
+
+/* Small mobile devices (480px and below) */
+@media (max-width: 480px) {
+  .page-title {
+    font-size: 1.25rem;
+  }
+
+  .stat-card {
+    padding: 1rem;
+  }
+
+  .stat-label {
+    font-size: 0.8125rem;
+  }
+
+  .stat-value {
+    font-size: 1.25rem;
+  }
+
+  .btn-primary,
+  .btn-secondary,
+  .btn-success,
+  .btn-danger-outline {
+    padding: 0.625rem 1rem;
+    font-size: 0.8125rem;
+    min-height: 48px;
+  }
+
+  .sidebar {
+    width: 90vw;
+    max-width: 320px;
+  }
+
+  .upload-zone {
+    padding: 2rem 1rem;
+  }
+
+  .btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+  }
+
+  .data-table {
+    min-width: 600px;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: 0.625rem 0.375rem;
+    font-size: 0.75rem;
+  }
+
+  .modal-content {
+    border-radius: 0;
+    max-height: 100vh;
+  }
+
+  .modal-header,
+  .form,
+  .modal-footer {
+    padding: 0.875rem;
+  }
+}
+
+/* Horizontal scroll wrapper utility */
+.scroll-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 -1rem;
+  padding: 0 1rem;
+}
+
+.scroll-wrapper::-webkit-scrollbar {
+  height: 8px;
+}
+
+.scroll-wrapper::-webkit-scrollbar-track {
+  border-radius: 4px;
+  /* Background set in theme CSS */
+}
+
+.scroll-wrapper::-webkit-scrollbar-thumb {
+  border-radius: 4px;
+  /* Background set in theme CSS */
+}
+
+/* Extra small devices (iPhone SE, small Android - 375px and below) */
+@media (max-width: 375px) {
+  .sidebar {
+    width: 95vw;
+  }
+
+  .modal {
+    padding: 0;
+  }
+
+  .page-title {
+    font-size: 1.125rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .stat-card {
+    padding: 0.875rem;
+  }
+}

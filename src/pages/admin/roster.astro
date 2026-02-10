@@ -1,0 +1,1160 @@
+---
+export const prerender = false;
+
+import AdminLayout from '../../layouts/AdminLayout.astro';
+
+// Check authentication
+const cookieHeader = Astro.request.headers.get('cookie');
+let authenticated = false;
+let username = '';
+
+if (cookieHeader) {
+  try {
+    const response = await fetch(
+      `${Astro.url.origin}/.netlify/functions/auth-check`,
+      {
+        headers: {
+          cookie: cookieHeader,
+        },
+      }
+    );
+    const data = await response.json();
+    authenticated = data.authenticated;
+    username = data.username || '';
+  } catch (error) {
+    authenticated = false;
+  }
+}
+
+// Redirect to login if not authenticated
+if (!authenticated) {
+  return Astro.redirect('/admin/login');
+}
+---
+
+<AdminLayout title="Team Roster Management - GSCC Admin" username={username} activePage="roster">
+  <div class="roster-page">
+    <!-- Page Header -->
+    <div class="page-header">
+      <h1 class="page-title">Team Roster Management</h1>
+      <p class="page-description">Mark players as core to teams for the current season</p>
+    </div>
+
+    <!-- Selectors -->
+    <div class="selectors-bar">
+      <div class="selector-group">
+        <label for="season-select" class="selector-label">Season:</label>
+        <select id="season-select" class="selector-input">
+          <option value="">Loading...</option>
+        </select>
+      </div>
+      <div class="selector-group">
+        <label for="team-select" class="selector-label">Team:</label>
+        <select id="team-select" class="selector-input" disabled>
+          <option value="">Select a season first...</option>
+        </select>
+      </div>
+      <button id="refresh-btn" class="btn-secondary">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M1 4v5h5M17 14v-5h-5"/>
+          <path d="M17.5 9A7.5 7.5 0 0 0 5.14 5.14L1 9m16 0l-4.14 3.86A7.5 7.5 0 0 1 .5 9"/>
+        </svg>
+        Refresh
+      </button>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-grid" id="stats-grid" style="display: none;">
+      <div class="stat-card">
+        <div class="stat-label">Core Players</div>
+        <div class="stat-value stat-success" id="stat-core">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Roster Players</div>
+        <div class="stat-value" id="stat-available">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Changes Pending</div>
+        <div class="stat-value stat-warning" id="stat-changes">0</div>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loading-state" class="state-container">
+      <div class="spinner"></div>
+      <p class="state-text">Loading roster data...</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="error-state" class="alert alert-error" style="display: none;">
+      <div>
+        <p class="alert-title">Error loading roster</p>
+        <p id="error-text"></p>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div id="empty-state" class="state-container" style="display: none;">
+      <div class="empty-icon">🏏</div>
+      <p class="state-title">Select a season and team</p>
+      <p class="state-text">Choose a season and team to manage the core roster</p>
+    </div>
+
+    <!-- No Players State -->
+    <div id="no-players-state" class="state-container" style="display: none;">
+      <div class="empty-icon">👥</div>
+      <p class="state-title">No players available</p>
+      <p class="state-text">Add players first from the Player Management page</p>
+      <a href="/admin/players" class="btn-primary">Go to Player Management</a>
+    </div>
+
+    <!-- Roster Grid -->
+    <div id="roster-container" style="display: none;">
+      <!-- Search Bar -->
+      <div class="search-bar">
+        <div class="search-container">
+          <svg class="search-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="9" cy="9" r="7"/>
+            <path d="M14 14l5 5"/>
+          </svg>
+          <input
+            type="text"
+            id="player-search"
+            placeholder="Search players..."
+            class="search-input"
+          />
+        </div>
+        <div class="quick-actions">
+          <button id="select-all-btn" class="btn-secondary btn-sm">Select All</button>
+          <button id="deselect-all-btn" class="btn-secondary btn-sm">Deselect All</button>
+        </div>
+      </div>
+
+      <!-- Players Table -->
+      <div class="table-container">
+        <table class="roster-table">
+          <thead>
+            <tr>
+              <th style="width: 25%;">Player Name</th>
+              <th style="width: 10%;">Role</th>
+              <th style="width: 10%; text-align: center;">In Roster</th>
+              <th style="width: 10%; text-align: center;">Core</th>
+              <th style="width: 10%; text-align: center;">Captain</th>
+              <th style="width: 10%; text-align: center;">Vice Captain</th>
+              <th style="width: 25%; text-align: center;">Status</th>
+            </tr>
+          </thead>
+          <tbody id="players-list">
+            <!-- Players will be inserted here -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="action-bar" id="action-bar" style="display: none;">
+        <button id="cancel-btn" class="btn-secondary">Cancel Changes</button>
+        <button id="save-btn" class="btn-primary">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 6l-8 8-4-4"/>
+          </svg>
+          Save Changes
+        </button>
+      </div>
+    </div>
+  </div>
+</AdminLayout>
+
+<style>
+  .roster-page {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .selectors-bar {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-end;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .selector-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .selector-label {
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.875rem;
+  }
+
+  .selector-input {
+    padding: 0.75rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    background: white;
+    cursor: pointer;
+  }
+
+  .selector-input:disabled {
+    background: #f3f4f6;
+    cursor: not-allowed;
+  }
+
+  .search-bar {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    align-items: center;
+  }
+
+  .search-container {
+    flex: 1;
+    position: relative;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 2.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 0.875rem;
+  }
+
+  .quick-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .players-grid {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+    max-height: 600px;
+    overflow-y: auto;
+  }
+
+  .table-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+  }
+
+  .roster-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .roster-table thead {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+  }
+
+  .roster-table th {
+    padding: 1rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-align: left;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .roster-table tbody tr {
+    border-bottom: 1px solid #e5e7eb;
+    transition: background-color 0.15s ease;
+  }
+
+  .roster-table tbody tr:hover {
+    background: #f9fafb;
+  }
+
+  .roster-table tbody tr.in-roster {
+    background: #f0fdf4;
+  }
+
+  .roster-table tbody tr.core {
+    background: #d1fae5;
+  }
+
+  .roster-table tbody tr.captain {
+    background: #fef9c3;
+    border-left: 4px solid #eab308;
+  }
+
+  .roster-table tbody tr.vice-captain {
+    background: #FEF2F2;
+    border-left: 4px solid #8C1D18;
+  }
+
+  .roster-table tbody tr.changed {
+    background: #fef3c7;
+  }
+
+  .roster-table td {
+    padding: 1rem;
+    border: 1px solid #e5e7eb;
+    vertical-align: middle;
+  }
+
+  .roster-table td.center {
+    text-align: center;
+  }
+
+  .player-name {
+    font-weight: 600;
+    color: #1f2937;
+  }
+
+  .player-role-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    background: #ede9fe;
+    color: #5b21b6;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .status-badge.in-roster {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+
+  .status-badge.core {
+    background: #d1fae5;
+    color: #065f46;
+  }
+
+  .status-badge.captain {
+    background: #fef08a;
+    color: #854d0e;
+    font-weight: 700;
+  }
+
+  .status-badge.vice-captain {
+    background: #fed7aa;
+    color: #9a3412;
+    font-weight: 700;
+  }
+
+  .status-badge.changed {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  .roster-table input[type="checkbox"],
+  .roster-table input[type="radio"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+  }
+
+  .roster-table input[type="checkbox"]:disabled,
+  .roster-table input[type="radio"]:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  .player-info {
+    flex: 1;
+  }
+
+  .player-name {
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 0.25rem;
+  }
+
+  .player-details {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .player-role {
+    font-size: 0.75rem;
+    padding: 0.125rem 0.5rem;
+    background: #ede9fe;
+    color: #5b21b6;
+    border-radius: 4px;
+  }
+
+  .multi-team-badge {
+    font-size: 0.75rem;
+    padding: 0.125rem 0.5rem;
+    background: #fef3c7;
+    color: #92400e;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .action-bar {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    padding: 1.5rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+  }
+
+  .stat-warning {
+    color: #f59e0b;
+  }
+
+  /* Mobile Responsive Styles */
+  @media (max-width: 768px) {
+    /* Selectors bar - stack on mobile */
+    .selectors-bar {
+      flex-direction: column;
+      gap: 1rem;
+      padding: 1rem;
+    }
+
+    .selector-group {
+      width: 100%;
+    }
+
+    .selectors-bar button {
+      width: 100%;
+    }
+
+    /* Search bar - stack on mobile */
+    .search-bar {
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .quick-actions {
+      width: 100%;
+      justify-content: stretch;
+    }
+
+    .quick-actions button {
+      flex: 1;
+    }
+
+    /* Make table container horizontally scrollable */
+    .table-container {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin: 0 -1rem;
+      padding: 0;
+      border-radius: 0;
+    }
+
+    /* Add scroll indicator shadow */
+    .table-container::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 20px;
+      background: linear-gradient(to left, rgba(0, 0, 0, 0.1), transparent);
+      pointer-events: none;
+    }
+
+    /* Ensure table has minimum width */
+    .roster-table {
+      min-width: 800px;
+    }
+
+    /* Reduce padding on mobile */
+    .roster-table th,
+    .roster-table td {
+      padding: 0.75rem 0.5rem;
+      font-size: 0.8125rem;
+    }
+
+    /* Make checkboxes/radios slightly smaller but still tappable */
+    .roster-table input[type="checkbox"],
+    .roster-table input[type="radio"] {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* Status badges */
+    .status-badge {
+      font-size: 0.625rem;
+      padding: 0.25rem 0.5rem;
+      display: inline-block;
+      margin-bottom: 0.25rem;
+    }
+
+    .player-role-badge {
+      font-size: 0.625rem;
+      padding: 0.25rem 0.5rem;
+    }
+
+    /* Action bar - stack buttons */
+    .action-bar {
+      flex-direction: column;
+      padding: 1rem;
+    }
+
+    .action-bar button {
+      width: 100%;
+    }
+
+    /* Stats grid - 2 columns on mobile */
+    .stats-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    /* Stats grid - single column on small mobile */
+    .stats-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .roster-table {
+      min-width: 700px;
+    }
+
+    .roster-table th,
+    .roster-table td {
+      padding: 0.625rem 0.375rem;
+      font-size: 0.75rem;
+    }
+
+    .status-badge {
+      font-size: 0.5625rem;
+      padding: 0.2rem 0.4rem;
+    }
+  }
+</style>
+
+<script>
+  let seasons = [];
+  let players = [];
+  let coreRoster = [];
+  let corePlayerIds = new Set(); // Set of player IDs who are in the roster
+  let selectedSeason = null;
+  let selectedTeam = '';
+  let playerChanges = new Map(); // playerId -> { inRoster, isCore }
+  let searchQuery = '';
+
+  // DOM elements
+  const loadingState = document.getElementById('loading-state');
+  const errorState = document.getElementById('error-state');
+  const errorText = document.getElementById('error-text');
+  const emptyState = document.getElementById('empty-state');
+  const noPlayersState = document.getElementById('no-players-state');
+  const rosterContainer = document.getElementById('roster-container');
+  const statsGrid = document.getElementById('stats-grid');
+  const seasonSelect = document.getElementById('season-select');
+  const teamSelect = document.getElementById('team-select');
+  const playersList = document.getElementById('players-list');
+  const actionBar = document.getElementById('action-bar');
+  const playerSearch = document.getElementById('player-search');
+
+  // Load seasons on page load
+  loadSeasons();
+
+  async function loadSeasons() {
+    try {
+      const response = await fetch('/.netlify/functions/seasons-list');
+      if (!response.ok) throw new Error('Failed to load seasons');
+
+      seasons = await response.json();
+
+      if (seasons.length === 0) {
+        seasonSelect.innerHTML = '<option value="">No seasons available</option>';
+        return;
+      }
+
+      // Populate season dropdown
+      seasonSelect.innerHTML = seasons
+        .map((s) => `<option value="${s.id}">${escapeHtml(s.name)}${s.isActive ? ' (Active)' : ''}</option>`)
+        .join('');
+
+      // Select active season by default
+      const activeSeason = seasons.find((s) => s.isActive);
+      if (activeSeason) {
+        seasonSelect.value = activeSeason.id;
+        await onSeasonChange();
+      }
+    } catch (error) {
+      console.error('Error loading seasons:', error);
+      seasonSelect.innerHTML = '<option value="">Error loading seasons</option>';
+    }
+  }
+
+  seasonSelect.addEventListener('change', onSeasonChange);
+  teamSelect.addEventListener('change', onTeamChange);
+
+  async function onSeasonChange() {
+    const seasonId = seasonSelect.value;
+    if (!seasonId) {
+      teamSelect.disabled = true;
+      teamSelect.innerHTML = '<option value="">Select a season first...</option>';
+      hideRoster();
+      return;
+    }
+
+    selectedSeason = seasons.find((s) => s.id === seasonId);
+    if (!selectedSeason) return;
+
+    // Populate team dropdown
+    teamSelect.disabled = false;
+    teamSelect.innerHTML = `
+      <option value="">Select a team...</option>
+      ${selectedSeason.teams.map((t) => `<option value="${escapeHtml(t.teamName)}">${escapeHtml(t.teamName)} (${escapeHtml(t.division)})</option>`).join('')}
+    `;
+
+    hideRoster();
+  }
+
+  async function onTeamChange() {
+    selectedTeam = teamSelect.value;
+    if (!selectedTeam || !selectedSeason) {
+      hideRoster();
+      return;
+    }
+
+    await loadRosterData();
+  }
+
+  async function loadRosterData() {
+    try {
+      showLoading();
+
+      // Load players and core roster in parallel
+      // Add cache buster to ensure fresh data
+      const cacheBuster = Date.now();
+      const [playersResponse, rosterResponse] = await Promise.all([
+        fetch(`/.netlify/functions/players-list?status=active&_=${cacheBuster}`),
+        fetch(`/.netlify/functions/core-roster-list?seasonId=${selectedSeason.id}&teamName=${encodeURIComponent(selectedTeam)}&_=${cacheBuster}`),
+      ]);
+
+      if (!playersResponse.ok) throw new Error('Failed to load players');
+      if (!rosterResponse.ok) throw new Error('Failed to load core roster');
+
+      players = await playersResponse.json();
+      coreRoster = await rosterResponse.json();
+
+      console.log('Loaded players:', players.length);
+      console.log('Loaded core roster:', coreRoster);
+      console.log('Core roster player IDs:', coreRoster.map(r => r.playerId));
+
+      if (players.length === 0) {
+        hideLoading();
+        noPlayersState.style.display = 'flex';
+        return;
+      }
+
+      // Reset changes
+      playerChanges.clear();
+
+      renderRoster();
+      updateStats();
+
+      hideLoading();
+      statsGrid.style.display = 'grid';
+      rosterContainer.style.display = 'block';
+    } catch (error) {
+      console.error('Error loading roster data:', error);
+      hideLoading();
+      errorState.style.display = 'flex';
+      errorText.textContent = error.message;
+    }
+  }
+
+  function renderRoster() {
+    // Update corePlayerIds set from current roster
+    corePlayerIds = new Set(coreRoster.map((r) => r.playerId));
+    console.log('Rendering roster, corePlayerIds:', Array.from(corePlayerIds));
+
+    // Filter players by search query
+    const filteredPlayers = players.filter((p) => {
+      if (!searchQuery) return true;
+      const fullName = `${p.firstName} ${p.lastName}`.toLowerCase();
+      return (
+        fullName.includes(searchQuery) ||
+        (p.email && p.email.toLowerCase().includes(searchQuery)) ||
+        (p.usacId && p.usacId.toLowerCase().includes(searchQuery))
+      );
+    });
+
+    playersList.innerHTML = filteredPlayers
+      .map((player) => {
+        // Get original values from roster
+        const rosterRecord = coreRoster.find(r => r.playerId === player.id);
+        const originalInRoster = corePlayerIds.has(player.id);
+        const originalIsCore = rosterRecord?.isCore || false;
+        const originalIsCaptain = rosterRecord?.isCaptain || false;
+        const originalIsViceCaptain = rosterRecord?.isViceCaptain || false;
+
+        // Check if player has any changes
+        const changes = playerChanges.get(player.id) || {
+          inRoster: originalInRoster,
+          isCore: originalIsCore,
+          isCaptain: originalIsCaptain,
+          isViceCaptain: originalIsViceCaptain
+        };
+
+        const inRoster = changes.inRoster;
+        const isCore = changes.isCore;
+        const isCaptain = changes.isCaptain;
+        const isViceCaptain = changes.isViceCaptain;
+        const hasChanged = playerChanges.has(player.id);
+
+        let rowClass = '';
+        if (isCaptain) rowClass = 'captain';
+        else if (isViceCaptain) rowClass = 'vice-captain';
+        else if (isCore) rowClass = 'core';
+        else if (inRoster) rowClass = 'in-roster';
+        if (hasChanged) rowClass += ' changed';
+
+        let statusBadges = [];
+        if (isCaptain) statusBadges.push('<span class="status-badge captain">CAPTAIN</span>');
+        if (isViceCaptain) statusBadges.push('<span class="status-badge vice-captain">VICE CAPTAIN</span>');
+        if (isCore) statusBadges.push('<span class="status-badge core">CORE</span>');
+        if (!isCaptain && !isViceCaptain && !isCore && inRoster) statusBadges.push('<span class="status-badge in-roster">IN ROSTER</span>');
+        if (hasChanged && statusBadges.length === 0) statusBadges.push('<span class="status-badge changed">CHANGED</span>');
+
+        const playerName = escapeHtml(player.firstName) + ' ' + escapeHtml(player.lastName);
+        const playerRole = player.role ? '<span class="player-role-badge">' + escapeHtml(player.role) + '</span>' : '-';
+
+        return '<tr class="' + rowClass + '">' +
+          '<td><span class="player-name">' + playerName + '</span></td>' +
+          '<td>' + playerRole + '</td>' +
+          '<td class="center">' +
+            '<input type="checkbox" id="roster-' + player.id + '" ' +
+            (inRoster ? 'checked' : '') + ' onchange="toggleRoster(\'' + player.id + '\')" />' +
+          '</td>' +
+          '<td class="center">' +
+            '<input type="checkbox" id="core-' + player.id + '" ' +
+            (isCore ? 'checked' : '') + ' ' +
+            (!inRoster ? 'disabled' : '') + ' onchange="toggleCore(\'' + player.id + '\')" />' +
+          '</td>' +
+          '<td class="center">' +
+            '<input type="radio" name="captain" id="captain-' + player.id + '" ' +
+            (isCaptain ? 'checked' : '') + ' ' +
+            (!inRoster ? 'disabled' : '') + ' onchange="toggleCaptain(\'' + player.id + '\')" />' +
+          '</td>' +
+          '<td class="center">' +
+            '<input type="radio" name="viceCaptain" id="vice-captain-' + player.id + '" ' +
+            (isViceCaptain ? 'checked' : '') + ' ' +
+            (!inRoster ? 'disabled' : '') + ' onchange="toggleViceCaptain(\'' + player.id + '\')" />' +
+          '</td>' +
+          '<td class="center">' + (statusBadges.length > 0 ? statusBadges.join(' ') : '-') + '</td>' +
+        '</tr>';
+      })
+      .join('');
+  }
+
+  window.toggleRoster = (playerId) => {
+    const rosterRecord = coreRoster.find(r => r.playerId === playerId);
+    const originalInRoster = corePlayerIds.has(playerId);
+    const originalIsCore = rosterRecord?.isCore || false;
+    const originalIsCaptain = rosterRecord?.isCaptain || false;
+    const originalIsViceCaptain = rosterRecord?.isViceCaptain || false;
+
+    // Get current state from changes or original
+    const current = playerChanges.get(playerId) || {
+      inRoster: originalInRoster,
+      isCore: originalIsCore,
+      isCaptain: originalIsCaptain,
+      isViceCaptain: originalIsViceCaptain
+    };
+    const newInRoster = !current.inRoster;
+
+    // If removing from roster, also remove all other flags
+    const newIsCore = newInRoster ? current.isCore : false;
+    const newIsCaptain = newInRoster ? current.isCaptain : false;
+    const newIsViceCaptain = newInRoster ? current.isViceCaptain : false;
+
+    console.log('Toggle roster for player:', playerId, {
+      originalInRoster,
+      newInRoster,
+      originalIsCore,
+      newIsCore,
+      originalIsCaptain,
+      newIsCaptain,
+      originalIsViceCaptain,
+      newIsViceCaptain
+    });
+
+    // Only track if different from original
+    if (newInRoster === originalInRoster && newIsCore === originalIsCore &&
+        newIsCaptain === originalIsCaptain && newIsViceCaptain === originalIsViceCaptain) {
+      playerChanges.delete(playerId);
+      console.log('No change detected, removing from playerChanges');
+    } else {
+      playerChanges.set(playerId, {
+        inRoster: newInRoster,
+        isCore: newIsCore,
+        isCaptain: newIsCaptain,
+        isViceCaptain: newIsViceCaptain
+      });
+      console.log('Change detected, added to playerChanges. Total changes:', playerChanges.size);
+    }
+
+    renderRoster();
+    updateStats();
+    updateActionBar();
+  };
+
+  window.toggleCore = (playerId) => {
+    const rosterRecord = coreRoster.find(r => r.playerId === playerId);
+    const originalInRoster = corePlayerIds.has(playerId);
+    const originalIsCore = rosterRecord?.isCore || false;
+    const originalIsCaptain = rosterRecord?.isCaptain || false;
+    const originalIsViceCaptain = rosterRecord?.isViceCaptain || false;
+
+    // Get current state from changes or original
+    const current = playerChanges.get(playerId) || {
+      inRoster: originalInRoster,
+      isCore: originalIsCore,
+      isCaptain: originalIsCaptain,
+      isViceCaptain: originalIsViceCaptain
+    };
+    const newIsCore = !current.isCore;
+
+    // Only track if different from original
+    if (current.inRoster === originalInRoster && newIsCore === originalIsCore &&
+        current.isCaptain === originalIsCaptain && current.isViceCaptain === originalIsViceCaptain) {
+      playerChanges.delete(playerId);
+    } else {
+      playerChanges.set(playerId, {
+        inRoster: current.inRoster,
+        isCore: newIsCore,
+        isCaptain: current.isCaptain,
+        isViceCaptain: current.isViceCaptain
+      });
+    }
+
+    renderRoster();
+    updateStats();
+    updateActionBar();
+  };
+
+  window.toggleCaptain = (playerId) => {
+    const rosterRecord = coreRoster.find(r => r.playerId === playerId);
+    const originalInRoster = corePlayerIds.has(playerId);
+    const originalIsCore = rosterRecord?.isCore || false;
+    const originalIsCaptain = rosterRecord?.isCaptain || false;
+    const originalIsViceCaptain = rosterRecord?.isViceCaptain || false;
+
+    // Get current state from changes or original
+    const current = playerChanges.get(playerId) || {
+      inRoster: originalInRoster,
+      isCore: originalIsCore,
+      isCaptain: originalIsCaptain,
+      isViceCaptain: originalIsViceCaptain
+    };
+    const newIsCaptain = !current.isCaptain;
+
+    // If setting as captain, remove captain from all other players
+    if (newIsCaptain) {
+      players.forEach((p) => {
+        if (p.id !== playerId) {
+          const pRoster = coreRoster.find(r => r.playerId === p.id);
+          const pOriginalInRoster = corePlayerIds.has(p.id);
+          const pOriginalIsCore = pRoster?.isCore || false;
+          const pOriginalIsCaptain = pRoster?.isCaptain || false;
+          const pOriginalIsViceCaptain = pRoster?.isViceCaptain || false;
+
+          const pCurrent = playerChanges.get(p.id) || {
+            inRoster: pOriginalInRoster,
+            isCore: pOriginalIsCore,
+            isCaptain: pOriginalIsCaptain,
+            isViceCaptain: pOriginalIsViceCaptain
+          };
+
+          if (pCurrent.isCaptain) {
+            playerChanges.set(p.id, {
+              ...pCurrent,
+              isCaptain: false
+            });
+          }
+        }
+      });
+    }
+
+    // Update current player
+    if (current.inRoster === originalInRoster && current.isCore === originalIsCore &&
+        newIsCaptain === originalIsCaptain && current.isViceCaptain === originalIsViceCaptain) {
+      playerChanges.delete(playerId);
+    } else {
+      playerChanges.set(playerId, {
+        inRoster: current.inRoster,
+        isCore: current.isCore,
+        isCaptain: newIsCaptain,
+        isViceCaptain: current.isViceCaptain
+      });
+    }
+
+    renderRoster();
+    updateStats();
+    updateActionBar();
+  };
+
+  window.toggleViceCaptain = (playerId) => {
+    const rosterRecord = coreRoster.find(r => r.playerId === playerId);
+    const originalInRoster = corePlayerIds.has(playerId);
+    const originalIsCore = rosterRecord?.isCore || false;
+    const originalIsCaptain = rosterRecord?.isCaptain || false;
+    const originalIsViceCaptain = rosterRecord?.isViceCaptain || false;
+
+    // Get current state from changes or original
+    const current = playerChanges.get(playerId) || {
+      inRoster: originalInRoster,
+      isCore: originalIsCore,
+      isCaptain: originalIsCaptain,
+      isViceCaptain: originalIsViceCaptain
+    };
+    const newIsViceCaptain = !current.isViceCaptain;
+
+    // If setting as vice captain, remove vice captain from all other players
+    if (newIsViceCaptain) {
+      players.forEach((p) => {
+        if (p.id !== playerId) {
+          const pRoster = coreRoster.find(r => r.playerId === p.id);
+          const pOriginalInRoster = corePlayerIds.has(p.id);
+          const pOriginalIsCore = pRoster?.isCore || false;
+          const pOriginalIsCaptain = pRoster?.isCaptain || false;
+          const pOriginalIsViceCaptain = pRoster?.isViceCaptain || false;
+
+          const pCurrent = playerChanges.get(p.id) || {
+            inRoster: pOriginalInRoster,
+            isCore: pOriginalIsCore,
+            isCaptain: pOriginalIsCaptain,
+            isViceCaptain: pOriginalIsViceCaptain
+          };
+
+          if (pCurrent.isViceCaptain) {
+            playerChanges.set(p.id, {
+              ...pCurrent,
+              isViceCaptain: false
+            });
+          }
+        }
+      });
+    }
+
+    // Update current player
+    if (current.inRoster === originalInRoster && current.isCore === originalIsCore &&
+        current.isCaptain === originalIsCaptain && newIsViceCaptain === originalIsViceCaptain) {
+      playerChanges.delete(playerId);
+    } else {
+      playerChanges.set(playerId, {
+        inRoster: current.inRoster,
+        isCore: current.isCore,
+        isCaptain: current.isCaptain,
+        isViceCaptain: newIsViceCaptain
+      });
+    }
+
+    renderRoster();
+    updateStats();
+    updateActionBar();
+  };
+
+  function updateStats() {
+    let coreCount = 0;
+    let rosterCount = 0;
+
+    players.forEach((player) => {
+      const rosterRecord = coreRoster.find(r => r.playerId === player.id);
+      const originalInRoster = corePlayerIds.has(player.id);
+      const originalIsCore = rosterRecord?.isCore || false;
+      const originalIsCaptain = rosterRecord?.isCaptain || false;
+      const originalIsViceCaptain = rosterRecord?.isViceCaptain || false;
+
+      const current = playerChanges.get(player.id) || {
+        inRoster: originalInRoster,
+        isCore: originalIsCore,
+        isCaptain: originalIsCaptain,
+        isViceCaptain: originalIsViceCaptain
+      };
+
+      if (current.inRoster) rosterCount++;
+      if (current.isCore) coreCount++;
+    });
+
+    document.getElementById('stat-core').textContent = coreCount;
+    document.getElementById('stat-available').textContent = rosterCount;
+    document.getElementById('stat-changes').textContent = playerChanges.size;
+  }
+
+  function updateActionBar() {
+    actionBar.style.display = playerChanges.size > 0 ? 'flex' : 'none';
+  }
+
+  // Search functionality
+  playerSearch?.addEventListener('input', (e) => {
+    searchQuery = e.target.value.toLowerCase();
+    renderRoster();
+  });
+
+  // Quick actions
+  document.getElementById('select-all-btn')?.addEventListener('click', () => {
+    players.forEach((player) => {
+      const rosterRecord = coreRoster.find(r => r.playerId === player.id);
+      const originalInRoster = corePlayerIds.has(player.id);
+      const originalIsCore = rosterRecord?.isCore || false;
+      const originalIsCaptain = rosterRecord?.isCaptain || false;
+      const originalIsViceCaptain = rosterRecord?.isViceCaptain || false;
+
+      // Add to roster if not already
+      if (!originalInRoster) {
+        playerChanges.set(player.id, {
+          inRoster: true,
+          isCore: false,
+          isCaptain: false,
+          isViceCaptain: false
+        });
+      }
+    });
+    renderRoster();
+    updateStats();
+    updateActionBar();
+  });
+
+  document.getElementById('deselect-all-btn')?.addEventListener('click', () => {
+    players.forEach((player) => {
+      const rosterRecord = coreRoster.find(r => r.playerId === player.id);
+      const originalInRoster = corePlayerIds.has(player.id);
+
+      // Remove from roster if currently in roster
+      if (originalInRoster || (playerChanges.has(player.id) && playerChanges.get(player.id).inRoster)) {
+        playerChanges.set(player.id, {
+          inRoster: false,
+          isCore: false,
+          isCaptain: false,
+          isViceCaptain: false
+        });
+      }
+    });
+    renderRoster();
+    updateStats();
+    updateActionBar();
+  });
+
+  // Cancel changes
+  document.getElementById('cancel-btn')?.addEventListener('click', () => {
+    playerChanges.clear();
+    renderRoster();
+    updateStats();
+    updateActionBar();
+  });
+
+  // Save changes
+  document.getElementById('save-btn')?.addEventListener('click', async () => {
+    if (playerChanges.size === 0) return;
+
+    try {
+      const updates = Array.from(playerChanges.entries()).map(([playerId, changes]) => ({
+        playerId,
+        inRoster: changes.inRoster,
+        isCore: changes.isCore,
+        isCaptain: changes.isCaptain || false,
+        isViceCaptain: changes.isViceCaptain || false,
+      }));
+
+      console.log('Saving roster updates:', updates);
+
+      const response = await fetch('/.netlify/functions/core-roster-bulk-update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          seasonId: selectedSeason.id,
+          teamName: selectedTeam,
+          updates,
+        }),
+      });
+
+      const result = await response.json();
+      console.log('Save response:', result);
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to save changes');
+      }
+
+      window.toast?.success('Roster changes saved successfully');
+      playerChanges.clear();
+      await loadRosterData();
+    } catch (error) {
+      console.error('Save error:', error);
+      window.toast?.error('Error: ' + error.message);
+    }
+  });
+
+  // Refresh button
+  document.getElementById('refresh-btn')?.addEventListener('click', () => {
+    if (selectedSeason && selectedTeam) {
+      loadRosterData();
+    }
+  });
+
+  function showLoading() {
+    loadingState.style.display = 'flex';
+    errorState.style.display = 'none';
+    emptyState.style.display = 'none';
+    noPlayersState.style.display = 'none';
+    rosterContainer.style.display = 'none';
+    statsGrid.style.display = 'none';
+  }
+
+  function hideLoading() {
+    loadingState.style.display = 'none';
+  }
+
+  function hideRoster() {
+    errorState.style.display = 'none';
+    emptyState.style.display = 'flex';
+    noPlayersState.style.display = 'none';
+    rosterContainer.style.display = 'none';
+    statsGrid.style.display = 'none';
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+</script>

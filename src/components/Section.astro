@@ -9,10 +9,10 @@ const bgClass = variant === 'alternate' ? '' : '';
 const bgStyle = variant === 'alternate' ? `background-color: var(--color-bg-section-alt);` : '';
 ---
 
-<section class={`py-12 sm:py-16 ${bgClass}`} style={bgStyle}>
+<section class={`section-spacing ${bgClass}`} style={bgStyle}>
     <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         {title && (
-            <h2 class="text-3xl sm:text-4xl font-bold mb-8 sm:mb-12 text-center text-heading">
+            <h2 class="section-heading text-center">
                 {title}
             </h2>
         )}

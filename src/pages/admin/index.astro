@@ -1,0 +1,45 @@
+---
+export const prerender = false;
+
+// Check authentication
+const cookieHeader = Astro.request.headers.get('cookie');
+let authenticated = false;
+
+if (cookieHeader) {
+  try {
+    const response = await fetch(
+      `${Astro.url.origin}/.netlify/functions/auth-check`,
+      {
+        headers: {
+          cookie: cookieHeader,
+        },
+      }
+    );
+    const data = await response.json();
+    authenticated = data.authenticated;
+  } catch (error) {
+    authenticated = false;
+  }
+}
+
+// Redirect to login if not authenticated
+if (!authenticated) {
+  return Astro.redirect('/admin/login');
+}
+
+// Redirect authenticated users to Fixtures & Availability
+return Astro.redirect('/admin/availability');
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="refresh" content="0;url=/admin/availability" />
+    <title>Redirecting...</title>
+  </head>
+  <body>
+    <p>Redirecting to admin panel...</p>
+  </body>
+</html>

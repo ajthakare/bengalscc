@@ -1,0 +1,69 @@
+---
+import { SITE_CONFIG } from '../config';
+
+interface Props {
+    title?: string;
+    description?: string;
+}
+
+const {
+    title = 'Support Our Mission',
+    description = 'Your tax-deductible donation helps us grow cricket in Northern California and support our community programs.'
+} = Astro.props;
+
+const donationTiers = [
+    { name: 'Rookie', amount: 25, description: 'Provides cricket balls and basic equipment', icon: '🏏' },
+    { name: 'Player', amount: 50, description: 'Supports youth training programs', icon: '👥' },
+    { name: 'Team Captain', amount: 100, description: 'Funds equipment for new members', icon: '⭐' },
+    { name: 'Champion', amount: 250, description: 'Sponsors a young player', icon: '🏆' },
+    { name: 'Platinum', amount: 500, description: 'Major impact on all programs', icon: '💎' }
+];
+---
+
+<div class="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl p-8 border-2" style="border-color: #E5C878;">
+    <div class="text-center mb-8">
+        <h2 class="text-3xl font-bold text-gray-900 mb-3">{title}</h2>
+        <p class="text-lg text-gray-700 max-w-2xl mx-auto">{description}</p>
+    </div>
+
+    {/* Donation Tiers */}
+    <div class="grid sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        {donationTiers.map(tier => (
+            <div class="bg-white rounded-lg p-4 border-2 hover:shadow-lg transition-all text-center" style="border-color: #E5C878;" onmouseover="this.style.borderColor='#D4AF37'" onmouseout="this.style.borderColor='#E5C878'">
+                <div class="text-3xl mb-2">{tier.icon}</div>
+                <div class="font-bold text-gray-900 mb-1">{tier.name}</div>
+                <div class="text-2xl font-bold text-primary mb-2">${tier.amount}</div>
+                <div class="text-xs text-gray-600">{tier.description}</div>
+            </div>
+        ))}
+    </div>
+
+    {/* Zeffy Button - Update with actual Zeffy form URL */}
+    <div class="text-center">
+        <a
+            href={SITE_CONFIG.nonProfit.zeffyUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn btn-lg inline-flex items-center gap-2"
+        >
+            <span class="text-xl">💝</span>
+            Make a Donation
+        </a>
+        <p class="text-sm text-gray-600 mt-4">
+            {SITE_CONFIG.nonProfit.name} is a {SITE_CONFIG.nonProfit.status}.<br />
+            EIN: {SITE_CONFIG.nonProfit.ein}. Donations are tax-deductible to the extent allowed by law.
+        </p>
+    </div>
+
+    {/* Alternative: Embedded Zeffy Form (uncomment when you have the embed code) */}
+    <!--
+    <div id="zeffy-donation-form" class="mt-8">
+        <!-- Paste Zeffy embed code here -->
+    </div>
+    -->
+</div>
+
+<!-- Zeffy Embed Script (uncomment when ready) -->
+<!--
+<script src="https://www.zeffy.com/embed/donation-form/XXXXX" async></script>
+-->

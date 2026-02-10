@@ -1,0 +1,256 @@
+import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
+import { getStore } from '@netlify/blobs';
+import { validateAdminSession } from '../../src/middleware/auth';
+import type { Player } from '../../src/types/player';
+import { PLAYER_ROLES } from '../../src/types/player';
+import { addAuditLog } from '../../src/utils/auditLog';
+import { spawn } from 'child_process';
+
+/**
+ * Update player details
+ * PUT /api/players-update
+ * Requires: Valid admin session
+ * Body: Partial<Player> & { id: string }
+ * Returns: Updated player
+ */
+export const handler: Handler = async (
+  event: HandlerEvent,
+  context: HandlerContext
+) => {
+  try {
+    // Validate admin session
+    const cookieHeader = event.headers.cookie;
+    const session = validateAdminSession(cookieHeader);
+
+    if (!session) {
+      return {
+        statusCode: 401,
+        body: JSON.stringify({ error: 'Unauthorized' }),
+      };
+    }
+
+    // Only PUT method allowed
+    if (event.httpMethod !== 'PUT') {
+      return {
+        statusCode: 405,
+        body: JSON.stringify({ error: 'Method not allowed' }),
+      };
+    }
+
+    // Parse request body
+    const body = JSON.parse(event.body || '{}');
+    const { id, ...updates } = body;
+
+    // Validate required ID
+    if (!id) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'Player ID is required' }),
+      };
+    }
+
+    // Validate field lengths
+    if (updates.firstName && (updates.firstName.trim().length < 1 || updates.firstName.trim().length > 100)) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'First name must be between 1 and 100 characters' }),
+      };
+    }
+
+    if (updates.lastName && (updates.lastName.trim().length < 1 || updates.lastName.trim().length > 100)) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'Last name must be between 1 and 100 characters' }),
+      };
+    }
+
+    if (updates.email && updates.email.trim().length > 255) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'Email must be less than 255 characters' }),
+      };
+    }
+
+    if (updates.usacId && (updates.usacId.trim().length < 1 || updates.usacId.trim().length > 50)) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'USAC ID must be between 1 and 50 characters' }),
+      };
+    }
+
+    // Validate email format if provided
+    if (updates.email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(updates.email)) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({ error: 'Invalid email format' }),
+        };
+      }
+    }
+
+    // Validate role if provided
+    if (updates.role && !PLAYER_ROLES.includes(updates.role)) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({
+          error: 'Invalid role',
+          validRoles: PLAYER_ROLES,
+        }),
+      };
+    }
+
+    // Get players from Netlify Blobs
+    const store = getStore({
+      name: 'players',
+      siteID: process.env.SITE_ID || '',
+      token: process.env.NETLIFY_AUTH_TOKEN || '',
+    });
+
+    const players =
+      (await store.get('players-all', { type: 'json' })) as Player[] | null;
+
+    if (!players || players.length === 0) {
+      return {
+        statusCode: 404,
+        body: JSON.stringify({ error: 'Player not found' }),
+      };
+    }
+
+    // Find player to update
+    const playerIndex = players.findIndex((p) => p.id === id);
+    if (playerIndex === -1) {
+      return {
+        statusCode: 404,
+        body: JSON.stringify({ error: 'Player not found' }),
+      };
+    }
+
+    const existingPlayer = players[playerIndex];
+
+    // Check for duplicate email (if email is being changed)
+    if (
+      updates.email &&
+      (!existingPlayer.email || updates.email.toLowerCase() !== existingPlayer.email.toLowerCase())
+    ) {
+      const duplicateEmail = players.find(
+        (p) =>
+          p.id !== id && p.email && p.email.toLowerCase() === updates.email.toLowerCase()
+      );
+      if (duplicateEmail) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({
+            error: 'A player with this email already exists',
+          }),
+        };
+      }
+    }
+
+    // Check for duplicate USAC ID (if USAC ID is being changed)
+    if (
+      updates.usacId &&
+      (!existingPlayer.usacId || updates.usacId.toLowerCase() !== existingPlayer.usacId.toLowerCase())
+    ) {
+      const duplicateUsacId = players.find(
+        (p) =>
+          p.id !== id &&
+          p.usacId && p.usacId.toLowerCase() === updates.usacId.toLowerCase()
+      );
+      if (duplicateUsacId) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({
+            error: 'A player with this USAC ID already exists',
+          }),
+        };
+      }
+    }
+
+    // Prepare updates with trimmed strings
+    const cleanUpdates = { ...updates };
+    if (cleanUpdates.firstName) cleanUpdates.firstName = cleanUpdates.firstName.trim();
+    if (cleanUpdates.lastName) cleanUpdates.lastName = cleanUpdates.lastName.trim();
+    if (cleanUpdates.email) cleanUpdates.email = cleanUpdates.email.trim().toLowerCase();
+    if (cleanUpdates.usacId) cleanUpdates.usacId = cleanUpdates.usacId.trim();
+
+    // Update player
+    const updatedPlayer: Player = {
+      ...existingPlayer,
+      ...cleanUpdates,
+      id: existingPlayer.id, // Ensure ID doesn't change
+      createdAt: existingPlayer.createdAt, // Preserve creation date
+      createdBy: existingPlayer.createdBy, // Preserve creator
+      updatedAt: new Date().toISOString(),
+      updatedBy: session.username,
+    };
+
+    players[playerIndex] = updatedPlayer;
+
+    // Save to Blobs
+    await store.setJSON('players-all', players);
+
+    // Wait for audit log to complete
+    const changedFields = Object.keys(cleanUpdates).filter(key =>
+      JSON.stringify(existingPlayer[key as keyof Player]) !== JSON.stringify(cleanUpdates[key])
+    );
+    const playerName = `${updatedPlayer.firstName} ${updatedPlayer.lastName}`;
+    const description = changedFields.length > 0
+      ? `Updated player ${playerName}: ${changedFields.join(', ')}`
+      : `Updated player ${playerName}`;
+
+    try {
+      await addAuditLog(
+        session.username,
+        'player_update',
+        description,
+        playerName,
+        { changedFields, updates: cleanUpdates }
+      );
+    } catch (err) {
+      console.error('Audit log failed:', err);
+    }
+
+    // Auto-sync player name in availability records if name changed (non-blocking)
+    const nameChanged =
+      (cleanUpdates.firstName && cleanUpdates.firstName !== existingPlayer.firstName) ||
+      (cleanUpdates.lastName && cleanUpdates.lastName !== existingPlayer.lastName);
+
+    if (nameChanged) {
+      console.log(`[Auto-sync] Player name changed for ${updatedPlayer.id}, syncing availability records...`);
+
+      // Spawn sync script in background (detached, non-blocking)
+      const syncProcess = spawn('node', ['sync-player-names.js', updatedPlayer.id], {
+        detached: true,
+        stdio: 'ignore',
+        cwd: process.cwd(), // Run from project root
+      });
+
+      // Detach so it continues running after this function completes
+      syncProcess.unref();
+
+      console.log(`[Auto-sync] Background sync started for player ${updatedPlayer.id}`);
+    }
+
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        success: true,
+        data: updatedPlayer,
+        message: 'Player updated successfully',
+      }),
+    };
+  } catch (error) {
+    console.error('Error updating player:', error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({
+        error: 'Failed to update player',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      }),
+    };
+  }
+};

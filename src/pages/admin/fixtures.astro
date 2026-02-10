@@ -1,0 +1,1643 @@
+---
+export const prerender = false;
+
+import AdminLayout from '../../layouts/AdminLayout.astro';
+
+// Check authentication
+const cookieHeader = Astro.request.headers.get('cookie');
+let authenticated = false;
+let username = '';
+
+if (cookieHeader) {
+  try {
+    const response = await fetch(
+      `${Astro.url.origin}/.netlify/functions/auth-check`,
+      {
+        headers: {
+          cookie: cookieHeader,
+        },
+      }
+    );
+    const data = await response.json();
+    authenticated = data.authenticated;
+    username = data.username || '';
+  } catch (error) {
+    authenticated = false;
+  }
+}
+
+// Redirect to login if not authenticated
+if (!authenticated) {
+  return Astro.redirect('/admin/login');
+}
+---
+
+<AdminLayout title="Fixture Management - GSCC Admin" username={username} activePage="fixtures">
+  <div class="fixtures-page">
+    <!-- Page Header -->
+    <div class="page-header">
+      <h1 class="page-title">Fixture Management</h1>
+      <p class="page-description">Manage fixtures for each season</p>
+    </div>
+
+    <!-- Season Selector & Actions -->
+    <div class="toolbar-main">
+      <div class="selector-group">
+        <label for="season-select" class="selector-label">Season:</label>
+        <select id="season-select" class="selector-input">
+          <option value="">Loading...</option>
+        </select>
+      </div>
+      <div class="actions-group">
+        <button id="import-btn" class="btn-secondary">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M2 10v3a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3M9 2v10m0 0l-3-3m3 3l3-3"/>
+          </svg>
+          Import CSV
+        </button>
+        <button id="export-btn" class="btn-secondary" disabled>
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M2 10v3a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3M9 12V2m0 0L6 5m3-3l3 3"/>
+          </svg>
+          Export CSV
+        </button>
+        <button id="add-fixture-btn" class="btn-primary" disabled>
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="9" y1="4" x2="9" y2="14"/>
+            <line x1="4" y1="9" x2="14" y2="9"/>
+          </svg>
+          Add Fixture
+        </button>
+      </div>
+    </div>
+
+    <!-- Bulk Actions Toolbar -->
+    <div id="bulk-actions-toolbar" class="bulk-actions-toolbar" style="display: none;">
+      <div class="bulk-actions-info">
+        <span id="selected-count">0</span> fixture(s) selected
+      </div>
+      <div class="bulk-actions-buttons">
+        <button id="bulk-delete-btn" class="btn-danger-outline btn-sm">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M2 4h12M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1m1 0v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4h8z"/>
+          </svg>
+          Delete Selected
+        </button>
+        <button id="clear-selection-btn" class="btn-secondary btn-sm">Clear Selection</button>
+      </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-grid" id="stats-grid" style="display: none;">
+      <div class="stat-card">
+        <div class="stat-label">Total Fixtures</div>
+        <div class="stat-value" id="stat-total">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Upcoming</div>
+        <div class="stat-value stat-success" id="stat-upcoming">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Completed</div>
+        <div class="stat-value stat-muted" id="stat-completed">0</div>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loading-state" class="state-container">
+      <div class="spinner"></div>
+      <p class="state-text">Loading fixtures...</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="error-state" class="alert alert-error" style="display: none;">
+      <div>
+        <p class="alert-title">Error loading fixtures</p>
+        <p id="error-text"></p>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div id="empty-state" class="state-container" style="display: none;">
+      <div class="empty-icon">📅</div>
+      <p class="state-title">No fixtures yet</p>
+      <p class="state-text">Import fixtures from CSV or add them manually</p>
+      <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+        <button class="btn-secondary" onclick="document.getElementById('import-btn').click()">Import CSV</button>
+        <button class="btn-primary" onclick="document.getElementById('add-fixture-btn').click()">Add Fixture</button>
+      </div>
+    </div>
+
+    <!-- Upcoming Fixtures -->
+    <div id="upcoming-container" style="display: none;">
+      <div style="margin-bottom: 1rem;">
+        <h2 style="font-size: 1.25rem; font-weight: 700; color: var(--color-text-heading); margin-bottom: 0.5rem;">
+          Upcoming Games
+        </h2>
+      </div>
+
+      <!-- Desktop Table View -->
+      <div class="table-container desktop-table-view">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 40px;">
+                <input type="checkbox" id="select-all-upcoming" class="select-all-checkbox" title="Select all" />
+              </th>
+              <th>Game #</th>
+              <th>Date</th>
+              <th>Time</th>
+              <th>Team</th>
+              <th>Opponent</th>
+              <th>Venue</th>
+              <th style="width: 200px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="upcoming-tbody">
+            <!-- Upcoming fixtures will be inserted here -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Mobile Card View -->
+      <div id="upcoming-cards" class="mobile-card-view">
+        <!-- Mobile cards will be inserted here -->
+      </div>
+    </div>
+
+    <!-- Past Fixtures -->
+    <div id="past-container" style="display: none; margin-top: 2rem;">
+      <div style="margin-bottom: 1rem;">
+        <h2 style="font-size: 1.25rem; font-weight: 700; color: var(--color-text-heading); margin-bottom: 0.5rem;">
+          Past Games
+        </h2>
+      </div>
+
+      <!-- Desktop Table View -->
+      <div class="table-container desktop-table-view">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 40px;">
+                <input type="checkbox" id="select-all-past" class="select-all-checkbox" title="Select all" />
+              </th>
+              <th>Game #</th>
+              <th>Date</th>
+              <th>Time</th>
+              <th>Team</th>
+              <th>Opponent</th>
+              <th>Venue</th>
+              <th>Result</th>
+              <th style="width: 200px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="past-tbody">
+            <!-- Past fixtures will be inserted here -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Mobile Card View -->
+      <div id="past-cards" class="mobile-card-view">
+        <!-- Mobile cards will be inserted here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Import CSV Modal -->
+  <div id="import-modal" class="modal" style="display: none;">
+    <div class="modal-content modal-large">
+      <div class="modal-header">
+        <h2 class="modal-title">Import Fixtures from CSV</h2>
+        <button class="modal-close" onclick="closeImportModal()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="info-box">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"/>
+          </svg>
+          <div>
+            <p class="info-title">CSV Format Required</p>
+            <p class="info-text" style="margin-bottom: 0.75rem;">Your CSV must have these exact column headers:</p>
+            <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 0.75rem; margin-top: 0.5rem; font-family: monospace; font-size: 0.7rem; overflow-x: auto;">
+              <div style="color: #6b7280; margin-bottom: 0.5rem;">Example CSV format:</div>
+              <div style="white-space: nowrap;">
+                <strong>Game#,Week#,Date,Division,Start Time,Home Team,Visitor Team,Venue Name,Ground Address,Umpiring Team</strong><br>
+                10,Week1,"Sat, Nov 1",WB-D3,12:30 PM,BA Vikings,Bengal Bulls,Sea Breeze Park,"32600 Carmel Way, Union City",BT Wolverines<br>
+                16,Week1,"Sun, Nov 2",WB-D2,8:30 AM,Bengal Tigers,Afghan Zwanan Heroes,NLCG East Avenue,"3600 Pacific Ave, Livermore",Spartan-CCA
+              </div>
+            </div>
+            <p class="info-text" style="margin-top: 0.75rem;">
+              • Date format: "Day, Mon DD" (e.g., "Sat, Nov 1")<br>
+              • Either Home Team or Visitor Team must match a team in the selected season<br>
+              • Required fields: Game#, Date, Division, Start Time, Home Team, Visitor Team, Venue Name<br>
+              • Optional fields: Week#, Ground Address, Umpiring Team
+            </p>
+          </div>
+        </div>
+
+        <div class="upload-zone" id="upload-zone">
+          <input type="file" id="csv-file-input" accept=".csv" hidden />
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M8 32v4a4 4 0 004 4h24a4 4 0 004-4v-4M32 16l-8-8m0 0l-8 8m8-8v24"/>
+          </svg>
+          <p class="upload-text">Click to upload or drag and drop</p>
+          <p class="upload-hint">CSV files only</p>
+        </div>
+
+        <div id="import-preview" style="display: none;">
+          <h3 style="margin: 1.5rem 0 0.75rem;">Preview</h3>
+          <div id="preview-content"></div>
+        </div>
+
+        <div id="import-error" class="alert alert-error" style="display: none; margin-top: 1rem;">
+          <span id="import-error-text"></span>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" onclick="closeImportModal()">Cancel</button>
+        <button id="confirm-import-btn" class="btn-primary" disabled>Import Fixtures</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add/Edit Fixture Modal -->
+  <div id="fixture-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modal-title" class="modal-title">Add New Fixture</h2>
+        <button class="modal-close" onclick="closeFixtureModal()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <form id="fixture-form" class="form">
+        <input type="hidden" id="fixture-id" name="id" />
+        <input type="hidden" id="fixture-season-id" name="seasonId" />
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="game-number" class="form-label">Game Number*</label>
+            <input
+              type="text"
+              id="game-number"
+              name="gameNumber"
+              required
+              class="form-input"
+              placeholder="e.g., Game 1"
+            />
+          </div>
+          <div class="form-group">
+            <label for="division" class="form-label">Division*</label>
+            <input
+              type="text"
+              id="division"
+              name="division"
+              required
+              class="form-input"
+              placeholder="e.g., WB-D2"
+            />
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="date" class="form-label">Date*</label>
+            <input
+              type="date"
+              id="date"
+              name="date"
+              required
+              class="form-input"
+            />
+          </div>
+          <div class="form-group">
+            <label for="time" class="form-label">Time*</label>
+            <input
+              type="time"
+              id="time"
+              name="time"
+              required
+              class="form-input"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="team" class="form-label">Team*</label>
+          <select id="team" name="team" required class="form-input">
+            <option value="">Select team...</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="opponent" class="form-label">Opponent*</label>
+          <input
+            type="text"
+            id="opponent"
+            name="opponent"
+            required
+            class="form-input"
+            placeholder="e.g., Team A"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="is-home-team" class="form-label">Location</label>
+          <select id="is-home-team" name="isHomeTeam" class="form-input">
+            <option value="true">Home Game</option>
+            <option value="false">Away Game</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="venue" class="form-label">Venue*</label>
+          <input
+            type="text"
+            id="venue"
+            name="venue"
+            required
+            class="form-input"
+            placeholder="e.g., Stadium Name"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="ground-address" class="form-label">Ground Address</label>
+          <input
+            type="text"
+            id="ground-address"
+            name="groundAddress"
+            class="form-input"
+            placeholder="e.g., 123 Main St, City"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="umpiring-team" class="form-label">Umpiring Team</label>
+          <input
+            type="text"
+            id="umpiring-team"
+            name="umpiringTeam"
+            class="form-input"
+            placeholder="e.g., Team Name"
+          />
+        </div>
+
+        <div id="form-error" class="alert alert-error" style="display: none;">
+          <span id="form-error-text"></span>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="closeFixtureModal()">Cancel</button>
+          <button type="submit" id="submit-btn" class="btn-primary">Add Fixture</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Record Result Modal -->
+  <div id="result-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">Record Match Result</h2>
+        <button class="modal-close" onclick="closeResultModal()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <form id="result-form" class="form">
+        <input type="hidden" id="result-fixture-id" name="fixtureId" />
+
+        <div id="result-fixture-info" style="background: #f9fafb; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+          <!-- Fixture info will be inserted here -->
+        </div>
+
+        <div class="form-group">
+          <label for="result" class="form-label">Match Result*</label>
+          <select id="result" name="result" required class="form-input">
+            <option value="">Select result...</option>
+            <option value="win">Win</option>
+            <option value="loss">Loss</option>
+            <option value="tie">Tie</option>
+            <option value="abandoned">Abandoned</option>
+            <option value="forfeit">Forfeit</option>
+          </select>
+        </div>
+
+        <div id="player-of-match-group" class="form-group" style="display: none;">
+          <label for="player-of-match" class="form-label">Player of the Match*</label>
+          <select id="player-of-match" name="playerOfMatch" class="form-input">
+            <option value="">Select player...</option>
+          </select>
+        </div>
+
+        <div id="result-form-error" class="alert alert-error" style="display: none;">
+          <span id="result-form-error-text"></span>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="closeResultModal()">Cancel</button>
+          <button type="submit" class="btn-primary">Save Result</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</AdminLayout>
+
+<style>
+  .fixtures-page {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .toolbar-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .selector-group {
+    flex: 1;
+    min-width: 200px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .selector-label {
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.875rem;
+  }
+
+  .selector-input {
+    padding: 0.75rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    background: white;
+  }
+
+  .actions-group {
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  .upload-zone {
+    border: 2px dashed #d1d5db;
+    border-radius: 12px;
+    padding: 3rem 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: #f9fafb;
+  }
+
+  .upload-zone:hover {
+    border-color: #9ca3af;
+    background: #f3f4f6;
+  }
+
+  .upload-zone svg {
+    margin: 0 auto 1rem;
+    color: #9ca3af;
+  }
+
+  .upload-text {
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.25rem;
+  }
+
+  .upload-hint {
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+
+  .info-box {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+  }
+
+  .info-box svg {
+    flex-shrink: 0;
+    color: #3b82f6;
+  }
+
+  .info-title {
+    font-weight: 600;
+    color: #1e40af;
+    margin-bottom: 0.25rem;
+  }
+
+  .info-text {
+    font-size: 0.875rem;
+    color: #1e3a8a;
+    margin: 0.125rem 0;
+  }
+
+  .modal-large {
+    max-width: 800px;
+  }
+
+  .empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+  }
+
+  .stat-muted {
+    color: #6b7280;
+  }
+
+  /* Bulk Actions Toolbar */
+  .bulk-actions-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    background: #fef3c7;
+    border: 1px solid #fbbf24;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+  }
+
+  .bulk-actions-info {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #78350f;
+  }
+
+  .bulk-actions-buttons {
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  /* Responsive Table/Card Toggle */
+  .desktop-table-view {
+    display: block;
+  }
+
+  .mobile-card-view {
+    display: none;
+  }
+
+  /* Mobile Fixture Cards */
+  .fixture-card-mobile {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+
+  .fixture-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #f3f4f6;
+  }
+
+  .fixture-card-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .fixture-card-game-number {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #111827;
+  }
+
+  .fixture-card-checkbox {
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+  }
+
+  .fixture-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+  }
+
+  .fixture-card-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+  }
+
+  .fixture-card-label {
+    color: #6b7280;
+    font-weight: 500;
+    min-width: 80px;
+  }
+
+  .fixture-card-value {
+    color: #111827;
+    font-weight: 600;
+    text-align: right;
+    flex: 1;
+  }
+
+  .fixture-card-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #f3f4f6;
+  }
+
+  .fixture-card-actions button,
+  .fixture-card-actions a {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    padding: 0.625rem;
+    border-radius: 8px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    min-height: 44px;
+  }
+
+  .fixture-card-actions .btn-primary-mobile {
+    background: #8C1D18;
+    color: white;
+    border: none;
+    cursor: pointer;
+  }
+
+  .fixture-card-actions .btn-secondary-mobile {
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #e5e7eb;
+    cursor: pointer;
+  }
+
+  .fixture-card-actions .btn-danger-mobile {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+    cursor: pointer;
+  }
+
+  @media (max-width: 768px) {
+    .desktop-table-view {
+      display: none;
+    }
+
+    .mobile-card-view {
+      display: block;
+    }
+
+    .bulk-actions-toolbar {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.75rem;
+    }
+
+    .bulk-actions-buttons {
+      flex-direction: column;
+    }
+
+    .bulk-actions-buttons button {
+      width: 100%;
+    }
+  }
+</style>
+
+<script is:inline src="https://unpkg.com/papaparse@5.5.3/papaparse.min.js"></script>
+
+<script>
+  let seasons = [];
+  let fixtures = [];
+  let selectedSeason = null;
+  let csvData = null;
+  let editingFixtureId = null;
+
+  // DOM elements
+  const loadingState = document.getElementById('loading-state');
+  const errorState = document.getElementById('error-state');
+  const errorText = document.getElementById('error-text');
+  const emptyState = document.getElementById('empty-state');
+  const upcomingContainer = document.getElementById('upcoming-container');
+  const pastContainer = document.getElementById('past-container');
+  const upcomingTbody = document.getElementById('upcoming-tbody');
+  const pastTbody = document.getElementById('past-tbody');
+  const statsGrid = document.getElementById('stats-grid');
+  const seasonSelect = document.getElementById('season-select');
+  const importModal = document.getElementById('import-modal');
+  const fixtureModal = document.getElementById('fixture-modal');
+  const fixtureForm = document.getElementById('fixture-form');
+  const formError = document.getElementById('form-error');
+  const formErrorText = document.getElementById('form-error-text');
+
+  // Load seasons on page load
+  loadSeasons();
+
+  async function loadSeasons() {
+    try {
+      const response = await fetch('/.netlify/functions/seasons-list');
+      if (!response.ok) throw new Error('Failed to load seasons');
+
+      seasons = await response.json();
+
+      if (seasons.length === 0) {
+        seasonSelect.innerHTML = '<option value="">No seasons available</option>';
+        return;
+      }
+
+      seasonSelect.innerHTML = seasons
+        .map((s) => `<option value="${s.id}">${escapeHtml(s.name)}${s.isActive ? ' (Active)' : ''}</option>`)
+        .join('');
+
+      // Select active season by default
+      const activeSeason = seasons.find((s) => s.isActive);
+      if (activeSeason) {
+        seasonSelect.value = activeSeason.id;
+        await onSeasonChange();
+      }
+    } catch (error) {
+      console.error('Error loading seasons:', error);
+    }
+  }
+
+  seasonSelect.addEventListener('change', onSeasonChange);
+
+  async function onSeasonChange() {
+    const seasonId = seasonSelect.value;
+    if (!seasonId) {
+      hideFixtures();
+      document.getElementById('export-btn').disabled = true;
+      document.getElementById('add-fixture-btn').disabled = true;
+      return;
+    }
+
+    selectedSeason = seasons.find((s) => s.id === seasonId);
+    document.getElementById('export-btn').disabled = false;
+    document.getElementById('add-fixture-btn').disabled = false;
+
+    await loadFixtures();
+  }
+
+  async function loadFixtures() {
+    if (!selectedSeason) return;
+
+    try {
+      showLoading();
+
+      const response = await fetch(`/.netlify/functions/fixtures-list?seasonId=${selectedSeason.id}`);
+      if (!response.ok) throw new Error('Failed to load fixtures');
+
+      fixtures = await response.json();
+
+      if (fixtures.length === 0) {
+        hideLoading();
+        emptyState.style.display = 'flex';
+        statsGrid.style.display = 'none';
+        return;
+      }
+
+      renderFixtures();
+      updateStats();
+
+      hideLoading();
+      statsGrid.style.display = 'grid';
+    } catch (error) {
+      console.error('Error loading fixtures:', error);
+      hideLoading();
+      errorState.style.display = 'flex';
+      errorText.textContent = error.message;
+    }
+  }
+
+  function renderFixtures() {
+    if (fixtures.length === 0) {
+      upcomingTbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 2rem; color: #6b7280;">No fixtures found</td></tr>';
+      pastTbody.innerHTML = '';
+      document.getElementById('upcoming-cards').innerHTML = '<div style="text-align: center; padding: 2rem; color: #6b7280;">No fixtures found</div>';
+      document.getElementById('past-cards').innerHTML = '';
+      upcomingContainer.style.display = 'block';
+      pastContainer.style.display = 'none';
+      updateBulkActions(); // Hide bulk actions when no fixtures
+      return;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Split fixtures into upcoming and past
+    const upcomingFixtures = fixtures.filter(f => new Date(f.date) >= today);
+    const pastFixtures = fixtures
+      .filter(f => new Date(f.date) < today)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); // Most recent first
+
+    // Helper function to render a fixture row
+    const renderFixtureRow = (fixture, isPast) => {
+      const homeAwayBadge = fixture.isHomeTeam
+        ? '<span style="background: #dbeafe; color: #1e40af; padding: 0.125rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">HOME</span>'
+        : '<span style="background: #f3e8ff; color: #6b21a8; padding: 0.125rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">AWAY</span>';
+
+      let resultBadge = '-';
+      let resultCell = '';
+      if (fixture.result) {
+        const resultColors = {
+          win: 'background: #d1fae5; color: #065f46; border: 1px solid #10b981;',
+          loss: 'background: #fee2e2; color: #991b1b; border: 1px solid #ef4444;',
+          tie: 'background: #e0e7ff; color: #3730a3; border: 1px solid #6366f1;',
+          abandoned: 'background: #f3f4f6; color: #374151; border: 1px solid #9ca3af;',
+          forfeit: 'background: #fef3c7; color: #78350f; border: 1px solid #fbbf24;'
+        };
+        const colorStyle = resultColors[fixture.result] || '';
+        resultBadge = '<span style="' + colorStyle + ' padding: 0.25rem 0.75rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">' + fixture.result + '</span>';
+      }
+
+      if (isPast) {
+        resultCell = '<td>' + resultBadge + '</td>';
+      }
+
+      // Record Result button removed - now available in availability tracker
+      let recordResultBtn = '';
+
+      return '<tr>' +
+        '<td><input type="checkbox" class="fixture-checkbox" value="' + fixture.id + '" /></td>' +
+        '<td><strong>' + escapeHtml(fixture.gameNumber) + '</strong></td>' +
+        '<td>' + formatDate(fixture.date) + '</td>' +
+        '<td>' + escapeHtml(fixture.time) + '</td>' +
+        '<td>' + escapeHtml(fixture.team) + ' ' + homeAwayBadge + '</td>' +
+        '<td>' + escapeHtml(fixture.opponent) + '</td>' +
+        '<td style="font-size: 0.875rem;">' + escapeHtml(fixture.venue) + '</td>' +
+        resultCell +
+        '<td>' +
+          recordResultBtn +
+          '<a href="/admin/availability?fixtureId=' + fixture.id + '" class="btn-icon" title="Manage Availability">' +
+            '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2">' +
+              '<path d="M9 2v16M2 9h16"/>' +
+              '<circle cx="9" cy="9" r="7"/>' +
+            '</svg>' +
+          '</a>' +
+          '<button class="btn-icon" onclick="editFixture(\'' + fixture.id + '\')" title="Edit">' +
+            '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2">' +
+              '<path d="M13 3l2 2-9 9H4v-2l9-9z"/>' +
+            '</svg>' +
+          '</button>' +
+          '<button class="btn-icon btn-danger-icon" onclick="deleteFixture(\'' + fixture.id + '\')" title="Delete">' +
+            '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2">' +
+              '<path d="M2 4h14M6 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1m2 0v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4h10z"/>' +
+            '</svg>' +
+          '</button>' +
+        '</td>' +
+      '</tr>';
+    };
+
+    // Helper function to render a mobile fixture card
+    const renderFixtureCard = (fixture, isPast) => {
+      const homeAwayBadge = fixture.isHomeTeam
+        ? '<span style="background: #dbeafe; color: #1e40af; padding: 0.125rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">HOME</span>'
+        : '<span style="background: #f3e8ff; color: #6b21a8; padding: 0.125rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">AWAY</span>';
+
+      let resultBadge = '';
+      if (isPast && fixture.result) {
+        const resultColors = {
+          win: 'background: #d1fae5; color: #065f46; border: 1px solid #10b981;',
+          loss: 'background: #fee2e2; color: #991b1b; border: 1px solid #ef4444;',
+          tie: 'background: #e0e7ff; color: #3730a3; border: 1px solid #6366f1;',
+          abandoned: 'background: #f3f4f6; color: #374151; border: 1px solid #9ca3af;',
+          forfeit: 'background: #fef3c7; color: #78350f; border: 1px solid #fbbf24;'
+        };
+        const colorStyle = resultColors[fixture.result] || '';
+        resultBadge = '<span style="' + colorStyle + ' padding: 0.25rem 0.75rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; display: inline-block; margin-top: 0.5rem;">' + fixture.result + '</span>';
+      }
+
+      return `
+        <div class="fixture-card-mobile">
+          <div class="fixture-card-header">
+            <div class="fixture-card-title">
+              <input type="checkbox" class="fixture-card-checkbox fixture-checkbox" value="${fixture.id}" />
+              <span class="fixture-card-game-number">${escapeHtml(fixture.gameNumber)}</span>
+            </div>
+            <div style="font-size: 0.8125rem; color: #6b7280;">${formatDate(fixture.date)}</div>
+          </div>
+          <div class="fixture-card-body">
+            <div class="fixture-card-row">
+              <span class="fixture-card-label">Time:</span>
+              <span class="fixture-card-value">${escapeHtml(fixture.time)}</span>
+            </div>
+            <div class="fixture-card-row">
+              <span class="fixture-card-label">Team:</span>
+              <span class="fixture-card-value">${escapeHtml(fixture.team)} ${homeAwayBadge}</span>
+            </div>
+            <div class="fixture-card-row">
+              <span class="fixture-card-label">Opponent:</span>
+              <span class="fixture-card-value">${escapeHtml(fixture.opponent)}</span>
+            </div>
+            <div class="fixture-card-row">
+              <span class="fixture-card-label">Venue:</span>
+              <span class="fixture-card-value" style="font-size: 0.8125rem;">${escapeHtml(fixture.venue)}</span>
+            </div>
+            ${resultBadge ? '<div class="fixture-card-row"><span class="fixture-card-label">Result:</span><span class="fixture-card-value">' + resultBadge + '</span></div>' : ''}
+          </div>
+          <div class="fixture-card-actions">
+            <a href="/admin/availability?fixtureId=${fixture.id}" class="btn-primary-mobile" title="Manage Availability">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 2v16M2 9h16"/><circle cx="9" cy="9" r="7"/>
+              </svg>
+              Availability
+            </a>
+            <button class="btn-secondary-mobile" onclick="editFixture('${fixture.id}')" title="Edit">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M13 3l2 2-9 9H4v-2l9-9z"/>
+              </svg>
+              Edit
+            </button>
+            <button class="btn-danger-mobile" onclick="deleteFixture('${fixture.id}')" title="Delete">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M2 4h14M6 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1m2 0v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4h10z"/>
+              </svg>
+              Delete
+            </button>
+          </div>
+        </div>
+      `;
+    };
+
+    // Render upcoming fixtures (both table and cards)
+    if (upcomingFixtures.length > 0) {
+      upcomingTbody.innerHTML = upcomingFixtures.map(f => renderFixtureRow(f, false)).join('');
+      document.getElementById('upcoming-cards').innerHTML = upcomingFixtures.map(f => renderFixtureCard(f, false)).join('');
+      upcomingContainer.style.display = 'block';
+    } else {
+      upcomingTbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 2rem; color: #6b7280;">No upcoming fixtures</td></tr>';
+      document.getElementById('upcoming-cards').innerHTML = '<div style="text-align: center; padding: 2rem; color: #6b7280;">No upcoming fixtures</div>';
+      upcomingContainer.style.display = 'block';
+    }
+
+    // Render past fixtures (both table and cards)
+    if (pastFixtures.length > 0) {
+      pastTbody.innerHTML = pastFixtures.map(f => renderFixtureRow(f, true)).join('');
+      document.getElementById('past-cards').innerHTML = pastFixtures.map(f => renderFixtureCard(f, true)).join('');
+      pastContainer.style.display = 'block';
+    } else {
+      pastContainer.style.display = 'none';
+    }
+
+    // Update bulk actions after rendering
+    updateBulkActions();
+  }
+
+  function updateStats() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const upcoming = fixtures.filter((f) => new Date(f.date) >= today).length;
+    const completed = fixtures.length - upcoming;
+
+    document.getElementById('stat-total').textContent = fixtures.length;
+    document.getElementById('stat-upcoming').textContent = upcoming;
+    document.getElementById('stat-completed').textContent = completed;
+  }
+
+  // Import CSV
+  document.getElementById('import-btn').addEventListener('click', () => {
+    if (!selectedSeason) {
+      alert('Please select a season first');
+      return;
+    }
+    csvData = null;
+    document.getElementById('import-preview').style.display = 'none';
+    document.getElementById('import-error').style.display = 'none';
+    document.getElementById('confirm-import-btn').disabled = true;
+    importModal.style.display = 'flex';
+  });
+
+  const uploadZone = document.getElementById('upload-zone');
+  const csvFileInput = document.getElementById('csv-file-input');
+
+  uploadZone.addEventListener('click', () => csvFileInput.click());
+
+  csvFileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) handleCSVFile(file);
+  });
+
+  // Drag and drop
+  uploadZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadZone.style.borderColor = '#3b82f6';
+  });
+
+  uploadZone.addEventListener('dragleave', () => {
+    uploadZone.style.borderColor = '#d1d5db';
+  });
+
+  uploadZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadZone.style.borderColor = '#d1d5db';
+    const file = e.dataTransfer.files[0];
+    if (file && file.name.endsWith('.csv')) {
+      handleCSVFile(file);
+    }
+  });
+
+  function handleCSVFile(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      csvData = e.target.result;
+      previewCSV(csvData);
+    };
+    reader.readAsText(file);
+  }
+
+  function previewCSV(data) {
+    const result = Papa.parse(data, { header: true, skipEmptyLines: true });
+
+    if (result.errors.length > 0) {
+      document.getElementById('import-error').style.display = 'block';
+      document.getElementById('import-error-text').textContent = 'CSV parsing errors: ' + result.errors.map(e => e.message).join(', ');
+      return;
+    }
+
+    const rows = result.data;
+
+    // Get valid team names from selected season
+    const season = seasons.find(s => s.id === selectedSeason);
+    const validTeamNames = season ? season.teams.map(t => t.teamName.toLowerCase()) : [];
+
+    const preview = `
+      <p style="color: #374151; margin-bottom: 0.5rem;"><strong>${rows.length} fixture(s) found</strong></p>
+      <div style="max-height: 200px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 6px; padding: 0.5rem;">
+        ${rows.slice(0, 5).map(row => {
+          const gameNum = row['Game#'] || '?';
+          const homeTeam = row['Home Team'] || '';
+          const visitorTeam = row['Visitor Team'] || '';
+          const date = row['Date'] || '';
+          const division = row['Division'] || '';
+
+          // Determine which team is ours
+          let ourTeam = '';
+          let opponent = '';
+          if (validTeamNames.includes(homeTeam.toLowerCase())) {
+            ourTeam = homeTeam;
+            opponent = visitorTeam;
+          } else if (validTeamNames.includes(visitorTeam.toLowerCase())) {
+            ourTeam = visitorTeam;
+            opponent = homeTeam;
+          } else {
+            ourTeam = homeTeam || visitorTeam;
+            opponent = visitorTeam || homeTeam;
+          }
+
+          return `
+            <div style="padding: 0.5rem; border-bottom: 1px solid #f3f4f6;">
+              <strong>Game ${gameNum}</strong> - ${ourTeam} vs ${opponent} <span style="color: #6b7280;">(${division})</span><br>
+              <span style="color: #6b7280; font-size: 0.875rem;">${date}</span>
+            </div>
+          `;
+        }).join('')}
+        ${rows.length > 5 ? `<div style="padding: 0.5rem; color: #6b7280;">... and ${rows.length - 5} more</div>` : ''}
+      </div>
+    `;
+
+    document.getElementById('preview-content').innerHTML = preview;
+    document.getElementById('import-preview').style.display = 'block';
+    document.getElementById('confirm-import-btn').disabled = false;
+  }
+
+  document.getElementById('confirm-import-btn').addEventListener('click', async () => {
+    if (!csvData || !selectedSeason) return;
+
+    try {
+      document.getElementById('confirm-import-btn').disabled = true;
+      document.getElementById('confirm-import-btn').textContent = 'Importing...';
+
+      const response = await fetch('/.netlify/functions/fixtures-import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          seasonId: selectedSeason.id,
+          csvData,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to import fixtures');
+      }
+
+      closeImportModal();
+      await loadFixtures();
+
+      const { data } = result;
+      alert(`Import completed!\nCreated: ${data.created}\nErrors: ${data.errors.length}`);
+
+      if (data.errors.length > 0) {
+        console.error('Import errors:', data.errors);
+      }
+    } catch (error) {
+      document.getElementById('import-error').style.display = 'block';
+      document.getElementById('import-error-text').textContent = error.message;
+      document.getElementById('confirm-import-btn').disabled = false;
+      document.getElementById('confirm-import-btn').textContent = 'Import Fixtures';
+    }
+  });
+
+  window.closeImportModal = () => {
+    importModal.style.display = 'none';
+  };
+
+  // Export CSV
+  document.getElementById('export-btn').addEventListener('click', async () => {
+    if (!selectedSeason) return;
+
+    try {
+      const response = await fetch(`/.netlify/functions/fixtures-export?seasonId=${selectedSeason.id}`);
+      if (!response.ok) throw new Error('Failed to export fixtures');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `fixtures-${selectedSeason.name}-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      alert('Error: ' + error.message);
+    }
+  });
+
+  // Add fixture
+  document.getElementById('add-fixture-btn').addEventListener('click', () => {
+    if (!selectedSeason) return;
+
+    editingFixtureId = null;
+    document.getElementById('modal-title').textContent = 'Add New Fixture';
+    document.getElementById('submit-btn').textContent = 'Add Fixture';
+    fixtureForm.reset();
+    document.getElementById('fixture-id').value = '';
+    document.getElementById('fixture-season-id').value = selectedSeason.id;
+
+    // Populate team dropdown
+    const teamSelect = document.getElementById('team');
+    teamSelect.innerHTML = '<option value="">Select team...</option>' +
+      selectedSeason.teams.map(t => `<option value="${escapeHtml(t.teamName)}">${escapeHtml(t.teamName)}</option>`).join('');
+
+    formError.style.display = 'none';
+    fixtureModal.style.display = 'flex';
+  });
+
+  // Edit fixture
+  // Convert 12-hour time to 24-hour format for time input
+  function convertTo24Hour(time12h) {
+    if (!time12h) return '';
+
+    // If already in 24-hour format (no AM/PM), return as-is
+    if (!time12h.includes('AM') && !time12h.includes('PM')) {
+      return time12h;
+    }
+
+    const [time, modifier] = time12h.trim().split(' ');
+    let [hours, minutes] = time.split(':');
+
+    if (hours === '12') {
+      hours = modifier === 'AM' ? '00' : '12';
+    } else if (modifier === 'PM') {
+      hours = String(parseInt(hours, 10) + 12);
+    }
+
+    return `${hours.padStart(2, '0')}:${minutes}`;
+  }
+
+  window.editFixture = (fixtureId) => {
+    const fixture = fixtures.find((f) => f.id === fixtureId);
+    if (!fixture) return;
+
+    editingFixtureId = fixtureId;
+    document.getElementById('modal-title').textContent = 'Edit Fixture';
+    document.getElementById('submit-btn').textContent = 'Update Fixture';
+    document.getElementById('fixture-id').value = fixture.id;
+    document.getElementById('fixture-season-id').value = fixture.seasonId;
+    document.getElementById('game-number').value = fixture.gameNumber;
+    document.getElementById('date').value = fixture.date.split('T')[0];
+    document.getElementById('time').value = convertTo24Hour(fixture.time);
+    document.getElementById('opponent').value = fixture.opponent;
+    document.getElementById('venue').value = fixture.venue;
+    document.getElementById('ground-address').value = fixture.groundAddress || '';
+    document.getElementById('umpiring-team').value = fixture.umpiringTeam || '';
+    document.getElementById('division').value = fixture.division;
+    document.getElementById('is-home-team').value = fixture.isHomeTeam ? 'true' : 'false';
+
+    // Populate team dropdown
+    const teamSelect = document.getElementById('team');
+    teamSelect.innerHTML = '<option value="">Select team...</option>' +
+      selectedSeason.teams.map(t => `<option value="${escapeHtml(t.teamName)}">${escapeHtml(t.teamName)}</option>`).join('');
+    teamSelect.value = fixture.team;
+
+    formError.style.display = 'none';
+    fixtureModal.style.display = 'flex';
+  };
+
+  // Delete fixture
+  window.deleteFixture = async (fixtureId) => {
+    const fixture = fixtures.find((f) => f.id === fixtureId);
+    if (!fixture) return;
+
+    if (!confirm(`Delete ${fixture.gameNumber}?`)) return;
+
+    try {
+      const response = await fetch('/.netlify/functions/fixtures-delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: fixtureId, seasonId: selectedSeason.id }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to delete fixture');
+      }
+
+      await loadFixtures();
+    } catch (error) {
+      alert('Error: ' + error.message);
+    }
+  };
+
+  // Submit form
+  fixtureForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    formError.style.display = 'none';
+
+    const formData = new FormData(fixtureForm);
+    const fixtureId = formData.get('id');
+    const seasonId = formData.get('seasonId');
+
+    const data = {
+      seasonId,
+      gameNumber: formData.get('gameNumber'),
+      date: formData.get('date'),
+      time: formData.get('time'),
+      team: formData.get('team'),
+      opponent: formData.get('opponent'),
+      venue: formData.get('venue'),
+      groundAddress: formData.get('groundAddress') || undefined,
+      umpiringTeam: formData.get('umpiringTeam') || undefined,
+      division: formData.get('division'),
+      isHomeTeam: formData.get('isHomeTeam') === 'true',
+    };
+
+    try {
+      const url = fixtureId
+        ? '/.netlify/functions/fixtures-update'
+        : '/.netlify/functions/fixtures-create';
+      const method = fixtureId ? 'PUT' : 'POST';
+
+      if (fixtureId) {
+        data.id = fixtureId;
+      }
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to save fixture');
+      }
+
+      closeFixtureModal();
+      await loadFixtures();
+    } catch (error) {
+      formError.style.display = 'block';
+      formErrorText.textContent = error.message;
+    }
+  });
+
+  window.closeFixtureModal = () => {
+    fixtureModal.style.display = 'none';
+    fixtureForm.reset();
+    editingFixtureId = null;
+  };
+
+  function showLoading() {
+    loadingState.style.display = 'flex';
+    errorState.style.display = 'none';
+    emptyState.style.display = 'none';
+    upcomingContainer.style.display = 'none';
+    pastContainer.style.display = 'none';
+  }
+
+  function hideLoading() {
+    loadingState.style.display = 'none';
+  }
+
+  function hideFixtures() {
+    errorState.style.display = 'none';
+    emptyState.style.display = 'flex';
+    upcomingContainer.style.display = 'none';
+    pastContainer.style.display = 'none';
+    statsGrid.style.display = 'none';
+  }
+
+  function formatDate(dateStr) {
+    // Extract just the date part (YYYY-MM-DD) from ISO timestamp or date string
+    const datePart = dateStr.split('T')[0]; // Handles both "2026-02-08" and "2026-02-08T00:00:00.000Z"
+
+    // Parse as local date to avoid timezone shifts
+    const [year, month, day] = datePart.split('-').map(Number);
+    const date = new Date(year, month - 1, day); // month is 0-indexed
+
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  // Close modals on outside click
+  importModal?.addEventListener('click', (e) => {
+    if (e.target === importModal) closeImportModal();
+  });
+
+  fixtureModal?.addEventListener('click', (e) => {
+    if (e.target === fixtureModal) closeFixtureModal();
+  });
+
+  // ============================================================================
+  // Bulk Operations
+  // ============================================================================
+
+  const bulkActionsToolbar = document.getElementById('bulk-actions-toolbar');
+  const selectedCountSpan = document.getElementById('selected-count');
+  const selectAllUpcoming = document.getElementById('select-all-upcoming');
+  const selectAllPast = document.getElementById('select-all-past');
+  const bulkDeleteBtn = document.getElementById('bulk-delete-btn');
+  const clearSelectionBtn = document.getElementById('clear-selection-btn');
+
+  // Update bulk actions toolbar visibility and count
+  function updateBulkActions() {
+    const checkboxes = document.querySelectorAll('.fixture-checkbox:checked');
+    const selectedCount = checkboxes.length;
+
+    if (selectedCount > 0) {
+      bulkActionsToolbar.style.display = 'flex';
+      selectedCountSpan.textContent = selectedCount;
+    } else {
+      bulkActionsToolbar.style.display = 'none';
+    }
+
+    // Update select all checkbox states for each section
+    const upcomingCheckboxes = document.querySelectorAll('#upcoming-tbody .fixture-checkbox');
+    const upcomingChecked = document.querySelectorAll('#upcoming-tbody .fixture-checkbox:checked').length;
+    if (upcomingCheckboxes.length > 0 && selectAllUpcoming) {
+      selectAllUpcoming.checked = upcomingChecked === upcomingCheckboxes.length;
+      selectAllUpcoming.indeterminate = upcomingChecked > 0 && upcomingChecked < upcomingCheckboxes.length;
+    }
+
+    const pastCheckboxes = document.querySelectorAll('#past-tbody .fixture-checkbox');
+    const pastChecked = document.querySelectorAll('#past-tbody .fixture-checkbox:checked').length;
+    if (pastCheckboxes.length > 0 && selectAllPast) {
+      selectAllPast.checked = pastChecked === pastCheckboxes.length;
+      selectAllPast.indeterminate = pastChecked > 0 && pastChecked < pastCheckboxes.length;
+    }
+  }
+
+  // Select all upcoming fixtures
+  selectAllUpcoming?.addEventListener('change', (e) => {
+    const checkboxes = document.querySelectorAll('#upcoming-tbody .fixture-checkbox');
+    checkboxes.forEach(cb => {
+      cb.checked = e.target.checked;
+    });
+    updateBulkActions();
+  });
+
+  // Select all past fixtures
+  selectAllPast?.addEventListener('change', (e) => {
+    const checkboxes = document.querySelectorAll('#past-tbody .fixture-checkbox');
+    checkboxes.forEach(cb => {
+      cb.checked = e.target.checked;
+    });
+    updateBulkActions();
+  });
+
+  // Listen for individual checkbox changes (using event delegation)
+  document.addEventListener('change', (e) => {
+    if (e.target.classList.contains('fixture-checkbox')) {
+      updateBulkActions();
+    }
+  });
+
+  // Clear selection
+  clearSelectionBtn.addEventListener('click', () => {
+    const checkboxes = document.querySelectorAll('.fixture-checkbox');
+    checkboxes.forEach(cb => {
+      cb.checked = false;
+    });
+    if (selectAllUpcoming) selectAllUpcoming.checked = false;
+    if (selectAllPast) selectAllPast.checked = false;
+    updateBulkActions();
+  });
+
+  // Bulk delete
+  bulkDeleteBtn.addEventListener('click', async () => {
+    const checkboxes = document.querySelectorAll('.fixture-checkbox:checked');
+    const selectedIds = Array.from(checkboxes).map(cb => cb.value);
+
+    if (selectedIds.length === 0) return;
+
+    const confirmed = confirm(
+      `Are you sure you want to delete ${selectedIds.length} fixture(s)? This action cannot be undone.`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      const response = await fetch('/.netlify/functions/fixtures-delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ids: selectedIds,
+          seasonId: selectedSeason.id,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to delete fixtures');
+      }
+
+      const result = await response.json();
+      window.toast.success(`${result.deletedCount} fixture(s) deleted successfully`);
+
+      // Clear selection and reload
+      const checkboxes = document.querySelectorAll('.fixture-checkbox');
+      checkboxes.forEach(cb => {
+        cb.checked = false;
+      });
+      if (selectAllUpcoming) selectAllUpcoming.checked = false;
+      if (selectAllPast) selectAllPast.checked = false;
+      updateBulkActions(); // Update toolbar to hide it
+      await loadFixtures();
+    } catch (error) {
+      window.toast.error('Error: ' + error.message);
+    }
+  });
+
+  // ============================================================================
+  // Record Result
+  // ============================================================================
+
+  const resultModal = document.getElementById('result-modal');
+  const resultForm = document.getElementById('result-form');
+  const resultFormError = document.getElementById('result-form-error');
+  const resultFormErrorText = document.getElementById('result-form-error-text');
+  const resultSelect = document.getElementById('result');
+  const playerOfMatchGroup = document.getElementById('player-of-match-group');
+  const playerOfMatchSelect = document.getElementById('player-of-match');
+
+  // Show/hide player of match field based on result
+  resultSelect.addEventListener('change', () => {
+    if (resultSelect.value === 'win') {
+      playerOfMatchGroup.style.display = 'block';
+      playerOfMatchSelect.required = true;
+    } else {
+      playerOfMatchGroup.style.display = 'none';
+      playerOfMatchSelect.required = false;
+      playerOfMatchSelect.value = '';
+    }
+  });
+
+  // Record result
+  window.recordResult = async (fixtureId) => {
+    const fixture = fixtures.find(f => f.id === fixtureId);
+    if (!fixture) return;
+
+    document.getElementById('result-fixture-id').value = fixture.id;
+
+    // Display fixture info
+    const fixtureInfo = document.getElementById('result-fixture-info');
+    const homeAway = fixture.isHomeTeam ? 'HOME' : 'AWAY';
+    fixtureInfo.innerHTML = `
+      <div style="font-weight: 600; margin-bottom: 0.5rem;">${escapeHtml(fixture.gameNumber)}</div>
+      <div style="font-size: 0.875rem; color: #6b7280;">
+        ${formatDate(fixture.date)} • ${escapeHtml(fixture.time)}<br>
+        ${escapeHtml(fixture.team)} <span style="font-weight: 600;">(${homeAway})</span> vs ${escapeHtml(fixture.opponent)}<br>
+        ${escapeHtml(fixture.venue)}
+      </div>
+    `;
+
+    // Pre-fill if result exists
+    if (fixture.result) {
+      document.getElementById('result').value = fixture.result;
+
+      if (fixture.result === 'win') {
+        playerOfMatchGroup.style.display = 'block';
+        playerOfMatchSelect.required = true;
+      }
+    }
+
+    // Load players for this team
+    try {
+      const response = await fetch(`/.netlify/functions/players-list?seasonId=${fixture.seasonId}`);
+      if (response.ok) {
+        const allPlayers = await response.json();
+        // Filter players who were in this team (would need roster data, for now show all active players)
+        const players = allPlayers.filter(p => p.isActive);
+
+        playerOfMatchSelect.innerHTML = '<option value="">Select player...</option>' +
+          players.map(p => `<option value="${p.id}" ${fixture.playerOfMatch === p.id ? 'selected' : ''}>${escapeHtml(p.firstName)} ${escapeHtml(p.lastName)}</option>`).join('');
+      }
+    } catch (error) {
+      console.error('Failed to load players:', error);
+    }
+
+    resultFormError.style.display = 'none';
+    resultModal.style.display = 'flex';
+  };
+
+  window.closeResultModal = () => {
+    resultModal.style.display = 'none';
+    resultForm.reset();
+    playerOfMatchGroup.style.display = 'none';
+    playerOfMatchSelect.required = false;
+  };
+
+  // Submit result
+  resultForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    resultFormError.style.display = 'none';
+
+    const formData = new FormData(resultForm);
+    const fixtureId = formData.get('fixtureId');
+    const fixture = fixtures.find(f => f.id === fixtureId);
+
+    const data = {
+      fixtureId,
+      seasonId: fixture?.seasonId,
+      result: formData.get('result'),
+      playerOfMatch: formData.get('playerOfMatch') || undefined,
+    };
+
+    try {
+      const response = await fetch('/.netlify/functions/fixtures-update-result', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to save result');
+      }
+
+      window.toast.success('Match result saved successfully');
+      closeResultModal();
+      await loadFixtures();
+    } catch (error) {
+      resultFormError.style.display = 'block';
+      resultFormErrorText.textContent = error.message;
+    }
+  });
+
+  // Close result modal on outside click
+  resultModal?.addEventListener('click', (e) => {
+    if (e.target === resultModal) closeResultModal();
+  });
+</script>

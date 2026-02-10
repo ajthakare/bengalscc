@@ -210,6 +210,9 @@ if (!authenticated) {
   const deleteButton = document.getElementById('delete-submission')!;
   const statsGrid = document.getElementById('stats-grid')!;
 
+  // Ensure modal is hidden on page load
+  modal.classList.remove('modal-open');
+
   async function loadSubmissions() {
     try {
       loadingState.style.display = 'flex';
@@ -389,6 +392,7 @@ if (!authenticated) {
     `;
 
     modal.classList.add('modal-open');
+    document.body.style.overflow = 'hidden';
 
     // Mark as read
     if (!submission.read) {
@@ -426,8 +430,13 @@ if (!authenticated) {
     }
   }
 
-  function closeModal() {
+  function closeModal(e?: Event) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     modal.classList.remove('modal-open');
+    document.body.style.overflow = '';
     currentSubmission = null;
   }
 
@@ -578,8 +587,8 @@ if (!authenticated) {
   searchInput.addEventListener('input', filterSubmissions);
   refreshButton.addEventListener('click', loadSubmissions);
   retryButton.addEventListener('click', loadSubmissions);
-  closeModalButton.addEventListener('click', closeModal);
-  closeModalButton2.addEventListener('click', closeModal);
+  closeModalButton.addEventListener('click', (e) => closeModal(e));
+  closeModalButton2.addEventListener('click', (e) => closeModal(e));
   deleteButton.addEventListener('click', deleteSubmission);
   selectAllCheckbox.addEventListener('change', handleSelectAll);
   deleteSelectedBtn.addEventListener('click', deleteSelected);
@@ -596,7 +605,14 @@ if (!authenticated) {
   // Close modal on overlay click
   modal.addEventListener('click', (e) => {
     if (e.target === modal || (e.target as HTMLElement).classList.contains('modal-overlay')) {
-      closeModal();
+      closeModal(e);
+    }
+  });
+
+  // Close modal on ESC key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal.classList.contains('modal-open')) {
+      closeModal(e);
     }
   });
 

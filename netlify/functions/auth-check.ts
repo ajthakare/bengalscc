@@ -45,9 +45,20 @@ export const handler: Handler = async (
       if (adminUsers) {
         const adminUser = adminUsers.find((u) => u.username === session.username);
         if (adminUser) {
+          // Try to get firstName from player record if they have one
+          const playersStore = getStore({
+            name: 'players',
+            siteID: process.env.SITE_ID || '',
+            token: process.env.NETLIFY_AUTH_TOKEN || '',
+          });
+          const playersData = await playersStore.get('players-all', { type: 'json' });
+          const players: Player[] = (playersData as Player[]) || [];
+          const player = players.find((p) => p.id === session.userId);
+
           userData = {
             username: adminUser.username,
             role: session.role,
+            firstName: player?.firstName || adminUser.username, // Use username as fallback
           };
         }
       }

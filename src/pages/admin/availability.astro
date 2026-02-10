@@ -302,12 +302,60 @@ if (!authenticated) {
       </div>
     </div>
   </div>
+
+  <!-- Team Announcement Modal -->
+  <div id="announcement-modal" class="modal" style="display: none;">
+    <div class="modal-content modal-lg">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title">Team Announcement</h2>
+          <p class="modal-subtitle">Copy this message to share on WhatsApp</p>
+        </div>
+        <button class="modal-close" onclick="closeAnnouncementModal()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <div style="padding: 1.5rem;">
+        <textarea
+          id="announcement-text"
+          readonly
+          style="width: 100%; min-height: 500px; padding: 1rem; border: 2px solid #d1d5db; border-radius: 8px; font-family: monospace; font-size: 0.875rem; line-height: 1.6; resize: vertical;"
+        ></textarea>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" onclick="closeAnnouncementModal()">Close</button>
+        <button id="copy-announcement-btn" class="btn-primary" onclick="copyAnnouncement()">
+          📋 Copy to Clipboard
+        </button>
+      </div>
+    </div>
+  </div>
 </AdminLayout>
 
 <style is:global>
   .availability-page {
     max-width: 1400px;
     margin: 0 auto;
+  }
+
+  /* Announcement Modal Specific Styles */
+  #announcement-modal.modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+  }
+
+  #announcement-modal.modal[style*="display: flex"] {
+    display: flex !important;
   }
 
   .toolbar {
@@ -814,6 +862,7 @@ if (!authenticated) {
 
   // Available match duties
   const MATCH_DUTIES = [
+    'Warm Up',
     'Water Assignment',
     'Scoring',
     'Team Kit',
@@ -1017,6 +1066,16 @@ if (!authenticated) {
             </div>
             <div style="display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end;">
               ${badges.join('')}
+              ${hasEnoughPlayers ? `
+                <button
+                  class="btn btn-sm"
+                  style="padding: 0.375rem 0.75rem; font-size: 0.875rem; background: #10b981; color: white; border: none; margin-top: 0.25rem;"
+                  onclick="event.stopPropagation(); generateTeamAnnouncement('${fixture.id}')"
+                  title="Generate WhatsApp announcement"
+                >
+                  📱 Generate Announcement
+                </button>
+              ` : ''}
             </div>
           </div>
           <div class="fixture-details">
@@ -1916,6 +1975,153 @@ if (!authenticated) {
       year: 'numeric',
     });
   }
+
+  // ==================== Team Announcement Functions ====================
+
+  window.generateTeamAnnouncement = async (fixtureId) => {
+    try {
+      const fixture = fixtures.find((f) => f.id === fixtureId);
+      if (!fixture) return;
+
+      // Get availability data for this fixture
+      const response = await fetch(`/.netlify/functions/availability-get?fixtureId=${fixtureId}`);
+      if (!response.ok) {
+        toast.error('Failed to load availability data');
+        return;
+      }
+
+      const availability = await response.json();
+
+      // Get selected players (sorted by selection order or name)
+      const selectedPlayers = availability.playerAvailability
+        .filter(p => p.wasSelected === true)
+        .sort((a, b) => a.playerName.localeCompare(b.playerName));
+
+      if (selectedPlayers.length !== 11) {
+        toast.error('Please select exactly 11 players first');
+        return;
+      }
+
+      // Format date
+      const datePart = fixture.date.split('T')[0];
+      const [year, month, day] = datePart.split('-').map(Number);
+      const fixtureDate = new Date(year, month - 1, day);
+      const dayName = fixtureDate.toLocaleDateString('en-US', { weekday: 'long' });
+      const monthName = fixtureDate.toLocaleDateString('en-US', { month: 'short' });
+      const dayNum = fixtureDate.getDate();
+      const formattedDate = `${dayName}, ${monthName} ${dayNum}${getDaySuffix(dayNum)}`;
+
+      // Determine home/away
+      const gameType = fixture.isHomeTeam ? 'Home' : 'Away';
+
+      // Get season info
+      const season = seasons.find(s => s.id === fixture.seasonId);
+      const seasonName = season ? season.name : 'Season';
+
+      // Extract game number from fixture.gameNumber (e.g., "Game 8" -> "8")
+      const gameNum = fixture.gameNumber.replace('Game ', '');
+
+      // Get duties assignments - map display names to stored duty names
+      const dutyMapping = {
+        'Warm Up': 'Warm Up',
+        'Water': 'Water Assignment',
+        'Scoring': 'Scoring',
+        'Set-up': 'Ground Set-up',
+        'Team Kit': 'Team Kit'
+      };
+
+      const getDutyAssignment = (displayName) => {
+        const actualDutyName = dutyMapping[displayName];
+        const player = selectedPlayers.find(p => p.duties && p.duties.includes(actualDutyName));
+        return player ? `@⁨${player.playerName}⁩` : 'N/A';
+      };
+
+      // Build duties section - always show all duties
+      const dutiesLines = [
+        `Warm Up: ${getDutyAssignment('Warm Up')}`,
+        `Scoring: ${getDutyAssignment('Scoring')}`,
+        `Water(30 bottles): ${getDutyAssignment('Water')}`,
+        `Set-up: ${getDutyAssignment('Set-up')}`,
+        'Clean-up: Everyone',
+        `Team Kit: ${getDutyAssignment('Team Kit')}`
+      ];
+
+      // Generate message
+      const message = `TEAM ANNOUNCEMENT
+
+${fixture.team} ${seasonName}
+Game: ${fixture.team} vs ${fixture.opponent}
+Date: ${formattedDate}
+Reporting Time: ${fixture.time}
+Game Type: ${gameType}
+Ground Address: ${fixture.venue}${fixture.groundAddress ? ', ' + fixture.groundAddress : ''}
+
+${fixture.team} XI
+
+${selectedPlayers.map((p, idx) => `${String(idx + 1).padStart(2, ' ')}.⁠ ⁠@⁨${p.playerName}⁩`).join('\n')}
+
+
+Duties Assignment:
+${dutiesLines.join('\n')}
+
+Please let the captain know if you need an extra colored jersey.`;
+
+      // Show modal with generated message
+      document.getElementById('announcement-text').value = message;
+      document.getElementById('announcement-modal').style.display = 'flex';
+    } catch (error) {
+      console.error('Error generating announcement:', error);
+      toast.error('Failed to generate announcement');
+    }
+  };
+
+  function getDaySuffix(day) {
+    if (day >= 11 && day <= 13) return 'th';
+    switch (day % 10) {
+      case 1: return 'st';
+      case 2: return 'nd';
+      case 3: return 'rd';
+      default: return 'th';
+    }
+  }
+
+  window.closeAnnouncementModal = () => {
+    document.getElementById('announcement-modal').style.display = 'none';
+  };
+
+  window.copyAnnouncement = async () => {
+    const textarea = document.getElementById('announcement-text');
+    const text = textarea.value;
+
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success('✓ Copied to clipboard!');
+
+      // Change button text temporarily
+      const btn = document.getElementById('copy-announcement-btn');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '✓ Copied!';
+      btn.style.background = '#10b981';
+
+      setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.style.background = '';
+      }, 2000);
+    } catch (error) {
+      // Fallback for older browsers
+      textarea.select();
+      document.execCommand('copy');
+      toast.success('✓ Copied to clipboard!');
+    }
+  };
+
+  // Close announcement modal on outside click
+  const announcementModal = document.getElementById('announcement-modal');
+  announcementModal?.addEventListener('click', (e) => {
+    if (e.target === announcementModal) {
+      closeAnnouncementModal();
+    }
+  });
 
   // Close modal on outside click
   availabilityModal?.addEventListener('click', (e) => {

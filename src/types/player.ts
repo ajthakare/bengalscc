@@ -58,7 +58,7 @@ export interface Player {
   id: string;                    // UUID
   firstName: string;
   lastName: string;
-  email?: string;                // Optional - can be added later
+  email?: string;                // Optional - can be added later (required for members, lowercase, unique)
   usacId?: string;               // USAC ID - Optional
   role?: string;                 // Batsman, Bowler, All-rounder, Wicket-keeper - Optional
   isActive: boolean;             // Currently active in club
@@ -66,6 +66,15 @@ export interface Player {
   updatedAt: string;
   createdBy: string;
   updatedBy: string;
+
+  // NEW: Member Authentication Fields
+  passwordHash?: string;         // bcrypt hash (only for members)
+  registrationStatus?: 'pending' | 'approved' | 'rejected' | 'suspended';
+  role_auth?: 'super_admin' | 'admin' | 'member';  // Authentication role
+  registeredAt?: string;         // When member registered (ISO date)
+  approvedAt?: string;           // When super admin approved (ISO date)
+  approvedBy?: string;           // Super admin username who approved
+  lastLogin?: string;            // Track member activity (ISO date)
 }
 
 // Valid role values
@@ -125,6 +134,12 @@ export interface PlayerAvailabilityRecord {
   wasSelected: boolean;          // Admin marks: Was player selected/played?
   duties?: string[];             // Match duties assigned to player
   lastUpdated: string;
+
+  // NEW: Member self-service availability fields
+  availability?: boolean;        // Member marks: true (available) or false (unavailable) - binary only
+  submittedAt?: string;          // When member submitted availability (ISO date)
+  submittedBy?: 'member' | 'admin';  // Who set the availability
+  notes?: string;                // Optional notes from member
 }
 
 // ============================================================================

@@ -1,0 +1,472 @@
+---
+export const prerender = false;
+
+import Layout from '../layouts/Layout.astro';
+import { validateAdminSession, isMember } from '../middleware/auth';
+
+// Check authentication
+const cookieHeader = Astro.request.headers.get('cookie');
+const session = validateAdminSession(cookieHeader || '');
+
+// Redirect to login if not authenticated
+if (!session || !isMember(session)) {
+  return Astro.redirect('/login');
+}
+
+// Fetch player data
+let player = null;
+let error = null;
+
+try {
+  const response = await fetch(
+    `${Astro.url.origin}/.netlify/functions/auth-check`,
+    {
+      headers: {
+        cookie: cookieHeader || '',
+      },
+    }
+  );
+  const data = await response.json();
+
+  if (data.authenticated && data.user) {
+    player = data.user;
+  }
+} catch (err) {
+  error = 'Failed to load profile data';
+  console.error('Profile fetch error:', err);
+}
+---
+
+<Layout title="My Profile - Golden State Cricket Club">
+  <div class="max-w-4xl mx-auto px-4 py-8">
+    <div class="mb-8">
+      <h1 class="page-title">My Profile</h1>
+      <p class="text-body text-gray-600">Manage your account settings</p>
+    </div>
+
+    {error && (
+      <div class="alert alert-error mb-6">
+        {error}
+      </div>
+    )}
+
+    {player && (
+      <>
+        {/* Personal Information */}
+        <div class="card mb-6">
+          <h2 class="card-title">Personal Information</h2>
+
+          <div class="info-grid">
+            <div class="info-item">
+              <label class="info-label">Name</label>
+              <p class="info-value">{player.firstName} {player.lastName}</p>
+            </div>
+
+            <div class="info-item">
+              <label class="info-label">Email</label>
+              <p class="info-value">{player.email}</p>
+              <p class="info-hint">Email cannot be changed after registration</p>
+            </div>
+
+            <div class="info-item">
+              <label class="info-label">Phone</label>
+              <p class="info-value">{player.phone || 'Not set'}</p>
+              <p class="info-hint">Update your phone number below</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Update Phone */}
+        <div class="card mb-6">
+          <h2 class="card-title">Update Phone Number</h2>
+
+          <form id="phone-form" class="form" method="post" action="javascript:void(0);">
+            <div class="form-group">
+              <label for="phone" class="form-label">Phone Number</label>
+              <div class="flex gap-2">
+                <select
+                  id="phone-country"
+                  name="phoneCountry"
+                  class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f67280] w-28"
+                >
+                  <option value="+1">🇺🇸 +1</option>
+                  <option value="+91">🇮🇳 +91</option>
+                  <option value="+44">🇬🇧 +44</option>
+                  <option value="+61">🇦🇺 +61</option>
+                  <option value="+86">🇨🇳 +86</option>
+                  <option value="+81">🇯🇵 +81</option>
+                  <option value="+49">🇩🇪 +49</option>
+                  <option value="+33">🇫🇷 +33</option>
+                  <option value="+971">🇦🇪 +971</option>
+                  <option value="+65">🇸🇬 +65</option>
+                </select>
+                <input
+                  type="tel"
+                  id="phone-number"
+                  name="phoneNumber"
+                  class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f67280]"
+                  placeholder="1234567890"
+                  pattern="[0-9]{7,15}"
+                />
+              </div>
+              <p class="form-hint">Enter phone number without country code. Used for team communications.</p>
+            </div>
+
+            <div id="phone-error" class="alert alert-error" style="display: none;">
+              <span id="phone-error-text"></span>
+            </div>
+
+            <div id="phone-success" class="alert alert-success" style="display: none;">
+              <span id="phone-success-text"></span>
+            </div>
+
+            <button type="submit" id="phone-button" class="btn btn-lg">
+              Update Phone
+            </button>
+          </form>
+        </div>
+
+        {/* Change Password */}
+        <div class="card">
+          <h2 class="card-title">Change Password</h2>
+
+          <form id="password-form" class="form" method="post" action="javascript:void(0);">
+            <div class="form-group">
+              <label for="current-password" class="form-label">Current Password</label>
+              <input
+                type="password"
+                id="current-password"
+                name="currentPassword"
+                required
+                class="form-input"
+                placeholder="Enter current password"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="new-password" class="form-label">New Password</label>
+              <input
+                type="password"
+                id="new-password"
+                name="newPassword"
+                required
+                minlength="8"
+                class="form-input"
+                placeholder="Minimum 8 characters"
+              />
+              <p class="form-hint">Minimum 8 characters</p>
+            </div>
+
+            <div class="form-group">
+              <label for="confirm-password" class="form-label">Confirm New Password</label>
+              <input
+                type="password"
+                id="confirm-password"
+                name="confirmPassword"
+                required
+                minlength="8"
+                class="form-input"
+                placeholder="Re-enter new password"
+              />
+            </div>
+
+            <div id="password-error" class="alert alert-error" style="display: none;">
+              <span id="password-error-text"></span>
+            </div>
+
+            <div id="password-success" class="alert alert-success" style="display: none;">
+              <span id="password-success-text"></span>
+            </div>
+
+            <button type="submit" id="password-button" class="btn btn-lg">
+              Change Password
+            </button>
+          </form>
+        </div>
+      </>
+    )}
+  </div>
+
+  <script define:vars={{ playerPhone: player?.phone }}>
+    console.log('Profile page script loaded');
+    console.log('Player phone:', playerPhone);
+
+    // Parse existing phone number and populate form
+    if (playerPhone) {
+      const phoneCountrySelect = document.getElementById('phone-country');
+      const phoneNumberInput = document.getElementById('phone-number');
+
+      if (phoneCountrySelect && phoneNumberInput) {
+        // Try to extract country code from phone (e.g., "+1 1234567890")
+        const phoneMatch = playerPhone.match(/^(\+\d+)\s*(.+)$/);
+        if (phoneMatch) {
+          const countryCode = phoneMatch[1];
+          const number = phoneMatch[2];
+
+          // Set country code if it exists in options
+          const option = Array.from(phoneCountrySelect.options).find(opt => opt.value === countryCode);
+          if (option) {
+            phoneCountrySelect.value = countryCode;
+          }
+          phoneNumberInput.value = number;
+        } else {
+          // Old format without country code, put in number field
+          phoneNumberInput.value = playerPhone;
+        }
+      }
+    }
+
+    // Phone update form
+    const phoneForm = document.getElementById('phone-form');
+    const phoneButton = document.getElementById('phone-button');
+    const phoneError = document.getElementById('phone-error');
+    const phoneErrorText = document.getElementById('phone-error-text');
+    const phoneSuccess = document.getElementById('phone-success');
+    const phoneSuccessText = document.getElementById('phone-success-text');
+
+    console.log('Phone form element:', phoneForm);
+
+    if (phoneForm) {
+      phoneForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        console.log('Phone form submitted');
+
+        phoneError.style.display = 'none';
+        phoneSuccess.style.display = 'none';
+
+        const formData = new FormData(phoneForm);
+        const phoneCountry = formData.get('phoneCountry');
+        const phoneNumber = formData.get('phoneNumber');
+        const phone = phoneNumber ? `${phoneCountry} ${phoneNumber}` : '';
+
+        console.log('Phone to update:', phone);
+
+        phoneButton.disabled = true;
+        phoneButton.textContent = 'Updating...';
+
+        try {
+          const response = await fetch('/.netlify/functions/profile-update', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({ phone }),
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || 'Failed to update phone');
+          }
+
+          phoneSuccess.style.display = 'block';
+          phoneSuccessText.textContent = data.message || 'Phone number updated successfully!';
+
+          // Reload page after 1 second to show updated phone
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+        } catch (error) {
+          phoneError.style.display = 'block';
+          phoneErrorText.textContent = error.message || 'Unknown error';
+        } finally {
+          phoneButton.disabled = false;
+          phoneButton.textContent = 'Update Phone';
+        }
+      });
+    } else {
+      console.error('Phone form not found!');
+    }
+
+    // Password change form
+    const passwordForm = document.getElementById('password-form');
+    const passwordButton = document.getElementById('password-button');
+    const passwordError = document.getElementById('password-error');
+    const passwordErrorText = document.getElementById('password-error-text');
+    const passwordSuccess = document.getElementById('password-success');
+    const passwordSuccessText = document.getElementById('password-success-text');
+
+    if (passwordForm) {
+      passwordForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        console.log('Password form submitted');
+
+        passwordError.style.display = 'none';
+        passwordSuccess.style.display = 'none';
+
+        const formData = new FormData(passwordForm);
+        const currentPassword = formData.get('currentPassword');
+        const newPassword = formData.get('newPassword');
+        const confirmPassword = formData.get('confirmPassword');
+
+        // Validate passwords match
+        if (newPassword !== confirmPassword) {
+          passwordError.style.display = 'block';
+          passwordErrorText.textContent = 'New passwords do not match';
+          return;
+        }
+
+        console.log('Passwords match, updating...');
+
+        passwordButton.disabled = true;
+        passwordButton.textContent = 'Changing...';
+
+        try {
+          const response = await fetch('/.netlify/functions/profile-update', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({ currentPassword, newPassword }),
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || 'Failed to change password');
+          }
+
+          passwordSuccess.style.display = 'block';
+          passwordSuccessText.textContent = data.message || 'Password changed successfully!';
+          passwordForm.reset();
+
+          // Reload page after 1 second (consistent with phone update)
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+        } catch (error) {
+          passwordError.style.display = 'block';
+          passwordErrorText.textContent = error.message || 'Unknown error';
+        } finally {
+          passwordButton.disabled = false;
+          passwordButton.textContent = 'Change Password';
+        }
+      });
+    } else {
+      console.error('Password form not found!');
+    }
+  </script>
+
+  <style>
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      padding: 24px;
+    }
+
+    .card-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: #111827;
+      margin-bottom: 20px;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 8px;
+    }
+
+    .info-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .info-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: #6b7280;
+      margin-bottom: 4px;
+    }
+
+    .info-value {
+      font-size: 16px;
+      color: #111827;
+      font-weight: 500;
+    }
+
+    .info-hint {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-top: 4px;
+    }
+
+    .role-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      background: #dbeafe;
+      color: #1e40af;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .form {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: #374151;
+      margin-bottom: 6px;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: #f67280;
+      box-shadow: 0 0 0 3px rgba(246, 114, 128, 0.1);
+    }
+
+    .form-hint {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+
+    .alert {
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    .alert-error {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #dc2626;
+    }
+
+    .alert-success {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      color: #16a34a;
+    }
+
+    @media (max-width: 768px) {
+      .info-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+    }
+  </style>
+</Layout>

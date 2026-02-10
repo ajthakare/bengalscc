@@ -1,8 +1,10 @@
 import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
-import { validateAdminSession } from '../../src/middleware/auth';
+import { getStore } from '@netlify/blobs';
+import { validateAdminSession, AdminUser } from '../../src/middleware/auth';
+import type { Player } from '../../src/types/player';
 
 /**
- * Check if user has a valid admin session
+ * Check if user has a valid session (admin or member)
  * GET /api/auth-check
  * Returns: Session status and user info
  */
@@ -27,6 +29,71 @@ export const handler: Handler = async (
       };
     }
 
+    // Determine user type by session role and load user data
+    let userData: any = {};
+
+    if (session.role === 'super_admin' || session.role === 'admin') {
+      // Load from admin-users store
+      const adminStore = getStore({
+        name: 'admin-users',
+        siteID: process.env.SITE_ID || '',
+        token: process.env.NETLIFY_AUTH_TOKEN || '',
+      });
+      const adminUsers =
+        (await adminStore.get('users', { type: 'json' })) as AdminUser[] | null;
+
+      if (adminUsers) {
+        const adminUser = adminUsers.find((u) => u.username === session.username);
+        if (adminUser) {
+          userData = {
+            username: adminUser.username,
+            role: session.role,
+          };
+        }
+      }
+    } else if (session.role === 'member') {
+      // Load from players store
+      const playersStore = getStore({
+        name: 'players',
+        siteID: process.env.SITE_ID || '',
+        token: process.env.NETLIFY_AUTH_TOKEN || '',
+      });
+      const playersData = await playersStore.get('players-all', { type: 'json' });
+      const players: Player[] = (playersData as Player[]) || [];
+
+      const player = players.find((p) => p.id === session.userId);
+
+      if (!player) {
+        return {
+          statusCode: 401,
+          body: JSON.stringify({
+            authenticated: false,
+            error: 'User not found',
+          }),
+        };
+      }
+
+      // Check if member is still approved
+      if (player.registrationStatus !== 'approved') {
+        return {
+          statusCode: 401,
+          body: JSON.stringify({
+            authenticated: false,
+            error: 'Account no longer active',
+          }),
+        };
+      }
+
+      userData = {
+        id: player.id,
+        email: player.email,
+        firstName: player.firstName,
+        lastName: player.lastName,
+        phone: player.phone,
+        role: session.role,
+      };
+    }
+
     return {
       statusCode: 200,
       headers: {
@@ -34,8 +101,7 @@ export const handler: Handler = async (
       },
       body: JSON.stringify({
         authenticated: true,
-        username: session.username,
-        role: session.role || (session.username === 'admin' ? 'super_admin' : 'admin'),
+        user: userData,
         expiresAt: session.exp ? new Date(session.exp * 1000).toISOString() : null,
       }),
     };

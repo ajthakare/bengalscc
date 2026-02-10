@@ -7,6 +7,7 @@ const SESSION_COOKIE_NAME = 'bengals_admin_session';
 const SESSION_EXPIRY = '24h';
 
 export type AdminRole = 'super_admin' | 'admin';
+export type AuthRole = 'super_admin' | 'admin' | 'member';
 
 export interface AdminUser {
   username: string;
@@ -16,8 +17,10 @@ export interface AdminUser {
 }
 
 export interface SessionPayload {
-  username: string;
-  role: AdminRole;
+  userId: string;               // Player ID (unified for all roles)
+  email: string;
+  username?: string;            // Display name (for admins)
+  role: AuthRole;               // Authentication role (super_admin, admin, or member)
   iat?: number;
   exp?: number;
 }
@@ -47,16 +50,23 @@ export async function verifyPassword(
 
 /**
  * Create a JWT session token
- * @param username - Admin username
- * @param role - Admin role
+ * @param userId - User ID (player ID for all roles)
+ * @param email - User email
+ * @param role - Authentication role (super_admin, admin, or member)
+ * @param username - Optional username (for admins)
  * @returns JWT token string
  */
-export function createSession(username: string, role: AdminRole): string {
+export function createSession(
+  userId: string,
+  email: string,
+  role: AuthRole,
+  username?: string
+): string {
   if (!SESSION_SECRET) {
     throw new Error('SESSION_SECRET environment variable is not set');
   }
 
-  const payload: SessionPayload = { username, role };
+  const payload: SessionPayload = { userId, email, role, username };
   return jwt.sign(payload, SESSION_SECRET, { expiresIn: SESSION_EXPIRY });
 }
 
@@ -140,4 +150,57 @@ export function validateAdminSession(
   }
 
   return validateSession(token);
+}
+
+// ============================================================================
+// Role-Based Authorization Helpers
+// ============================================================================
+
+/**
+ * Check if session has super_admin role
+ * @param session - Session payload
+ * @returns True if user is super admin
+ */
+export function isSuperAdmin(session: SessionPayload | null): boolean {
+  return session?.role === 'super_admin';
+}
+
+/**
+ * Check if session has admin or super_admin role
+ * @param session - Session payload
+ * @returns True if user is admin or super admin
+ */
+export function isAdmin(session: SessionPayload | null): boolean {
+  return session?.role === 'super_admin' || session?.role === 'admin';
+}
+
+/**
+ * Check if session has any authenticated role (member, admin, or super_admin)
+ * @param session - Session payload
+ * @returns True if user is authenticated with any role
+ */
+export function isMember(session: SessionPayload | null): boolean {
+  if (!session) return false;
+  return ['super_admin', 'admin', 'member'].includes(session.role);
+}
+
+/**
+ * Check if session meets required role level
+ * @param session - Session payload
+ * @param requiredRole - Required role level
+ * @returns True if user has required role or higher
+ */
+export function requireRole(
+  session: SessionPayload | null,
+  requiredRole: AuthRole
+): boolean {
+  if (!session) return false;
+
+  const roleHierarchy: Record<AuthRole, number> = {
+    super_admin: 3,
+    admin: 2,
+    member: 1,
+  };
+
+  return roleHierarchy[session.role] >= roleHierarchy[requiredRole];
 }

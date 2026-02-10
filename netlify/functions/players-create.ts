@@ -39,7 +39,7 @@ export const handler: Handler = async (
 
     // Parse request body
     const body = JSON.parse(event.body || '{}');
-    const { firstName, lastName, email, usacId, role, isActive } = body;
+    const { firstName, lastName, email, phone, usacId, role, isActive } = body;
 
     // Validate required fields (only firstName and lastName are mandatory)
     if (!firstName || !lastName) {
@@ -82,6 +82,17 @@ export const handler: Handler = async (
         return {
           statusCode: 400,
           body: JSON.stringify({ error: 'Invalid email format' }),
+        };
+      }
+    }
+
+    // Validate phone if provided (expecting format: "+1 1234567890")
+    if (phone && phone.trim()) {
+      const phoneRegex = /^\+\d{1,4}\s\d{7,15}$/;
+      if (!phoneRegex.test(phone.trim())) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({ error: 'Invalid phone format. Expected format: +1 1234567890' }),
         };
       }
     }
@@ -149,6 +160,7 @@ export const handler: Handler = async (
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       email: email ? email.trim().toLowerCase() : undefined,
+      phone: phone ? phone.trim() : undefined,
       usacId: usacId ? usacId.trim() : undefined,
       role: role || undefined,
       isActive: isActive !== undefined ? isActive : true,

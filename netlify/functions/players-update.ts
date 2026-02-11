@@ -71,6 +71,17 @@ export const handler: Handler = async (
       };
     }
 
+    // Validate phone format if provided (expecting: "+1 1234567890")
+    if (updates.phone && updates.phone.trim()) {
+      const phoneRegex = /^\+\d{1,4}\s\d{7,15}$/;
+      if (!phoneRegex.test(updates.phone.trim())) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({ error: 'Invalid phone format. Expected format: +1 1234567890' }),
+        };
+      }
+    }
+
     if (updates.usacId && (updates.usacId.trim().length < 1 || updates.usacId.trim().length > 50)) {
       return {
         statusCode: 400,
@@ -172,6 +183,7 @@ export const handler: Handler = async (
     if (cleanUpdates.firstName) cleanUpdates.firstName = cleanUpdates.firstName.trim();
     if (cleanUpdates.lastName) cleanUpdates.lastName = cleanUpdates.lastName.trim();
     if (cleanUpdates.email) cleanUpdates.email = cleanUpdates.email.trim().toLowerCase();
+    if (cleanUpdates.phone) cleanUpdates.phone = cleanUpdates.phone.trim();
     if (cleanUpdates.usacId) cleanUpdates.usacId = cleanUpdates.usacId.trim();
 
     // Update player

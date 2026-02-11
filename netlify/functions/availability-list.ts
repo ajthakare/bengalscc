@@ -66,16 +66,54 @@ export const handler: Handler = async (
 
     // Get availability index for the season
     const indexKey = `availability-index-${targetSeasonId}`;
-    const index = (await availabilityStore.get(indexKey, { type: 'json' })) as any[] | null;
+    let index = (await availabilityStore.get(indexKey, { type: 'json' })) as any[] | null;
 
+    // If no index exists, build it from fixtures store
     if (!index || index.length === 0) {
-      return {
-        statusCode: 200,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify([]),
-      };
+      console.log('[Availability List] No index found, checking for availability records...');
+
+      // Get all fixtures for the season
+      const fixturesStore = getStore({
+        name: 'fixtures',
+        siteID: process.env.SITE_ID || '',
+        token: process.env.NETLIFY_AUTH_TOKEN || '',
+      });
+      const fixtures = (await fixturesStore.get(`fixtures-${targetSeasonId}`, { type: 'json' })) as any[] | null;
+
+      if (!fixtures || fixtures.length === 0) {
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify([]),
+        };
+      }
+
+      // Check which fixtures have availability records
+      index = [];
+      for (const fixture of fixtures) {
+        const availRecord = await availabilityStore.get(`availability-${fixture.id}`, { type: 'json' });
+        if (availRecord) {
+          index.push({
+            fixtureId: fixture.id,
+            gameNumber: fixture.gameNumber,
+            date: fixture.date,
+            team: fixture.team,
+            opponent: fixture.opponent,
+            venue: fixture.venue,
+          });
+        }
+      }
+
+      // Save the rebuilt index
+      if (index.length > 0) {
+        await availabilityStore.setJSON(indexKey, index);
+      } else {
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify([]),
+        };
+      }
     }
 
     // Filter fixtures
@@ -107,9 +145,12 @@ export const handler: Handler = async (
 
         // Calculate stats
         const totalPlayers = availability.playerAvailability.length;
+
+        // Count available using the unified wasAvailable field
         const availableCount = availability.playerAvailability.filter(
-          (p) => p.wasAvailable
+          (p) => p.wasAvailable === true
         ).length;
+
         const selectedCount = availability.playerAvailability.filter(
           (p) => p.wasSelected
         ).length;

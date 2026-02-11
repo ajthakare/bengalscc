@@ -3,6 +3,13 @@ export const prerender = false;
 
 import Layout from '../layouts/Layout.astro';
 import Section from '../components/Section.astro';
+import { validateAdminSession, isMember } from '../middleware/auth';
+
+// Check authentication status
+const cookieHeader = Astro.request.headers.get('cookie');
+const session = validateAdminSession(cookieHeader || '');
+const isAuthenticated = !!session;
+const isAuthenticatedMember = session && isMember(session);
 
 // Our teams
 const OUR_TEAMS = ['Bengal Tigers', 'Bengal Bulls', 'Bengal Thunder Cats'];
@@ -220,14 +227,28 @@ function getResultBadge(result: string): { text: string; color: string; icon: st
     {upcomingWeekendMatches.length > 0 ? (
         <Section>
             <div class="bg-gradient-to-r from-primary/10 to-complementary/10 border-2 border-primary rounded-xl p-6 mb-8">
-                <div class="flex items-center gap-2 mb-6">
-                    <span class="text-2xl">🏏</span>
-                    <h2 class="text-2xl font-bold text-gray-900">
-                        {upcomingWeekendMatches.length === 1 ? 'Upcoming Weekend Match' : 'Upcoming Weekend Matches'}
-                    </h2>
-                    <span class="px-3 py-1 bg-primary/20 text-primary rounded-full text-sm font-semibold">
-                        {upcomingWeekendMatches.length} {upcomingWeekendMatches.length === 1 ? 'match' : 'matches'}
-                    </span>
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="text-2xl">🏏</span>
+                        <h2 class="text-2xl font-bold text-gray-900">
+                            {upcomingWeekendMatches.length === 1 ? 'Upcoming Weekend Match' : 'Upcoming Weekend Matches'}
+                        </h2>
+                        <span class="px-3 py-1 bg-primary/20 text-primary rounded-full text-sm font-semibold">
+                            {upcomingWeekendMatches.length} {upcomingWeekendMatches.length === 1 ? 'match' : 'matches'}
+                        </span>
+                    </div>
+                    {isAuthenticatedMember && (
+                        <a
+                            href="/myfixtures"
+                            class="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-white font-bold rounded-lg transition-all shadow-md hover:shadow-lg whitespace-nowrap"
+                        >
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M9 11l3 3L22 4"></path>
+                                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                            </svg>
+                            <span>Mark Your Availability</span>
+                        </a>
+                    )}
                 </div>
                 <div class={`grid gap-6 ${upcomingWeekendMatches.length === 1 ? 'md:grid-cols-1' : upcomingWeekendMatches.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
                     {upcomingWeekendMatches.map(match => (

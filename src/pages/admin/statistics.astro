@@ -7,6 +7,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 const cookieHeader = Astro.request.headers.get('cookie');
 let authenticated = false;
 let username = '';
+let userRole = 'admin';
 
 if (cookieHeader) {
   try {
@@ -20,7 +21,8 @@ if (cookieHeader) {
     );
     const data = await response.json();
     authenticated = data.authenticated;
-    username = data.username || '';
+    username = data.user?.firstName || data.user?.username || '';
+    userRole = data.user?.role_auth || data.user?.role || 'admin';
   } catch (error) {
     authenticated = false;
   }
@@ -32,7 +34,7 @@ if (!authenticated) {
 }
 ---
 
-<AdminLayout title="Statistics Dashboard - GSCC Admin" username={username} activePage="statistics">
+<AdminLayout title="Statistics Dashboard - GSCC Admin" username={username} userRole={userRole} activePage="statistics">
   <script is:inline src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <div class="statistics-page">
     <!-- Page Header -->

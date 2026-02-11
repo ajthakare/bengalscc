@@ -7,6 +7,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 const cookieHeader = Astro.request.headers.get('cookie');
 let authenticated = false;
 let username = '';
+let userRole = 'admin';
 
 if (cookieHeader) {
   try {
@@ -20,7 +21,8 @@ if (cookieHeader) {
     );
     const data = await response.json();
     authenticated = data.authenticated;
-    username = data.username || '';
+    username = data.user?.firstName || data.user?.username || '';
+    userRole = data.user?.role_auth || data.user?.role || 'admin';
   } catch (error) {
     authenticated = false;
   }
@@ -32,7 +34,7 @@ if (!authenticated) {
 }
 ---
 
-<AdminLayout title="Player Management - GSCC Admin" username={username} activePage="players">
+<AdminLayout title="Player Management - GSCC Admin" username={username} userRole={userRole} activePage="players">
   <div class="players-page">
     <!-- Page Header -->
     <div class="page-header">
@@ -210,16 +212,42 @@ if (!authenticated) {
           </div>
         </div>
 
-        <div class="form-group">
-          <label for="email" class="form-label">Email (Optional)</label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            maxlength="255"
-            class="form-input"
-            placeholder="e.g., john.doe@example.com"
-          />
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="email" class="form-label">Email (Optional)</label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              maxlength="255"
+              class="form-input"
+              placeholder="e.g., john.doe@example.com"
+            />
+          </div>
+          <div class="form-group">
+            <label for="phone" class="form-label">Phone (Optional)</label>
+            <div class="phone-input-container">
+              <select id="phone-country" class="phone-country-select">
+                <option value="+1">🇺🇸 +1</option>
+                <option value="+91">🇮🇳 +91</option>
+                <option value="+44">🇬🇧 +44</option>
+                <option value="+61">🇦🇺 +61</option>
+                <option value="+86">🇨🇳 +86</option>
+                <option value="+81">🇯🇵 +81</option>
+                <option value="+49">🇩🇪 +49</option>
+                <option value="+33">🇫🇷 +33</option>
+                <option value="+971">🇦🇪 +971</option>
+                <option value="+65">🇸🇬 +65</option>
+              </select>
+              <input
+                type="tel"
+                id="phone-number"
+                class="phone-number-input"
+                placeholder="1234567890"
+                pattern="[0-9]{7,15}"
+              />
+            </div>
+          </div>
         </div>
 
         <div class="form-grid">
@@ -391,6 +419,36 @@ if (!authenticated) {
   .empty-icon {
     font-size: 4rem;
     margin-bottom: 1rem;
+  }
+
+  .phone-input-container {
+    display: flex;
+    gap: 8px;
+  }
+
+  .phone-country-select {
+    width: 110px;
+    padding: 10px 8px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    font-size: 14px;
+    background: white;
+    cursor: pointer;
+  }
+
+  .phone-number-input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    font-size: 14px;
+  }
+
+  .phone-country-select:focus,
+  .phone-number-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
   }
 </style>
 
@@ -715,6 +773,24 @@ if (!authenticated) {
     document.getElementById('first-name').value = player.firstName;
     document.getElementById('last-name').value = player.lastName;
     document.getElementById('email').value = player.email || '';
+
+    // Parse phone number (format: "+1 1234567890")
+    const phoneCountrySelect = document.getElementById('phone-country');
+    const phoneNumberInput = document.getElementById('phone-number');
+    if (player.phone) {
+      const phoneMatch = player.phone.match(/^(\+\d+)\s*(.+)$/);
+      if (phoneMatch) {
+        phoneCountrySelect.value = phoneMatch[1];
+        phoneNumberInput.value = phoneMatch[2];
+      } else {
+        // Old format without country code
+        phoneNumberInput.value = player.phone;
+      }
+    } else {
+      phoneCountrySelect.value = '+1';
+      phoneNumberInput.value = '';
+    }
+
     document.getElementById('usac-id').value = player.usacId || '';
     document.getElementById('role').value = player.role || '';
     document.getElementById('is-active').checked = player.isActive;
@@ -763,6 +839,11 @@ if (!authenticated) {
       firstName: formData.get('firstName'),
       lastName: formData.get('lastName'),
       email: formData.get('email'),
+      phone: (() => {
+        const phoneCountry = document.getElementById('phone-country').value;
+        const phoneNumber = document.getElementById('phone-number').value.trim();
+        return phoneNumber ? `${phoneCountry} ${phoneNumber}` : '';
+      })(),
       usacId: formData.get('usacId'),
       role: formData.get('role'),
       isActive: document.getElementById('is-active').checked,

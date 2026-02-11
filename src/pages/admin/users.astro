@@ -7,6 +7,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 const cookieHeader = Astro.request.headers.get('cookie');
 let authenticated = false;
 let username = '';
+let userEmail = '';
 let userRole = 'admin';
 
 if (cookieHeader) {
@@ -21,8 +22,9 @@ if (cookieHeader) {
     );
     const data = await response.json();
     authenticated = data.authenticated;
-    username = data.username || '';
-    userRole = data.role || (data.username === 'admin' ? 'super_admin' : 'admin');
+    username = data.user?.firstName || data.user?.username || '';
+    userEmail = data.user?.email || data.user?.username || '';
+    userRole = data.user?.role_auth || data.user?.role || 'admin';
   } catch (error) {
     authenticated = false;
   }
@@ -30,277 +32,233 @@ if (cookieHeader) {
 
 // Redirect to login if not authenticated
 if (!authenticated) {
-  return Astro.redirect('/admin/login');
+  return Astro.redirect('/login');
 }
 
 // Check if user is super admin
 const isSuperAdmin = userRole === 'super_admin';
+
+// Only super admins can access this page
+if (!isSuperAdmin) {
+  return Astro.redirect('/admin/availability');
+}
 ---
 
-<AdminLayout title="Manage Profile - GSCC Admin" username={username} userRole={userRole} activePage="users">
+<AdminLayout title="Manage Users - GSCC Admin" username={username} userRole={userRole} activePage="users">
   <div class="users-page">
     <!-- Page Header -->
     <div class="page-header">
-      <h1 class="page-title">Manage Profile</h1>
-      <p class="page-description">{isSuperAdmin ? 'Manage your profile and admin users for the dashboard' : 'Manage your account settings'}</p>
+      <h1 class="page-title">Manage Users</h1>
+      <p class="page-description">Manage admin users and member registrations</p>
     </div>
 
-      <!-- Change Password Section (for all users) -->
-      <div class="card">
-        <h2 class="card-title">Change Password</h2>
+    {/* Tabs */}
+    <div class="tabs">
+      <button class="tab-button active" data-tab="admin-users">Admin Users</button>
+      <button class="tab-button" data-tab="members">
+        Member Registrations
+        <span id="pending-count-badge" class="badge" style="display: none;"></span>
+      </button>
+    </div>
+        {/* Admin Users Tab */}
+        <div class="tab-content active" data-tab-content="admin-users">
+          <!-- Add User Form -->
+          <div class="card">
+            <h2 class="card-title">Promote Member to Admin</h2>
 
-        <form id="change-password-form" class="form">
-          <div class="form-grid">
-            <div class="form-group">
-              <label for="current-password" class="form-label">
-                Current Password
-              </label>
-              <input
-                type="password"
-                id="current-password"
-                name="currentPassword"
-                required
-                class="form-input"
-                placeholder="Enter current password"
-              />
-            </div>
+            <form id="add-user-form" class="form">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="select-member" class="form-label">
+                    Select Registered Member
+                  </label>
+                  <select
+                    id="select-member"
+                    name="playerId"
+                    required
+                    class="form-input"
+                  >
+                    <option value="">-- Select a member --</option>
+                  </select>
+                  <p class="form-hint">Choose from registered members (approved players)</p>
+                </div>
 
-            <div class="form-group">
-              <label for="new-password-change" class="form-label">
-                New Password
-              </label>
-              <input
-                type="password"
-                id="new-password-change"
-                name="newPassword"
-                required
-                minlength="8"
-                class="form-input"
-                placeholder="Minimum 8 characters"
-              />
-              <p class="form-hint">Minimum 8 characters</p>
-            </div>
+                <div class="form-group">
+                  <label for="new-user-role" class="form-label">
+                    Admin Role
+                  </label>
+                  <select
+                    id="new-user-role"
+                    name="role"
+                    required
+                    class="form-input"
+                  >
+                    <option value="admin">Admin</option>
+                    <option value="super_admin">Super Admin</option>
+                  </select>
+                  <p class="form-hint">Admin can only change their own password. Super Admin can manage all users.</p>
+                </div>
+              </div>
 
-            <div class="form-group">
-              <label for="confirm-password" class="form-label">
-                Confirm New Password
-              </label>
-              <input
-                type="password"
-                id="confirm-password"
-                name="confirmPassword"
-                required
-                minlength="8"
-                class="form-input"
-                placeholder="Re-enter new password"
-              />
-            </div>
-          </div>
+              <div id="add-user-error" class="alert alert-error" style="display: none;">
+                <span id="add-user-error-text"></span>
+              </div>
 
-          <div id="change-password-error" class="alert alert-error" style="display: none;">
-            <span id="change-password-error-text"></span>
-          </div>
+              <div id="add-user-success" class="alert alert-success" style="display: none;">
+                <span id="add-user-success-text"></span>
+              </div>
 
-          <div id="change-password-success" class="alert alert-success" style="display: none;">
-            <span id="change-password-success-text"></span>
-          </div>
-
-          <button
-            type="submit"
-            id="change-password-button"
-            class="btn-primary"
-          >
-            Update Password
-          </button>
-        </form>
-      </div>
-
-      <!-- Add User Form (Super Admin Only) -->
-      {isSuperAdmin && (
-      <div class="card">
-        <h2 class="card-title">Add New Admin User</h2>
-
-        <form id="add-user-form" class="form">
-          <div class="form-grid">
-            <div class="form-group">
-              <label for="new-username" class="form-label">
-                Username
-              </label>
-              <input
-                type="text"
-                id="new-username"
-                name="username"
-                required
-                pattern="[a-zA-Z0-9_]{3,20}"
-                title="3-20 characters, letters, numbers, and underscores only"
-                class="form-input"
-                placeholder="e.g., john_admin"
-              />
-              <p class="form-hint">3-20 characters, alphanumeric and underscores</p>
-            </div>
-
-            <div class="form-group">
-              <label for="new-password" class="form-label">
-                Password
-              </label>
-              <input
-                type="password"
-                id="new-password"
-                name="password"
-                required
-                minlength="8"
-                class="form-input"
-                placeholder="Minimum 8 characters"
-              />
-              <p class="form-hint">Minimum 8 characters</p>
-            </div>
-
-            <div class="form-group">
-              <label for="new-user-role" class="form-label">
-                Role
-              </label>
-              <select
-                id="new-user-role"
-                name="role"
-                required
-                class="form-input"
+              <button
+                type="submit"
+                id="add-user-button"
+                class="btn-primary"
               >
-                <option value="admin">Admin</option>
-                <option value="super_admin">Super Admin</option>
-              </select>
-              <p class="form-hint">Admin can only change their own password. Super Admin can manage all users.</p>
+                Promote to Admin
+              </button>
+            </form>
+          </div>
+
+          <!-- Users List -->
+          <div class="card">
+            <h2 class="card-title">Current Admin Users</h2>
+
+            <div id="loading-users" class="state-container">
+              <div class="spinner"></div>
+              <p class="state-text">Loading users...</p>
+            </div>
+
+            <div id="users-error" class="alert alert-error" style="display: none;">
+              <div>
+                <p class="alert-title">Error loading users</p>
+                <p id="users-error-text"></p>
+              </div>
+            </div>
+
+            <div id="users-table-container" style="display: none;">
+              <div class="table-container">
+                <table class="users-table">
+                  <thead>
+                    <tr>
+                      <th>Username</th>
+                      <th>Role</th>
+                      <th>Created At</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="users-tbody">
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
-
-          <div id="add-user-error" class="alert alert-error" style="display: none;">
-            <span id="add-user-error-text"></span>
-          </div>
-
-          <div id="add-user-success" class="alert alert-success" style="display: none;">
-            <span id="add-user-success-text"></span>
-          </div>
-
-          <button
-            type="submit"
-            id="add-user-button"
-            class="btn-primary"
-          >
-            Add Admin User
-          </button>
-        </form>
-      </div>
-
-      <!-- Users List (Super Admin Only) -->
-      <div class="card">
-        <h2 class="card-title">Current Admin Users</h2>
-
-        <!-- Loading State -->
-        <div id="loading-users" class="state-container">
-          <div class="spinner"></div>
-          <p class="state-text">Loading users...</p>
         </div>
 
-        <!-- Error State -->
-        <div id="users-error" class="alert alert-error" style="display: none;">
-          <div>
-            <p class="alert-title">Error loading users</p>
-            <p id="users-error-text"></p>
+        {/* Member Registrations Tab */}
+        <div class="tab-content" data-tab-content="members">
+          {/* Filter Tabs */}
+          <div class="filter-tabs">
+            <button class="filter-tab active" data-status="pending">Pending</button>
+            <button class="filter-tab" data-status="approved">Approved</button>
+            <button class="filter-tab" data-status="rejected">Rejected</button>
+            <button class="filter-tab" data-status="suspended">Suspended</button>
+          </div>
+
+          {/* Members List */}
+          <div class="card">
+            <div id="loading-members" class="state-container">
+              <div class="spinner"></div>
+              <p class="state-text">Loading member registrations...</p>
+            </div>
+
+            <div id="members-error" class="alert alert-error" style="display: none;">
+              <p id="members-error-text"></p>
+            </div>
+
+            <div id="members-table-container" style="display: none;">
+              <div class="table-container">
+                <table class="members-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th>Phone</th>
+                      <th>Registered</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="members-tbody">
+                  </tbody>
+                </table>
+              </div>
+              <div id="no-members" class="state-container" style="display: none;">
+                <p class="state-text">No member registrations found</p>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Users Table -->
-        <div id="users-table-container" style="display: none;">
-          <div class="table-container">
-            <table class="users-table">
-              <thead>
-                <tr>
-                  <th>Username</th>
-                  <th>Role</th>
-                  <th>Created At</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="users-tbody">
-                <!-- Users will be inserted here -->
-              </tbody>
-            </table>
+        {/* Approval Modal */}
+        <div id="approval-modal" class="modal">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h2>Approve Member Registration</h2>
+              <button class="modal-close" onclick="closeApprovalModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+              <div class="member-details" id="member-details"></div>
+
+              <form id="approval-form">
+                <div class="form-group">
+                  <label class="form-label">Select Existing Player to Update:</label>
+                  <select id="target-player" class="form-input" required>
+                    <option value="">-- Search and select player --</option>
+                  </select>
+                  <p class="form-hint">This will update the selected player's information with the registration details</p>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Player Position/Role:</label>
+                  <select id="player-role" class="form-input" required>
+                    <option value="">-- Select role --</option>
+                    <option value="Batsman">Batsman</option>
+                    <option value="Bowler">Bowler</option>
+                    <option value="All-rounder">All-rounder</option>
+                    <option value="Wicket-keeper">Wicket-keeper</option>
+                  </select>
+                </div>
+
+                <div class="alert alert-warning">
+                  <p><strong>⚠️ Warning:</strong> This will overwrite the selected player's:</p>
+                  <ul>
+                    <li>Name, Email, Phone, Role</li>
+                    <li>And enable login access for this player</li>
+                  </ul>
+                </div>
+
+                <div class="modal-actions">
+                  <button type="button" class="btn-secondary" onclick="closeApprovalModal()">Cancel</button>
+                  <button type="submit" class="btn-primary">Approve & Update Player</button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
-      </div>
-      )}
   </div>
 </AdminLayout>
 
-<script define:vars={{ currentUsername: username, isSuperAdmin: isSuperAdmin }}>
-  console.log('Admin users script loaded', { currentUsername, isSuperAdmin });
-
-  // Change Password Form
-  const changePasswordForm = document.getElementById('change-password-form');
-  const changePasswordButton = document.getElementById('change-password-button');
-  const changePasswordError = document.getElementById('change-password-error');
-  const changePasswordErrorText = document.getElementById('change-password-error-text');
-  const changePasswordSuccess = document.getElementById('change-password-success');
-  const changePasswordSuccessText = document.getElementById('change-password-success-text');
-
-  // Handle change password
-  changePasswordForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const currentPassword = document.getElementById('current-password').value;
-    const newPassword = document.getElementById('new-password-change').value;
-    const confirmPassword = document.getElementById('confirm-password').value;
-
-    // Validate passwords match
-    if (newPassword !== confirmPassword) {
-      changePasswordError.style.display = 'block';
-      changePasswordErrorText.textContent = 'New passwords do not match';
-      changePasswordSuccess.style.display = 'none';
-      return;
-    }
-
-    changePasswordButton.disabled = true;
-    changePasswordButton.textContent = 'Updating...';
-    changePasswordError.style.display = 'none';
-    changePasswordSuccess.style.display = 'none';
-
-    try {
-      const response = await fetch('/.netlify/functions/admin-change-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({
-          username: currentUsername,
-          currentPassword,
-          newPassword
-        })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to change password');
-      }
-
-      changePasswordSuccess.style.display = 'block';
-      changePasswordSuccessText.textContent = 'Password updated successfully!';
-      changePasswordForm.reset();
-
-      // Hide success message after 3 seconds
-      setTimeout(() => {
-        changePasswordSuccess.style.display = 'none';
-      }, 3000);
-    } catch (error) {
-      changePasswordError.style.display = 'block';
-      changePasswordErrorText.textContent = error.message;
-    } finally {
-      changePasswordButton.disabled = false;
-      changePasswordButton.textContent = 'Update Password';
-    }
-  });
-
-  // User management (super admin only)
+<script define:vars={{ currentUsername: userEmail, isSuperAdmin: isSuperAdmin }}>
+  // Admin User Management (super admin only)
   if (isSuperAdmin) {
+    // Tab switching
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabContents = document.querySelectorAll('.tab-content');
+
     let users = [];
+    let members = [];
+    let allPlayers = [];
+    let currentMemberStatus = 'pending';
+    let currentMemberId = null;
 
     const loadingUsers = document.getElementById('loading-users');
     const usersError = document.getElementById('users-error');
@@ -314,207 +272,532 @@ const isSuperAdmin = userRole === 'super_admin';
     const addUserSuccess = document.getElementById('add-user-success');
     const addUserSuccessText = document.getElementById('add-user-success-text');
 
-  async function loadUsers() {
-    console.log('loadUsers called');
-    try {
-      loadingUsers.style.display = 'flex';
-      usersError.style.display = 'none';
-      usersTableContainer.style.display = 'none';
+    // Member management elements
+    const loadingMembers = document.getElementById('loading-members');
+    const membersError = document.getElementById('members-error');
+    const membersErrorText = document.getElementById('members-error-text');
+    const membersTableContainer = document.getElementById('members-table-container');
+    const membersTbody = document.getElementById('members-tbody');
+    const noMembers = document.getElementById('no-members');
+    const pendingCountBadge = document.getElementById('pending-count-badge');
 
-      console.log('Fetching admin users...');
-      const response = await fetch('/.netlify/functions/admin-users-list', {
-        credentials: 'same-origin'
+    // Filter tabs
+    const filterTabs = document.querySelectorAll('.filter-tab');
+    filterTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const status = tab.getAttribute('data-status');
+        currentMemberStatus = status;
+
+        filterTabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+
+        renderMembers();
       });
+    });
 
-      console.log('Response status:', response.status);
+    async function loadUsers() {
+      try {
+        loadingUsers.style.display = 'flex';
+        usersError.style.display = 'none';
+        usersTableContainer.style.display = 'none';
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Error response:', errorData);
-        throw new Error(errorData.error || 'Failed to fetch users');
+        const response = await fetch('/.netlify/functions/admin-users-list', {
+          credentials: 'same-origin'
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to fetch users');
+        }
+
+        users = await response.json();
+
+        loadingUsers.style.display = 'none';
+        usersTableContainer.style.display = 'block';
+
+        renderUsers();
+      } catch (error) {
+        loadingUsers.style.display = 'none';
+        usersError.style.display = 'block';
+        usersErrorText.textContent = error instanceof Error ? error.message : 'Unknown error';
+      }
+    }
+
+    function renderUsers() {
+      usersTbody.innerHTML = '';
+
+      users.forEach((user) => {
+        const row = document.createElement('tr');
+
+        const date = new Date(user.createdAt);
+        const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+        const isCurrentUser = user.username === currentUsername;
+        const isOnlyUser = users.length === 1;
+        const userRole = user.role || (user.username === 'admin' ? 'super_admin' : 'admin');
+
+        row.innerHTML = `
+          <td class="user-username">
+            ${user.username}
+            ${isCurrentUser ? '<span class="user-badge">(You)</span>' : ''}
+          </td>
+          <td class="user-role">
+            <select
+              class="role-dropdown"
+              data-username="${user.username}"
+              onchange="updateUserRole('${user.username}', this.value)"
+              ${isCurrentUser && userRole === 'super_admin' ? 'disabled' : ''}
+            >
+              <option value="admin" ${userRole === 'admin' ? 'selected' : ''}>Admin</option>
+              <option value="super_admin" ${userRole === 'super_admin' ? 'selected' : ''}>Super Admin</option>
+            </select>
+          </td>
+          <td class="user-date">
+            ${formattedDate}
+          </td>
+          <td>
+            <button
+              onclick="deleteUser('${user.username}')"
+              class="btn-delete ${isCurrentUser || isOnlyUser ? 'disabled' : ''}"
+              ${isCurrentUser || isOnlyUser ? 'disabled' : ''}
+              title="${isCurrentUser ? 'Cannot delete your own account' : isOnlyUser ? 'Cannot delete the last admin' : 'Delete user'}"
+            >
+              Delete
+            </button>
+          </td>
+        `;
+
+        usersTbody.appendChild(row);
+      });
+    }
+
+    async function deleteUser(username) {
+      if (!confirm(`Are you sure you want to delete admin user "${username}"? This cannot be undone.`)) {
+        return;
       }
 
-      users = await response.json();
-      console.log('Users loaded:', users);
+      try {
+        const response = await fetch('/.netlify/functions/admin-users-delete', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ username }),
+          credentials: 'same-origin'
+        });
 
-      loadingUsers.style.display = 'none';
-      usersTableContainer.style.display = 'block';
+        const data = await response.json();
 
-      renderUsers();
-    } catch (error) {
-      loadingUsers.style.display = 'none';
-      usersError.style.display = 'block';
-      usersErrorText.textContent = error instanceof Error ? error.message : 'Unknown error';
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to delete user');
+        }
+
+        await loadUsers();
+      } catch (error) {
+        alert('Failed to delete user: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      }
     }
-  }
 
-  function renderUsers() {
-    usersTbody.innerHTML = '';
+    async function updateUserRole(username, newRole) {
+      try {
+        const response = await fetch('/.netlify/functions/admin-users-update-role', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ username, role: newRole }),
+          credentials: 'same-origin'
+        });
 
-    users.forEach((user) => {
-      const row = document.createElement('tr');
+        const data = await response.json();
 
-      const date = new Date(user.createdAt);
-      const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
-      const isCurrentUser = user.username === currentUsername;
-      const isOnlyUser = users.length === 1;
-      const userRole = user.role || (user.username === 'admin' ? 'super_admin' : 'admin');
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to update role');
+        }
 
-      row.innerHTML = `
-        <td class="user-username">
-          ${user.username}
-          ${isCurrentUser ? '<span class="user-badge">(You)</span>' : ''}
-        </td>
-        <td class="user-role">
-          <select
-            class="role-dropdown"
-            data-username="${user.username}"
-            onchange="updateUserRole('${user.username}', this.value)"
-            ${isCurrentUser && userRole === 'super_admin' ? 'disabled' : ''}
-          >
-            <option value="admin" ${userRole === 'admin' ? 'selected' : ''}>Admin</option>
-            <option value="super_admin" ${userRole === 'super_admin' ? 'selected' : ''}>Super Admin</option>
-          </select>
-        </td>
-        <td class="user-date">
-          ${formattedDate}
-        </td>
-        <td>
-          <button
-            onclick="deleteUser('${user.username}')"
-            class="btn-delete ${isCurrentUser || isOnlyUser ? 'disabled' : ''}"
-            ${isCurrentUser || isOnlyUser ? 'disabled' : ''}
-            title="${isCurrentUser ? 'Cannot delete your own account' : isOnlyUser ? 'Cannot delete the last admin' : 'Delete user'}"
-          >
-            Delete
-          </button>
-        </td>
+        await loadUsers();
+      } catch (error) {
+        alert('Failed to update role: ' + (error instanceof Error ? error.message : 'Unknown error'));
+        await loadUsers();
+      }
+    }
+
+    window.deleteUser = deleteUser;
+    window.updateUserRole = updateUserRole;
+
+    // Load members for admin promotion dropdown
+    async function loadMembersForPromotion() {
+      try {
+        const selectMember = document.getElementById('select-member');
+        if (!selectMember) return;
+
+        // Load all players
+        const playersResponse = await fetch('/.netlify/functions/players-list', {
+          credentials: 'same-origin'
+        });
+
+        if (!playersResponse.ok) {
+          throw new Error('Failed to load members');
+        }
+
+        const allPlayers = await playersResponse.json();
+
+        // Filter to show only approved members (who have registrationStatus === 'approved')
+        // and exclude those who are already admins
+        const availableMembers = allPlayers.filter(player => {
+          // Must have registration status of approved
+          if (player.registrationStatus !== 'approved') return false;
+
+          // Exclude if already an admin (check if they have role_auth of admin or super_admin)
+          if (player.role_auth === 'admin' || player.role_auth === 'super_admin') return false;
+
+          return true;
+        });
+
+        // Sort by name
+        availableMembers.sort((a, b) => {
+          const nameA = `${a.firstName} ${a.lastName}`.toLowerCase();
+          const nameB = `${b.firstName} ${b.lastName}`.toLowerCase();
+          return nameA.localeCompare(nameB);
+        });
+
+        // Clear existing options except the first one
+        selectMember.innerHTML = '<option value="">-- Select a member --</option>';
+
+        // Add member options
+        availableMembers.forEach(player => {
+          const option = document.createElement('option');
+          option.value = player.id;
+          option.textContent = `${player.firstName} ${player.lastName}${player.email ? ` (${player.email})` : ''}`;
+          selectMember.appendChild(option);
+        });
+
+        if (availableMembers.length === 0) {
+          const option = document.createElement('option');
+          option.value = '';
+          option.textContent = 'No available members to promote';
+          option.disabled = true;
+          selectMember.appendChild(option);
+        }
+      } catch (error) {
+        console.error('Error loading members for promotion:', error);
+      }
+    }
+
+    addUserForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      addUserError.style.display = 'none';
+      addUserSuccess.style.display = 'none';
+
+      const formData = new FormData(addUserForm);
+      const playerId = formData.get('playerId');
+      const role = formData.get('role');
+
+      if (!playerId) {
+        addUserError.style.display = 'block';
+        addUserErrorText.textContent = 'Please select a member';
+        return;
+      }
+
+      addUserButton.disabled = true;
+      addUserButton.textContent = 'Promoting...';
+
+      try {
+        const response = await fetch('/.netlify/functions/admin-users-promote', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ playerId, role }),
+          credentials: 'same-origin'
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to promote member');
+        }
+
+        addUserSuccess.style.display = 'block';
+        addUserSuccessText.textContent = `Member promoted to ${role === 'super_admin' ? 'Super Admin' : 'Admin'} successfully`;
+        addUserForm.reset();
+        await loadUsers();
+        await loadMembersForPromotion(); // Reload dropdown
+      } catch (error) {
+        addUserError.style.display = 'block';
+        addUserErrorText.textContent = error instanceof Error ? error.message : 'Unknown error';
+      } finally {
+        addUserButton.disabled = false;
+        addUserButton.textContent = 'Promote to Admin';
+      }
+    });
+
+    // Member Management Functions
+    async function loadMembers() {
+      try {
+        loadingMembers.style.display = 'flex';
+        membersError.style.display = 'none';
+        membersTableContainer.style.display = 'none';
+
+        // Load all players
+        const playersResponse = await fetch('/.netlify/functions/players-list', {
+          credentials: 'same-origin'
+        });
+
+        if (!playersResponse.ok) {
+          throw new Error('Failed to load players');
+        }
+
+        allPlayers = await playersResponse.json();
+
+        // Debug: Log first few players to see their structure
+        console.log('First 3 players:', allPlayers.slice(0, 3));
+
+        // Debug: Find any players with email (members should have email)
+        const playersWithEmail = allPlayers.filter(p => p.email);
+        console.log('Players with email:', playersWithEmail.length);
+        console.log('Players with email sample:', playersWithEmail.slice(0, 3));
+
+        // Filter members (players with passwordHash)
+        members = allPlayers.filter(p => p.passwordHash);
+
+        console.log('Total players:', allPlayers.length);
+        console.log('Total members (with passwordHash):', members.length);
+        console.log('Members:', members);
+
+        // Debug: Check if any players have auth fields
+        const playersWithAuthFields = allPlayers.filter(p => p.registrationStatus || p.role_auth || p.registeredAt);
+        console.log('Players with auth fields:', playersWithAuthFields.length);
+        console.log('Players with auth fields sample:', playersWithAuthFields.slice(0, 3));
+
+        // Count pending members
+        const pendingCount = members.filter(m => m.registrationStatus === 'pending').length;
+        console.log('Pending members count:', pendingCount);
+        if (pendingCount > 0) {
+          pendingCountBadge.textContent = pendingCount;
+          pendingCountBadge.style.display = 'inline-block';
+        } else {
+          pendingCountBadge.style.display = 'none';
+        }
+
+        loadingMembers.style.display = 'none';
+        membersTableContainer.style.display = 'block';
+
+        renderMembers();
+      } catch (error) {
+        loadingMembers.style.display = 'none';
+        membersError.style.display = 'block';
+        membersErrorText.textContent = error instanceof Error ? error.message : 'Unknown error';
+      }
+    }
+
+    function renderMembers() {
+      membersTbody.innerHTML = '';
+
+      const filteredMembers = members.filter(m => m.registrationStatus === currentMemberStatus);
+
+      if (filteredMembers.length === 0) {
+        membersTbody.style.display = 'none';
+        noMembers.style.display = 'flex';
+        return;
+      }
+
+      membersTbody.style.display = '';
+      noMembers.style.display = 'none';
+
+      filteredMembers.forEach((member) => {
+        const row = document.createElement('tr');
+
+        const registeredDate = member.registeredAt ? new Date(member.registeredAt) : new Date(member.createdAt);
+        const formattedDate = registeredDate.toLocaleDateString();
+
+        const statusColors = {
+          pending: 'bg-yellow-100 text-yellow-800',
+          approved: 'bg-green-100 text-green-800',
+          rejected: 'bg-red-100 text-red-800',
+          suspended: 'bg-gray-100 text-gray-800'
+        };
+
+        const statusClass = statusColors[member.registrationStatus] || '';
+
+        let actions = '';
+        if (member.registrationStatus === 'pending') {
+          actions = `
+            <button onclick="openApprovalModal('${member.id}')" class="btn-approve">Approve</button>
+            <button onclick="rejectMember('${member.id}')" class="btn-reject">Reject</button>
+          `;
+        } else if (member.registrationStatus === 'approved') {
+          actions = `<button onclick="suspendMember('${member.id}')" class="btn-suspend">Suspend</button>`;
+        }
+
+        row.innerHTML = `
+          <td class="member-name">${member.firstName} ${member.lastName}</td>
+          <td>${member.email || '-'}</td>
+          <td>${member.phone || '-'}</td>
+          <td class="member-date">${formattedDate}</td>
+          <td><span class="status-badge ${statusClass}">${member.registrationStatus}</span></td>
+          <td class="member-actions">${actions}</td>
+        `;
+
+        membersTbody.appendChild(row);
+      });
+    }
+
+    window.openApprovalModal = function(memberId) {
+      currentMemberId = memberId;
+      const member = members.find(m => m.id === memberId);
+      if (!member) return;
+
+      // Show member details
+      document.getElementById('member-details').innerHTML = `
+        <div class="detail-grid">
+          <div><strong>Name:</strong> ${member.firstName} ${member.lastName}</div>
+          <div><strong>Email:</strong> ${member.email}</div>
+          <div><strong>Phone:</strong> ${member.phone || 'N/A'}</div>
+          <div><strong>Registered:</strong> ${new Date(member.registeredAt).toLocaleDateString()}</div>
+        </div>
       `;
 
-      usersTbody.appendChild(row);
+      // Populate player dropdown (exclude members with passwordHash)
+      const targetPlayer = document.getElementById('target-player');
+      targetPlayer.innerHTML = '<option value="">-- Search and select player --</option>';
+
+      const nonMemberPlayers = allPlayers.filter(p => !p.passwordHash);
+      nonMemberPlayers.forEach(player => {
+        const option = document.createElement('option');
+        option.value = player.id;
+        option.textContent = `${player.firstName} ${player.lastName}${player.email ? ' (' + player.email + ')' : ''}`;
+        targetPlayer.appendChild(option);
+      });
+
+      document.getElementById('approval-modal').style.display = 'flex';
+    };
+
+    window.closeApprovalModal = function() {
+      document.getElementById('approval-modal').style.display = 'none';
+      document.getElementById('approval-form').reset();
+      currentMemberId = null;
+    };
+
+    document.getElementById('approval-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const targetPlayerId = document.getElementById('target-player').value;
+      const playerRole = document.getElementById('player-role').value;
+
+      if (!targetPlayerId || !playerRole) {
+        alert('Please select a player and role');
+        return;
+      }
+
+      try {
+        const response = await fetch('/.netlify/functions/members-approve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({
+            registrationId: currentMemberId,
+            targetPlayerId,
+            playerRole
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to approve member');
+        }
+
+        alert('Member approved successfully!');
+        closeApprovalModal();
+        await loadMembers();
+      } catch (error) {
+        alert('Failed to approve member: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      }
     });
-  }
 
-  async function deleteUser(username) {
-    if (!confirm(`Are you sure you want to delete admin user "${username}"? This cannot be undone.`)) {
-      return;
-    }
+    window.rejectMember = async function(memberId) {
+      const reason = prompt('Reason for rejection (optional):');
+      if (reason === null) return; // User cancelled
 
-    try {
-      const response = await fetch('/.netlify/functions/admin-users-delete', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username }),
-        credentials: 'same-origin'
-      });
+      try {
+        const response = await fetch('/.netlify/functions/members-reject', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ registrationId: memberId, reason })
+        });
 
-      const data = await response.json();
+        const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to delete user');
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to reject member');
+        }
+
+        alert('Member registration rejected');
+        await loadMembers();
+      } catch (error) {
+        alert('Failed to reject member: ' + (error instanceof Error ? error.message : 'Unknown error'));
       }
+    };
 
-      await loadUsers();
-    } catch (error) {
-      alert('Failed to delete user: ' + (error instanceof Error ? error.message : 'Unknown error'));
-    }
-  }
+    window.suspendMember = async function(memberId) {
+      const reason = prompt('Reason for suspension:');
+      if (!reason) return;
 
-  async function updateUserRole(username, newRole) {
-    try {
-      const response = await fetch('/.netlify/functions/admin-users-update-role', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, role: newRole }),
-        credentials: 'same-origin'
-      });
+      try {
+        const response = await fetch('/.netlify/functions/members-suspend', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ playerId: memberId, reason })
+        });
 
-      const data = await response.json();
+        const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to update role');
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to suspend member');
+        }
+
+        alert('Member suspended');
+        await loadMembers();
+      } catch (error) {
+        alert('Failed to suspend member: ' + (error instanceof Error ? error.message : 'Unknown error'));
       }
+    };
 
-      // Reload users to reflect changes
-      await loadUsers();
+    // Tab switching event listeners
+    tabButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        const targetTab = button.getAttribute('data-tab');
 
-      // Show success message
-      showSuccess(`Role updated successfully for user "${username}"`);
-      setTimeout(() => hideMessages(), 3000);
-    } catch (error) {
-      alert('Failed to update role: ' + (error instanceof Error ? error.message : 'Unknown error'));
-      // Reload to reset dropdown to original value
-      await loadUsers();
-    }
-  }
+        // Update button states
+        tabButtons.forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
 
-  // Make functions globally available
-  window.deleteUser = deleteUser;
-  window.updateUserRole = updateUserRole;
+        // Update content visibility
+        tabContents.forEach(content => {
+          const contentTab = content.getAttribute('data-tab-content');
+          if (contentTab === targetTab) {
+            content.classList.add('active');
+          } else {
+            content.classList.remove('active');
+          }
+        });
 
-  function hideMessages() {
-    addUserError.style.display = 'none';
-    addUserSuccess.style.display = 'none';
-  }
-
-  function showError(message) {
-    addUserErrorText.textContent = message;
-    addUserError.style.display = 'block';
-    addUserSuccess.style.display = 'none';
-  }
-
-  function showSuccess(message) {
-    addUserSuccessText.textContent = message;
-    addUserSuccess.style.display = 'block';
-    addUserError.style.display = 'none';
-  }
-
-  addUserForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    hideMessages();
-
-    const formData = new FormData(addUserForm);
-    const username = formData.get('username');
-    const password = formData.get('password');
-    const role = formData.get('role');
-
-    addUserButton.disabled = true;
-    addUserButton.textContent = 'Adding...';
-
-    try {
-      const response = await fetch('/.netlify/functions/admin-users-create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password, role }),
-        credentials: 'same-origin'
+        // Load data when switching to tabs
+        if (targetTab === 'members') {
+          loadMembers();
+        } else if (targetTab === 'admin-users') {
+          loadUsers();
+          loadMembersForPromotion();
+        }
       });
+    });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create user');
-      }
-
-      showSuccess(`Admin user "${username}" created successfully`);
-      addUserForm.reset();
-      await loadUsers();
-    } catch (error) {
-      showError(error instanceof Error ? error.message : 'Unknown error');
-    } finally {
-      addUserButton.disabled = false;
-      addUserButton.textContent = 'Add Admin User';
-    }
-  });
-
-    // Load users on page load
+    // Load data for the initially active tab on page load
     loadUsers();
-  } // end if (isSuperAdmin)
+    loadMembersForPromotion();
+  }
 </script>
 
 <style is:global>
@@ -523,12 +806,88 @@ const isSuperAdmin = userRole === 'super_admin';
     margin: 0 auto;
   }
 
-  /* Page Header */
   .page-header {
     margin-bottom: 32px;
   }
 
-  /* Note: .page-title and .page-description styles are now in theme file */
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    border-bottom: 2px solid #e5e7eb;
+  }
+
+  .tab-button {
+    padding: 12px 24px;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    font-size: 14px;
+    font-weight: 600;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .tab-button:hover {
+    color: var(--color-primary);
+  }
+
+  .tab-button.active {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+  }
+
+  .badge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 2px 8px;
+    background: #ef4444;
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 12px;
+  }
+
+  .tab-content {
+    display: none;
+  }
+
+  .tab-content.active {
+    display: block;
+  }
+
+  /* Filter Tabs */
+  .filter-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .filter-tab {
+    padding: 8px 16px;
+    background: white;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .filter-tab:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+
+  .filter-tab.active {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: white;
+  }
 
   /* Cards */
   .card {
@@ -546,7 +905,7 @@ const isSuperAdmin = userRole === 'super_admin';
     margin-bottom: 20px;
   }
 
-  /* Form */
+  /* Forms */
   .form {
     display: flex;
     flex-direction: column;
@@ -611,53 +970,97 @@ const isSuperAdmin = userRole === 'super_admin';
     color: #16a34a;
   }
 
-  .alert-title {
-    font-weight: 600;
-    margin-bottom: 4px;
+  .alert-warning {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    color: #d97706;
+    margin-bottom: 16px;
+  }
+
+  .alert-warning ul {
+    margin-top: 8px;
+    margin-left: 20px;
   }
 
   /* Buttons */
-  .btn-primary {
+  .btn-primary, .btn-secondary {
     padding: 10px 20px;
-    background: var(--color-primary);
-    color: white;
     border: none;
     border-radius: 8px;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
+  }
+
+  .btn-primary {
+    background: var(--color-primary);
+    color: white;
   }
 
   .btn-primary:hover {
     background: #ea580c;
-    transform: translateY(-1px);
   }
 
   .btn-primary:disabled {
     opacity: 0.6;
     cursor: not-allowed;
-    transform: none;
+  }
+
+  .btn-secondary {
+    background: #f3f4f6;
+    color: #374151;
+  }
+
+  .btn-secondary:hover {
+    background: #e5e7eb;
+  }
+
+  .btn-approve, .btn-reject, .btn-suspend, .btn-delete {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-right: 4px;
+  }
+
+  .btn-approve {
+    background: #10b981;
+    color: white;
+  }
+
+  .btn-approve:hover {
+    background: #059669;
+  }
+
+  .btn-reject {
+    background: #ef4444;
+    color: white;
+  }
+
+  .btn-reject:hover {
+    background: #dc2626;
+  }
+
+  .btn-suspend {
+    background: #6b7280;
+    color: white;
+  }
+
+  .btn-suspend:hover {
+    background: #4b5563;
   }
 
   .btn-delete {
     color: #dc2626;
     background: transparent;
-    border: none;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 4px;
-    transition: all 0.2s;
   }
 
   .btn-delete:hover:not(.disabled) {
     background: #fef2f2;
-    color: #991b1b;
   }
 
   .btn-delete.disabled {
@@ -685,9 +1088,7 @@ const isSuperAdmin = userRole === 'super_admin';
   }
 
   @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
+    to { transform: rotate(360deg); }
   }
 
   .state-text {
@@ -696,53 +1097,44 @@ const isSuperAdmin = userRole === 'super_admin';
     color: var(--color-text-muted);
   }
 
-  /* Table */
+  /* Tables */
   .table-container {
     overflow-x: auto;
     border-radius: 8px;
     border: 1px solid var(--color-border);
   }
 
-  .users-table {
+  .users-table, .members-table {
     width: 100%;
     border-collapse: collapse;
   }
 
-  .users-table thead {
+  .users-table thead, .members-table thead {
     background: var(--color-bg-card);
   }
 
-  .users-table th {
+  .users-table th, .members-table th {
     padding: 12px 16px;
     text-align: left;
     font-size: 12px;
     font-weight: 600;
     color: var(--color-text-muted);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
     border-bottom: 1px solid var(--color-border);
   }
 
-  .users-table tbody tr {
-    border-bottom: 1px solid var(--color-border);
-    transition: background-color 0.2s;
-  }
-
-  .users-table tbody tr:hover {
-    background: var(--color-bg-card);
-  }
-
-  .users-table tbody tr:last-child {
-    border-bottom: none;
-  }
-
-  .users-table td {
+  .users-table td, .members-table td {
     padding: 16px;
     font-size: 14px;
     color: var(--color-text-body);
+    border-bottom: 1px solid var(--color-border);
   }
 
-  .user-username {
+  .users-table tbody tr:hover, .members-table tbody tr:hover {
+    background: var(--color-bg-card);
+  }
+
+  .user-username, .member-name {
     font-weight: 600;
     color: var(--color-text-heading);
   }
@@ -754,22 +1146,28 @@ const isSuperAdmin = userRole === 'super_admin';
     font-weight: 500;
   }
 
-  .user-role {
-    min-width: 150px;
+  .status-badge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
   }
+
+  .bg-yellow-100 { background: #fef3c7; }
+  .text-yellow-800 { color: #92400e; }
+  .bg-green-100 { background: #d1fae5; }
+  .text-green-800 { color: #065f46; }
+  .bg-red-100 { background: #fee2e2; }
+  .text-red-800 { color: #991b1b; }
+  .bg-gray-100 { background: #f3f4f6; }
+  .text-gray-800 { color: #1f2937; }
 
   .role-dropdown {
     padding: 6px 12px;
     border: 1px solid #d1d5db;
     border-radius: 6px;
     font-size: 14px;
-    background-color: white;
     cursor: pointer;
-    transition: border-color 0.2s;
-  }
-
-  .role-dropdown:hover:not(:disabled) {
-    border-color: var(--color-primary);
   }
 
   .role-dropdown:disabled {
@@ -778,31 +1176,90 @@ const isSuperAdmin = userRole === 'super_admin';
     opacity: 0.6;
   }
 
-  .user-date {
-    color: var(--color-text-muted);
+  /* Modal */
+  .modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+
+  .modal-content {
+    background: white;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .modal-header h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-text-heading);
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 28px;
+    color: #6b7280;
+    cursor: pointer;
+    line-height: 1;
+  }
+
+  .modal-close:hover {
+    color: #374151;
+  }
+
+  .modal-body {
+    padding: 24px;
+  }
+
+  .member-details {
+    background: #f9fafb;
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+  }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    font-size: 14px;
+  }
+
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 24px;
   }
 
   /* Responsive */
   @media (max-width: 768px) {
-    .page-header {
-      margin-bottom: 24px;
-    }
-
-    .page-title {
-      font-size: 24px;
-    }
-
-    .form-grid {
+    .form-grid, .detail-grid {
       grid-template-columns: 1fr;
     }
 
-    .card {
-      padding: 20px;
+    .tabs {
+      overflow-x: auto;
     }
 
-    .table-container {
-      border-radius: 0;
-      margin: 0 -20px;
+    .tab-button {
+      white-space: nowrap;
     }
   }
 </style>

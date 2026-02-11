@@ -134,13 +134,15 @@ const isSuperAdmin = userRole === 'super_admin';
             <span>Website Inquiries</span>
           </a>
 
-          <a href="/admin/users" class:list={['nav-item', { active: activePage === 'users' }]}>
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/>
-              <circle cx="10" cy="7" r="4"/>
-            </svg>
-            <span>{isSuperAdmin ? 'Manage Profile & Users' : 'Manage Profile'}</span>
-          </a>
+          {isSuperAdmin && (
+            <a href="/admin/users" class:list={['nav-item', { active: activePage === 'users' }]}>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/>
+                <circle cx="10" cy="7" r="4"/>
+              </svg>
+              <span>Manage Users</span>
+            </a>
+          )}
 
           {isSuperAdmin && (
             <a href="/admin/audit-logs" class:list={['nav-item', { active: activePage === 'logs' }]}>

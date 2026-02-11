@@ -45,7 +45,7 @@ export const handler: Handler = async (
       if (adminUsers) {
         const adminUser = adminUsers.find((u) => u.username === session.username);
         if (adminUser) {
-          // Try to get firstName from player record if they have one
+          // Load full player record if they have one (promoted members)
           const playersStore = getStore({
             name: 'players',
             siteID: process.env.SITE_ID || '',
@@ -55,11 +55,26 @@ export const handler: Handler = async (
           const players: Player[] = (playersData as Player[]) || [];
           const player = players.find((p) => p.id === session.userId);
 
-          userData = {
-            username: adminUser.username,
-            role: session.role,
-            firstName: player?.firstName || adminUser.username, // Use username as fallback
-          };
+          if (player) {
+            // Return full player data for promoted members
+            userData = {
+              id: player.id,
+              email: player.email,
+              firstName: player.firstName,
+              lastName: player.lastName,
+              phone: player.phone,
+              usacId: player.usacId,
+              role: player.role, // Playing role/position (Batsman, Bowler, etc.)
+              role_auth: session.role, // Authentication role (admin, super_admin)
+            };
+          } else {
+            // Old-style admin without player record
+            userData = {
+              username: adminUser.username,
+              role: session.role,
+              firstName: adminUser.username, // Use username as name
+            };
+          }
         }
       }
     } else if (session.role === 'member') {
@@ -101,7 +116,9 @@ export const handler: Handler = async (
         firstName: player.firstName,
         lastName: player.lastName,
         phone: player.phone,
-        role: session.role,
+        usacId: player.usacId,
+        role: player.role, // Playing role/position (Batsman, Bowler, etc.)
+        role_auth: session.role, // Authentication role (member, admin, super_admin)
       };
     }
 

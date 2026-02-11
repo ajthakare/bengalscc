@@ -5,9 +5,9 @@ import { validateAdminSession, isMember, verifyPassword, hashPassword } from '..
 import type { Player } from '../../src/types/player';
 
 /**
- * Update member profile (phone and/or password)
+ * Update member profile (phone, password, usacId, and/or playerRole)
  * POST /.netlify/functions/profile-update
- * Body: { phone?, currentPassword?, newPassword? }
+ * Body: { phone?, currentPassword?, newPassword?, usacId?, playerRole? }
  */
 export const handler: Handler = async (
   event: HandlerEvent,
@@ -31,10 +31,10 @@ export const handler: Handler = async (
     }
 
     // Parse request
-    const { phone, currentPassword, newPassword } = JSON.parse(event.body || '{}');
+    const { phone, currentPassword, newPassword, usacId, playerRole } = JSON.parse(event.body || '{}');
 
     // Must provide at least one field to update
-    if (!phone && !currentPassword && !newPassword) {
+    if (!phone && !currentPassword && !newPassword && usacId === undefined && !playerRole) {
       return {
         statusCode: 400,
         body: JSON.stringify({ error: 'No fields to update' }),
@@ -117,6 +117,28 @@ export const handler: Handler = async (
       }
     }
 
+    // Update USAC ID if provided
+    if (usacId !== undefined) {
+      // Allow empty string to clear USAC ID
+      if (usacId.trim()) {
+        player.usacId = usacId.trim();
+      } else {
+        player.usacId = undefined;
+      }
+    }
+
+    // Update player role if provided
+    if (playerRole) {
+      const validRoles = ['Batsman', 'Bowler', 'All-rounder', 'Wicket Keeper', 'Wicket Keeper Batsman'];
+      if (!validRoles.includes(playerRole)) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({ error: 'Invalid player role' }),
+        };
+      }
+      player.role = playerRole;
+    }
+
     const now = new Date().toISOString();
     player.updatedAt = now;
     player.updatedBy = session.email;
@@ -135,6 +157,8 @@ export const handler: Handler = async (
     const updates: string[] = [];
     if (phone !== undefined) updates.push('phone');
     if (newPassword) updates.push('password');
+    if (usacId !== undefined) updates.push('USAC ID');
+    if (playerRole) updates.push('playing role');
 
     auditLogs.push({
       id: uuidv4(),

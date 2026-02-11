@@ -70,8 +70,25 @@ export const handler: Handler = async (
         // Get user role (with fallback for unmigrated users)
         const userRole = adminUser.role || (loginIdentifier === 'admin' ? 'super_admin' : 'admin');
 
-        // Create session token (admins don't have player ID, use username as userId for now)
-        const token = createSession('admin-' + adminUser.username, loginIdentifier, userRole, adminUser.username);
+        // Check if this admin has a linked player record (promoted member)
+        const playersStore = getStore({
+          name: 'players',
+          siteID: process.env.SITE_ID || '',
+          token: process.env.NETLIFY_AUTH_TOKEN || '',
+        });
+        const playersData = await playersStore.get('players-all', { type: 'json' });
+        const players: Player[] = (playersData as Player[]) || [];
+
+        // Find player by email matching admin username
+        const linkedPlayer = players.find(
+          (p) => p.email?.toLowerCase() === adminUser.username.toLowerCase()
+        );
+
+        // Use player ID if linked, otherwise use admin fallback
+        const userId = linkedPlayer ? linkedPlayer.id : 'admin-' + adminUser.username;
+
+        // Create session token
+        const token = createSession(userId, loginIdentifier, userRole, adminUser.username);
 
         // Create session cookie
         const cookie = createSessionCookie(token, isProduction);

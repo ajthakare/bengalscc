@@ -7,6 +7,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 const cookieHeader = Astro.request.headers.get('cookie');
 let authenticated = false;
 let username = '';
+let userEmail = '';
 let userRole = 'admin';
 
 if (cookieHeader) {
@@ -21,8 +22,9 @@ if (cookieHeader) {
     );
     const data = await response.json();
     authenticated = data.authenticated;
-    username = data.user?.username || '';
-    userRole = data.user?.role || 'admin';
+    username = data.user?.firstName || data.user?.username || '';
+    userEmail = data.user?.email || data.user?.username || '';
+    userRole = data.user?.role_auth || data.user?.role || 'admin';
   } catch (error) {
     authenticated = false;
   }
@@ -35,147 +37,55 @@ if (!authenticated) {
 
 // Check if user is super admin
 const isSuperAdmin = userRole === 'super_admin';
+
+// Only super admins can access this page
+if (!isSuperAdmin) {
+  return Astro.redirect('/admin/availability');
+}
 ---
 
-<AdminLayout title="Manage Profile - GSCC Admin" username={username} userRole={userRole} activePage="users">
+<AdminLayout title="Manage Users - GSCC Admin" username={username} userRole={userRole} activePage="users">
   <div class="users-page">
     <!-- Page Header -->
     <div class="page-header">
-      <h1 class="page-title">Manage Profile & Users</h1>
-      <p class="page-description">{isSuperAdmin ? 'Manage your profile, admin users, and member registrations' : 'Manage your account settings'}</p>
+      <h1 class="page-title">Manage Users</h1>
+      <p class="page-description">Manage admin users and member registrations</p>
     </div>
 
-    {/* Tabs (Super Admin Only) */}
-    {isSuperAdmin && (
-      <div class="tabs">
-        <button class="tab-button active" data-tab="profile">My Profile</button>
-        <button class="tab-button" data-tab="admin-users">Admin Users</button>
-        <button class="tab-button" data-tab="members">
-          Member Registrations
-          <span id="pending-count-badge" class="badge" style="display: none;"></span>
-        </button>
-      </div>
-    )}
-
-    {/* Tab Content */}
-    <div class="tab-content active" data-tab-content="profile">
-      <!-- Change Password Section (for all users) -->
-      <div class="card">
-        <h2 class="card-title">Change Password</h2>
-
-        <form id="change-password-form" class="form">
-          <div class="form-grid">
-            <div class="form-group">
-              <label for="current-password" class="form-label">
-                Current Password
-              </label>
-              <input
-                type="password"
-                id="current-password"
-                name="currentPassword"
-                required
-                class="form-input"
-                placeholder="Enter current password"
-              />
-            </div>
-
-            <div class="form-group">
-              <label for="new-password-change" class="form-label">
-                New Password
-              </label>
-              <input
-                type="password"
-                id="new-password-change"
-                name="newPassword"
-                required
-                minlength="8"
-                class="form-input"
-                placeholder="Minimum 8 characters"
-              />
-              <p class="form-hint">Minimum 8 characters</p>
-            </div>
-
-            <div class="form-group">
-              <label for="confirm-password" class="form-label">
-                Confirm New Password
-              </label>
-              <input
-                type="password"
-                id="confirm-password"
-                name="confirmPassword"
-                required
-                minlength="8"
-                class="form-input"
-                placeholder="Re-enter new password"
-              />
-            </div>
-          </div>
-
-          <div id="change-password-error" class="alert alert-error" style="display: none;">
-            <span id="change-password-error-text"></span>
-          </div>
-
-          <div id="change-password-success" class="alert alert-success" style="display: none;">
-            <span id="change-password-success-text"></span>
-          </div>
-
-          <button
-            type="submit"
-            id="change-password-button"
-            class="btn-primary"
-          >
-            Update Password
-          </button>
-        </form>
-      </div>
+    {/* Tabs */}
+    <div class="tabs">
+      <button class="tab-button active" data-tab="admin-users">Admin Users</button>
+      <button class="tab-button" data-tab="members">
+        Member Registrations
+        <span id="pending-count-badge" class="badge" style="display: none;"></span>
+      </button>
     </div>
-
-    {isSuperAdmin && (
-      <>
         {/* Admin Users Tab */}
-        <div class="tab-content" data-tab-content="admin-users">
+        <div class="tab-content active" data-tab-content="admin-users">
           <!-- Add User Form -->
           <div class="card">
-            <h2 class="card-title">Add New Admin User</h2>
+            <h2 class="card-title">Promote Member to Admin</h2>
 
             <form id="add-user-form" class="form">
               <div class="form-grid">
                 <div class="form-group">
-                  <label for="new-username" class="form-label">
-                    Username
+                  <label for="select-member" class="form-label">
+                    Select Registered Member
                   </label>
-                  <input
-                    type="text"
-                    id="new-username"
-                    name="username"
+                  <select
+                    id="select-member"
+                    name="playerId"
                     required
-                    pattern="[a-zA-Z0-9_]{3,20}"
-                    title="3-20 characters, letters, numbers, and underscores only"
                     class="form-input"
-                    placeholder="e.g., john_admin"
-                  />
-                  <p class="form-hint">3-20 characters, alphanumeric and underscores</p>
-                </div>
-
-                <div class="form-group">
-                  <label for="new-password" class="form-label">
-                    Password
-                  </label>
-                  <input
-                    type="password"
-                    id="new-password"
-                    name="password"
-                    required
-                    minlength="8"
-                    class="form-input"
-                    placeholder="Minimum 8 characters"
-                  />
-                  <p class="form-hint">Minimum 8 characters</p>
+                  >
+                    <option value="">-- Select a member --</option>
+                  </select>
+                  <p class="form-hint">Choose from registered members (approved players)</p>
                 </div>
 
                 <div class="form-group">
                   <label for="new-user-role" class="form-label">
-                    Role
+                    Admin Role
                   </label>
                   <select
                     id="new-user-role"
@@ -203,7 +113,7 @@ const isSuperAdmin = userRole === 'super_admin';
                 id="add-user-button"
                 class="btn-primary"
               >
-                Add Admin User
+                Promote to Admin
               </button>
             </form>
           </div>
@@ -245,7 +155,7 @@ const isSuperAdmin = userRole === 'super_admin';
 
         {/* Member Registrations Tab */}
         <div class="tab-content" data-tab-content="members">
-          <!-- Filter Tabs -->}
+          {/* Filter Tabs */}
           <div class="filter-tabs">
             <button class="filter-tab active" data-status="pending">Pending</button>
             <button class="filter-tab" data-status="approved">Approved</button>
@@ -253,7 +163,7 @@ const isSuperAdmin = userRole === 'super_admin';
             <button class="filter-tab" data-status="suspended">Suspended</button>
           </div>
 
-          <!-- Members List -->}
+          {/* Members List */}
           <div class="card">
             <div id="loading-members" class="state-container">
               <div class="spinner"></div>
@@ -334,73 +244,10 @@ const isSuperAdmin = userRole === 'super_admin';
             </div>
           </div>
         </div>
-      </>
-    )}
   </div>
 </AdminLayout>
 
-<script define:vars={{ currentUsername: username, isSuperAdmin: isSuperAdmin }}>
-  // Change Password Form
-  const changePasswordForm = document.getElementById('change-password-form');
-  const changePasswordButton = document.getElementById('change-password-button');
-  const changePasswordError = document.getElementById('change-password-error');
-  const changePasswordErrorText = document.getElementById('change-password-error-text');
-  const changePasswordSuccess = document.getElementById('change-password-success');
-  const changePasswordSuccessText = document.getElementById('change-password-success-text');
-
-  changePasswordForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const currentPassword = document.getElementById('current-password').value;
-    const newPassword = document.getElementById('new-password-change').value;
-    const confirmPassword = document.getElementById('confirm-password').value;
-
-    if (newPassword !== confirmPassword) {
-      changePasswordError.style.display = 'block';
-      changePasswordErrorText.textContent = 'New passwords do not match';
-      changePasswordSuccess.style.display = 'none';
-      return;
-    }
-
-    changePasswordButton.disabled = true;
-    changePasswordButton.textContent = 'Updating...';
-    changePasswordError.style.display = 'none';
-    changePasswordSuccess.style.display = 'none';
-
-    try {
-      const response = await fetch('/.netlify/functions/admin-change-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({
-          username: currentUsername,
-          currentPassword,
-          newPassword
-        })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to change password');
-      }
-
-      changePasswordSuccess.style.display = 'block';
-      changePasswordSuccessText.textContent = 'Password updated successfully!';
-      changePasswordForm.reset();
-
-      setTimeout(() => {
-        changePasswordSuccess.style.display = 'none';
-      }, 3000);
-    } catch (error) {
-      changePasswordError.style.display = 'block';
-      changePasswordErrorText.textContent = error.message;
-    } finally {
-      changePasswordButton.disabled = false;
-      changePasswordButton.textContent = 'Update Password';
-    }
-  });
-
+<script define:vars={{ currentUsername: userEmail, isSuperAdmin: isSuperAdmin }}>
   // Admin User Management (super admin only)
   if (isSuperAdmin) {
     // Tab switching
@@ -577,45 +424,110 @@ const isSuperAdmin = userRole === 'super_admin';
     window.deleteUser = deleteUser;
     window.updateUserRole = updateUserRole;
 
+    // Load members for admin promotion dropdown
+    async function loadMembersForPromotion() {
+      try {
+        const selectMember = document.getElementById('select-member');
+        if (!selectMember) return;
+
+        // Load all players
+        const playersResponse = await fetch('/.netlify/functions/players-list', {
+          credentials: 'same-origin'
+        });
+
+        if (!playersResponse.ok) {
+          throw new Error('Failed to load members');
+        }
+
+        const allPlayers = await playersResponse.json();
+
+        // Filter to show only approved members (who have registrationStatus === 'approved')
+        // and exclude those who are already admins
+        const availableMembers = allPlayers.filter(player => {
+          // Must have registration status of approved
+          if (player.registrationStatus !== 'approved') return false;
+
+          // Exclude if already an admin (check if they have role_auth of admin or super_admin)
+          if (player.role_auth === 'admin' || player.role_auth === 'super_admin') return false;
+
+          return true;
+        });
+
+        // Sort by name
+        availableMembers.sort((a, b) => {
+          const nameA = `${a.firstName} ${a.lastName}`.toLowerCase();
+          const nameB = `${b.firstName} ${b.lastName}`.toLowerCase();
+          return nameA.localeCompare(nameB);
+        });
+
+        // Clear existing options except the first one
+        selectMember.innerHTML = '<option value="">-- Select a member --</option>';
+
+        // Add member options
+        availableMembers.forEach(player => {
+          const option = document.createElement('option');
+          option.value = player.id;
+          option.textContent = `${player.firstName} ${player.lastName}${player.email ? ` (${player.email})` : ''}`;
+          selectMember.appendChild(option);
+        });
+
+        if (availableMembers.length === 0) {
+          const option = document.createElement('option');
+          option.value = '';
+          option.textContent = 'No available members to promote';
+          option.disabled = true;
+          selectMember.appendChild(option);
+        }
+      } catch (error) {
+        console.error('Error loading members for promotion:', error);
+      }
+    }
+
     addUserForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       addUserError.style.display = 'none';
       addUserSuccess.style.display = 'none';
 
       const formData = new FormData(addUserForm);
-      const username = formData.get('username');
-      const password = formData.get('password');
+      const playerId = formData.get('playerId');
       const role = formData.get('role');
 
+      if (!playerId) {
+        addUserError.style.display = 'block';
+        addUserErrorText.textContent = 'Please select a member';
+        return;
+      }
+
       addUserButton.disabled = true;
-      addUserButton.textContent = 'Adding...';
+      addUserButton.textContent = 'Promoting...';
 
       try {
-        const response = await fetch('/.netlify/functions/admin-users-create', {
+        const response = await fetch('/.netlify/functions/admin-users-promote', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ username, password, role }),
+          body: JSON.stringify({ playerId, role }),
           credentials: 'same-origin'
         });
 
         const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(data.error || 'Failed to create user');
+          throw new Error(data.error || 'Failed to promote member');
         }
 
         addUserSuccess.style.display = 'block';
-        addUserSuccessText.textContent = `Admin user "${username}" created successfully`;
+        addUserSuccessText.textContent = `Member promoted to ${role === 'super_admin' ? 'Super Admin' : 'Admin'} successfully`;
         addUserForm.reset();
         await loadUsers();
+        await loadMembersForPromotion(); // Reload dropdown
       } catch (error) {
         addUserError.style.display = 'block';
         addUserErrorText.textContent = error instanceof Error ? error.message : 'Unknown error';
       } finally {
         addUserButton.disabled = false;
-        addUserButton.textContent = 'Add Admin User';
+        addUserButton.textContent = 'Promote to Admin';
       }
     });
 
@@ -877,11 +789,14 @@ const isSuperAdmin = userRole === 'super_admin';
           loadMembers();
         } else if (targetTab === 'admin-users') {
           loadUsers();
+          loadMembersForPromotion();
         }
       });
     });
 
-    // Don't auto-load on page load - only load when tab is clicked
+    // Load data for the initially active tab on page load
+    loadUsers();
+    loadMembersForPromotion();
   }
 </script>
 

@@ -113,17 +113,6 @@ try {
               <p class="info-value">{player.role || 'Not set'}</p>
               <p class="info-hint">Update below</p>
             </div>
-
-            {session && session.role && (
-              <div class="info-item">
-                <label class="info-label">Account Type</label>
-                <p class="info-value">
-                  <span class="role-badge">
-                    {session.role === 'super_admin' ? 'Super Admin' : session.role === 'admin' ? 'Admin' : 'Member'}
-                  </span>
-                </p>
-              </div>
-            )}
           </div>
         </div>
 

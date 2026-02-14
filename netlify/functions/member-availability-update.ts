@@ -3,6 +3,7 @@ import { getStore } from '@netlify/blobs';
 import { v4 as uuidv4 } from 'uuid';
 import { validateAdminSession, isMember } from '../../src/middleware/auth';
 import type { Fixture, FixtureAvailability, CoreRosterAssignment, Player, PlayerAvailabilityRecord } from '../../src/types/player';
+import { parseLocalDate } from './_utils';
 
 /**
  * Update member availability for a fixture (binary: true/false only, next 7 days only)
@@ -85,7 +86,7 @@ export const handler: Handler = async (
     }
 
     // Check if fixture is within next 7 days
-    const fixtureDate = new Date(fixture.date);
+    const fixtureDate = parseLocalDate(fixture.date);
     fixtureDate.setHours(0, 0, 0, 0);
 
     if (fixtureDate < today) {
@@ -100,6 +101,31 @@ export const handler: Handler = async (
         statusCode: 403,
         body: JSON.stringify({ error: 'Can only update availability for fixtures in the next 7 days' }),
       };
+    }
+
+    // Check if fixture is on weekend (Fri/Sat/Sun) and if deadline (Wednesday 6 PM) has passed
+    const fixtureDateForDeadline = parseLocalDate(fixture.date);
+    const dayOfWeek = fixtureDateForDeadline.getDay(); // 0 = Sunday, 6 = Saturday, 5 = Friday
+
+    if (dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0) { // Weekend fixture (Fri/Sat/Sun)
+      // Calculate preceding Wednesday at 6 PM
+      let daysBack;
+      if (dayOfWeek === 5) daysBack = 2; // Friday: 2 days back (Wednesday)
+      else if (dayOfWeek === 6) daysBack = 3; // Saturday: 3 days back
+      else daysBack = 4; // Sunday: 4 days back
+
+      const wednesday = new Date(fixtureDateForDeadline);
+      wednesday.setDate(wednesday.getDate() - daysBack);
+      wednesday.setHours(18, 0, 0, 0); // 6 PM
+
+      // Check if current time is past deadline
+      const now = new Date();
+      if (now > wednesday) {
+        return {
+          statusCode: 403,
+          body: JSON.stringify({ error: 'Poll is locked. Please contact your team captain to mark availability.' }),
+        };
+      }
     }
 
     // Verify player is on team roster for this fixture (any roster member - core or reserve)

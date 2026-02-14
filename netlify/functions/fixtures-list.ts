@@ -1,6 +1,7 @@
 import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
 import type { Fixture } from '../../src/types/player';
+import { parseLocalDate } from './_utils';
 
 /**
  * List fixtures for a season
@@ -97,7 +98,7 @@ async function getFixturesForSeason(seasonId: string) {
       }
       return fixture;
     })
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    .sort((a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime());
 
   return {
     statusCode: 200,

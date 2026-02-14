@@ -2,6 +2,7 @@ import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
 import { validateAdminSession, isMember } from '../../src/middleware/auth';
 import type { Fixture, FixtureAvailability, CoreRosterAssignment, Player } from '../../src/types/player';
+import { parseLocalDate } from './_utils';
 
 /**
  * List upcoming fixtures for authenticated member (next 7 days only)
@@ -102,7 +103,7 @@ export const handler: Handler = async (
     // 1. For player's teams
     // 2. Within next 7 days (inclusive)
     const upcomingFixtures = allFixtures.filter(fixture => {
-      const fixtureDate = new Date(fixture.date);
+      const fixtureDate = parseLocalDate(fixture.date);
       fixtureDate.setHours(0, 0, 0, 0);
 
       return (

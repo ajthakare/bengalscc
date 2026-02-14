@@ -222,6 +222,37 @@ export interface SeasonStatisticsSummary {
 }
 
 // ============================================================================
+// Practice Session Management
+// ============================================================================
+
+export interface PracticeSession {
+  id: string;                           // UUID
+  type: 'net' | 'field';                // Practice type (determines response options)
+  title: string;                        // "Saturday Net Practice"
+  date: string;                         // ISO date (YYYY-MM-DD)
+  time: string;                         // "10:00 AM - 12:00 PM"
+  location: string;                     // "Fremont Central Park - Cricket Ground 1"
+  seasonId: string;                     // Link to season
+  team?: string;                        // Specific team or "all" for all teams
+  description?: string;                 // Optional details
+  status: 'active' | 'cancelled' | 'completed';
+  locked: boolean;                      // If true, members cannot vote or change votes
+  playerAvailability: PracticeAvailabilityRecord[];
+  createdAt: string;
+  createdBy: string;                    // Admin username
+  updatedAt: string;
+  updatedBy: string;
+}
+
+export interface PracticeAvailabilityRecord {
+  playerId: string;
+  playerName: string;
+  response: 'yes' | 'bowling-only' | 'not-available' | null;
+  submittedAt?: string;                     // When member submitted
+  lastUpdated: string;
+}
+
+// ============================================================================
 // API Response Types
 // ============================================================================
 

@@ -1,0 +1,1253 @@
+---
+export const prerender = false;
+
+import AdminLayout from '../../layouts/AdminLayout.astro';
+
+// Check authentication
+const cookieHeader = Astro.request.headers.get('cookie');
+let authenticated = false;
+let username = '';
+let userRole = 'admin';
+
+if (cookieHeader) {
+  try {
+    const response = await fetch(
+      `${Astro.url.origin}/.netlify/functions/auth-check`,
+      {
+        headers: {
+          cookie: cookieHeader,
+        },
+      }
+    );
+    const data = await response.json();
+    authenticated = data.authenticated;
+    username = data.user?.firstName || data.user?.username || '';
+    userRole = data.user?.role_auth || data.user?.role || 'admin';
+  } catch (error) {
+    authenticated = false;
+  }
+}
+
+// Redirect to login if not authenticated
+if (!authenticated) {
+  return Astro.redirect('/admin/login');
+}
+---
+
+<AdminLayout title="Practice Sessions - GSCC Admin" username={username} userRole={userRole} activePage="practices">
+  <div class="practices-page">
+    <!-- Page Header -->
+    <div class="page-header">
+      <h1 class="page-title">Practice Sessions</h1>
+      <p class="page-description">Manage net and field practice sessions</p>
+      <p id="season-info" class="season-info" style="margin-top: 0.5rem; font-size: 0.9rem; color: #6b7280;">
+        <span id="season-name"></span>
+      </p>
+    </div>
+
+    <!-- Create Practice Form (Hidden initially) -->
+    <div id="create-form-container" style="display: none; margin-bottom: 2rem;">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Create New Practice Session</h2>
+          <button id="cancel-create-btn" class="btn-text">Cancel</button>
+        </div>
+        <form id="create-practice-form" class="form-grid">
+          <div class="form-group">
+            <label for="practice-type" class="form-label">Practice Type *</label>
+            <div class="radio-group">
+              <label class="radio-label">
+                <input type="radio" name="type" value="net" required checked />
+                <span>🎾 Net Session</span>
+                <small>Batting & bowling in cages</small>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="type" value="field" required />
+                <span>🏟️ Field Practice</span>
+                <small>Outdoor ground practice</small>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="date" class="form-label">Date *</label>
+              <input type="date" id="date" name="date" class="form-input" required />
+            </div>
+            <div class="form-group">
+              <label for="time" class="form-label">Time *</label>
+              <input type="time" id="time" name="time" class="form-input" required />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="location" class="form-label">Location *</label>
+            <input type="text" id="location" name="location" class="form-input" placeholder="e.g., Fremont Central Park - Ground 1" required minlength="5" maxlength="500" />
+          </div>
+
+          <div class="form-group">
+            <label for="description" class="form-label">Description (Optional)</label>
+            <textarea id="description" name="description" class="form-input" rows="3" placeholder="Additional details about the practice..."></textarea>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" id="cancel-form-btn" class="btn-secondary">Cancel</button>
+            <button type="submit" class="btn-primary">
+              <span id="submit-text">Create Practice</span>
+              <span id="submit-spinner" style="display: none;" class="spinner-sm"></span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="actions-bar" style="margin-bottom: 1.5rem;">
+      <button id="show-create-form-btn" class="btn-primary">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="9" y1="4" x2="9" y2="14"/>
+          <line x1="4" y1="9" x2="14" y2="9"/>
+        </svg>
+        Create Practice
+      </button>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loading-state" class="state-container">
+      <div class="spinner"></div>
+      <p class="state-text">Loading practices...</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="error-state" class="alert alert-error" style="display: none;">
+      <p id="error-text"></p>
+    </div>
+
+    <!-- Empty State -->
+    <div id="empty-state" class="state-container" style="display: none;">
+      <div class="empty-icon">🏏</div>
+      <p class="state-title">No practice sessions yet</p>
+      <p class="state-text">Create your first practice session to get started</p>
+      <button class="btn-primary" onclick="document.getElementById('show-create-form-btn').click()">Create Practice</button>
+    </div>
+
+    <!-- Practices List -->
+    <div id="practices-container" style="display: none;">
+      <div id="practices-list"></div>
+    </div>
+  </div>
+
+  <!-- Poll Modal -->
+  <div id="poll-modal" class="modal" style="display: none;">
+    <div class="modal-overlay"></div>
+    <div class="modal-content modal-lg">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-title">Practice Availability</h2>
+        <button class="modal-close" id="close-modal-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="modal-practice-info" class="practice-info-header"></div>
+        <div id="modal-stats" class="stats-summary"></div>
+
+        <!-- Add Player Section -->
+        <div class="add-player-section">
+          <h4 style="font-size: 1rem; font-weight: 600; margin-bottom: 0.75rem;">Add Player</h4>
+          <div style="display: grid; grid-template-columns: 1fr auto auto; gap: 0.75rem; align-items: flex-end;">
+            <div style="position: relative;">
+              <label for="player-search-input" style="display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.5rem; color: #374151;">Search and Select Player</label>
+              <input
+                type="text"
+                id="player-search-input"
+                class="form-input"
+                placeholder="Type to search players..."
+                style="width: 100%;"
+                autocomplete="off"
+                oninput="filterPlayers()"
+                onfocus="filterPlayers()"
+                onblur="hideDropdownDelayed()"
+              />
+              <div id="player-dropdown" class="player-dropdown" style="display: none;"></div>
+            </div>
+            <div id="player-status-select-container" style="display: none;">
+              <label for="player-status-select" style="display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.5rem; color: #374151;">Initial Status</label>
+              <select id="player-status-select" class="form-input" style="min-width: 150px;">
+                <option value="yes">✓ Yes</option>
+                <option value="bowling-only">Bowling Only</option>
+              </select>
+            </div>
+            <button id="add-player-btn" class="btn-primary" onclick="addPlayerToPractice()" disabled>Add Player</button>
+          </div>
+        </div>
+
+        <div id="modal-players-list" class="players-table-container"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="document.getElementById('close-modal-btn').click()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Announcement Modal -->
+  <div id="announcement-modal" class="modal" style="display: none;">
+    <div class="modal-content modal-lg">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title">Practice Announcement</h2>
+          <p class="modal-subtitle">Copy this message to share on WhatsApp</p>
+        </div>
+        <button class="modal-close" onclick="closeAnnouncementModal()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <div style="padding: 1.5rem;">
+        <textarea
+          id="announcement-text"
+          readonly
+          style="width: 100%; min-height: 500px; padding: 1rem; border: 2px solid #d1d5db; border-radius: 8px; font-family: monospace; font-size: 0.875rem; line-height: 1.6; resize: vertical;"
+        ></textarea>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" onclick="closeAnnouncementModal()">Close</button>
+        <button id="copy-announcement-btn" class="btn-primary" onclick="copyAnnouncement()">
+          📋 Copy to Clipboard
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notifications -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <style is:global>
+    /* Mobile-specific fixes */
+    @media (max-width: 768px) {
+      html,
+      body,
+      .main-content {
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        height: auto !important;
+        min-height: 100vh;
+      }
+
+      #practices-list,
+      #practices-container,
+      .practices-page,
+      .practice-card {
+        overflow: visible !important;
+        height: auto !important;
+        min-height: 0 !important;
+      }
+
+      /* Ensure all practice action buttons are visible */
+      .practice-actions {
+        margin-bottom: 1.5rem !important;
+        padding-bottom: 1rem !important;
+      }
+
+      .practice-card {
+        margin-bottom: 3rem !important;
+        padding-bottom: 2rem !important;
+      }
+    }
+
+    /* Form Grid Layout */
+    .form-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* Announcement Modal Overlay */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+    }
+
+    /* Large Modal Variant */
+    .modal-content.modal-lg {
+      position: relative;
+      background: white;
+      border-radius: 12px;
+      max-width: 800px;
+      width: 90%;
+      max-height: 90vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-body {
+      padding: 1.5rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    /* Announcement Modal Specific Styles */
+    #announcement-modal.modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    #announcement-modal.modal[style*="display: flex"] {
+      display: flex !important;
+    }
+
+    #announcement-modal .modal-content {
+      max-height: calc(100vh - 4rem);
+      overflow-y: auto;
+    }
+  </style>
+
+  <script>
+    let currentSeasonId = '';
+    let currentPractice = null;
+    let editingPracticeId = null;
+
+    // Utility functions for date and time
+    function parseLocalDate(dateString: string): Date {
+      const parts = dateString.split('-');
+      return new Date(
+        parseInt(parts[0]),
+        parseInt(parts[1]) - 1,
+        parseInt(parts[2])
+      );
+    }
+
+    function formatDateDisplay(dateString: string): string {
+      const date = parseLocalDate(dateString);
+      return date.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
+    }
+
+    function formatTime12Hour(time24: string): string {
+      const [hoursStr, minutes] = time24.split(':');
+      const hours = parseInt(hoursStr);
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      const displayHour = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+      return `${displayHour}:${minutes} ${ampm}`;
+    }
+
+    function formatTimeForInput(time12: string): string {
+      const timeMatch = time12.match(/(\d+):(\d+)\s*(AM|PM)/i);
+      if (!timeMatch) return '';
+
+      let hours = parseInt(timeMatch[1]);
+      const minutes = timeMatch[2];
+      const period = timeMatch[3].toUpperCase();
+
+      if (period === 'PM' && hours !== 12) {
+        hours += 12;
+      } else if (period === 'AM' && hours === 12) {
+        hours = 0;
+      }
+
+      return `${String(hours).padStart(2, '0')}:${minutes}`;
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      loadSeasons();
+      setupEventListeners();
+    });
+
+    function setupEventListeners() {
+      // Create form toggle
+      document.getElementById('show-create-form-btn')?.addEventListener('click', () => {
+        document.getElementById('create-form-container').style.display = 'block';
+        document.getElementById('show-create-form-btn').style.display = 'none';
+        // Set initial defaults based on selected type (net is default)
+        setPracticeDefaults();
+      });
+
+      document.getElementById('cancel-create-btn')?.addEventListener('click', hideCreateForm);
+      document.getElementById('cancel-form-btn')?.addEventListener('click', hideCreateForm);
+
+      // Form submission
+      document.getElementById('create-practice-form')?.addEventListener('submit', handleCreatePractice);
+
+      // Poll Modal
+      document.getElementById('close-modal-btn')?.addEventListener('click', closeModal);
+      document.querySelector('.modal-overlay')?.addEventListener('click', closeModal);
+
+      // Announcement Modal - close on outside click
+      const announcementModal = document.getElementById('announcement-modal');
+      announcementModal?.addEventListener('click', (e) => {
+        if (e.target === announcementModal) {
+          closeAnnouncementModal();
+        }
+      });
+
+      // Practice type change - set defaults
+      const typeRadios = document.querySelectorAll('input[name="type"]');
+      typeRadios.forEach(radio => {
+        radio.addEventListener('change', setPracticeDefaults);
+      });
+    }
+
+    function setPracticeDefaults() {
+      const selectedType = document.querySelector('input[name="type"]:checked')?.value;
+      const locationInput = document.getElementById('location');
+      const timeInput = document.getElementById('time');
+
+      if (!selectedType || !locationInput || !timeInput) return;
+
+      // Only set defaults if fields are empty (don't override user input)
+      if (selectedType === 'net') {
+        if (!locationInput.value || locationInput.value === 'Ortega Park, 636 Harrow Way, Sunnyvale, CA 94087') {
+          locationInput.value = 'NACL Sports Center, 1111 Felipe Ave, San Jose, CA 95122';
+        }
+        if (!timeInput.value || timeInput.value === '16:00') {
+          timeInput.value = '19:00'; // 7:00 PM
+        }
+      } else if (selectedType === 'field') {
+        if (!locationInput.value || locationInput.value === 'NACL Sports Center, 1111 Felipe Ave, San Jose, CA 95122') {
+          locationInput.value = 'Ortega Park, 636 Harrow Way, Sunnyvale, CA 94087';
+        }
+        if (!timeInput.value || timeInput.value === '19:00') {
+          timeInput.value = '16:00'; // 4:00 PM
+        }
+      }
+    }
+
+    function hideCreateForm() {
+      document.getElementById('create-form-container').style.display = 'none';
+      document.getElementById('show-create-form-btn').style.display = 'block';
+      document.getElementById('create-practice-form').reset();
+      editingPracticeId = null;
+      document.querySelector('.card-title').textContent = 'Create New Practice Session';
+      document.getElementById('submit-text').textContent = 'Create Practice';
+    }
+
+    async function loadSeasons() {
+      try {
+        const response = await fetch('/.netlify/functions/seasons-list');
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const seasons = await response.json();
+        console.log('Seasons response:', seasons);
+
+        // seasons-list returns an array directly
+        if (!Array.isArray(seasons) || seasons.length === 0) {
+          console.error('No seasons found');
+          showError('No seasons found. Please create a season first.');
+          document.getElementById('show-create-form-btn').style.display = 'none';
+          return;
+        }
+
+        const activeSeason = seasons.find(s => s.isActive);
+
+        if (activeSeason) {
+          currentSeasonId = activeSeason.id;
+          console.log('Active season loaded:', activeSeason.name, 'ID:', currentSeasonId);
+
+          // Update season display
+          const seasonNameEl = document.getElementById('season-name');
+          if (seasonNameEl) {
+            seasonNameEl.textContent = `Active Season: ${activeSeason.name}`;
+            seasonNameEl.style.fontWeight = '600';
+            seasonNameEl.style.color = '#10B981';
+          }
+
+          // Load practices
+          loadPractices();
+        } else {
+          console.error('No active season found in:', seasons);
+          showError('No active season found. Please go to Seasons page and click "Set Active" on a season.');
+          // Hide the create button if no active season
+          document.getElementById('show-create-form-btn').style.display = 'none';
+        }
+      } catch (error) {
+        console.error('Error loading seasons:', error);
+        showError('Failed to load season data: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      }
+    }
+
+    async function loadPractices() {
+      try {
+        document.getElementById('loading-state').style.display = 'flex';
+        document.getElementById('error-state').style.display = 'none';
+        document.getElementById('empty-state').style.display = 'none';
+        document.getElementById('practices-container').style.display = 'none';
+
+        const response = await fetch(`/.netlify/functions/practice-admin-list?seasonId=${currentSeasonId}`);
+        const data = await response.json();
+
+        document.getElementById('loading-state').style.display = 'none';
+
+        if (!data.success || !data.data || data.data.length === 0) {
+          document.getElementById('empty-state').style.display = 'flex';
+          return;
+        }
+
+        const practices = data.data;
+        renderPractices(practices);
+
+        document.getElementById('practices-container').style.display = 'block';
+      } catch (error) {
+        console.error('Error loading practices:', error);
+        document.getElementById('loading-state').style.display = 'none';
+        showError('Failed to load practice sessions');
+      }
+    }
+
+    function renderPractices(practices) {
+      const container = document.getElementById('practices-list');
+      container.innerHTML = '';
+
+      // Separate upcoming and past practices
+      const today = new Date().toISOString().split('T')[0];
+      const upcoming = practices.filter(p => p.date >= today && p.status === 'active');
+      const past = practices.filter(p => p.date < today || p.status !== 'active');
+
+      // Render upcoming
+      if (upcoming.length > 0) {
+        const upcomingSection = document.createElement('div');
+        upcomingSection.innerHTML = '<h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem;">Upcoming Practices</h2>';
+        upcoming.forEach(practice => {
+          upcomingSection.appendChild(createPracticeCard(practice));
+        });
+        container.appendChild(upcomingSection);
+      }
+
+      // Render past
+      if (past.length > 0) {
+        const pastSection = document.createElement('div');
+        pastSection.style.marginTop = '2rem';
+        pastSection.innerHTML = '<h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem;">Past Practices</h2>';
+        past.forEach(practice => {
+          pastSection.appendChild(createPracticeCard(practice));
+        });
+        container.appendChild(pastSection);
+      }
+    }
+
+    function createPracticeCard(practice) {
+      const card = document.createElement('div');
+      card.className = 'practice-card';
+
+      const typeEmoji = practice.type === 'net' ? '🎾' : '🏟️';
+      const typeName = practice.type === 'net' ? 'Net Session' : 'Field Practice';
+      const typeBadgeClass = practice.type === 'net' ? 'badge-net' : 'badge-field';
+
+      // Calculate stats based on practice type
+      let statsHTML = '';
+      if (practice.type === 'net') {
+        statsHTML = `
+          <div class="stat-item">
+            <span class="stat-label">Yes</span>
+            <span class="stat-value">${practice.stats.yesCount}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Bowling Only</span>
+            <span class="stat-value">${practice.stats.bowlingOnlyCount}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Not Available</span>
+            <span class="stat-value">${practice.stats.notAvailableCount}</span>
+          </div>
+        `;
+      } else {
+        statsHTML = `
+          <div class="stat-item">
+            <span class="stat-label">Yes</span>
+            <span class="stat-value">${practice.stats.yesCount}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Not Available</span>
+            <span class="stat-value">${practice.stats.notAvailableCount}</span>
+          </div>
+        `;
+      }
+
+      card.innerHTML = `
+        <div class="practice-header">
+          <div>
+            <div class="practice-title-row">
+              <h3 class="practice-title">${practice.title}</h3>
+              <span class="practice-type-badge ${typeBadgeClass}">${typeEmoji} ${typeName}</span>
+            </div>
+            <div class="practice-details">
+              <div class="practice-detail">
+                📅 ${formatDateDisplay(practice.date)}
+              </div>
+              <div class="practice-detail">
+                🕐 ${practice.time}
+              </div>
+              <div class="practice-detail">
+                📍 ${practice.location}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        ${practice.description ? `<p style="color: var(--color-text-body); margin-bottom: 1rem;">${practice.description}</p>` : ''}
+
+        <div class="practice-stats">
+          <div class="stat-item">
+            <span class="stat-label">Responses</span>
+            <span class="stat-value">${practice.stats.respondedCount}/${practice.stats.totalPlayers} (${practice.stats.responseRate}%)</span>
+          </div>
+          ${statsHTML}
+        </div>
+
+        ${practice.locked ? '<div class="lock-notice">🔒 This practice session is locked. Members cannot vote or change their votes.</div>' : ''}
+
+        <div class="practice-actions">
+          <button class="btn-primary btn-sm" onclick="viewPoll('${practice.id}')">View Poll</button>
+          <button class="btn-secondary btn-sm" onclick="generatePracticeAnnouncement('${practice.id}')" title="Generate WhatsApp announcement">📱 Generate Announcement</button>
+          <button class="btn-secondary btn-sm" onclick="toggleLock('${practice.id}', ${practice.locked})" title="${practice.locked ? 'Unlock voting' : 'Lock voting'}">
+            ${practice.locked ? '🔓 Unlock' : '🔒 Lock'}
+          </button>
+          <button class="btn-secondary btn-sm" onclick="editPractice('${practice.id}')">Edit</button>
+          <button class="btn-secondary btn-sm" onclick="deletePractice('${practice.id}', '${practice.title}')">Delete</button>
+        </div>
+      `;
+
+      return card;
+    }
+
+    async function handleCreatePractice(e) {
+      e.preventDefault();
+
+      const form = e.target;
+      const formData = new FormData(form);
+
+      // Format time from HH:MM to HH:MM AM/PM using utility function
+      const timeValue = formData.get('time');
+
+      if (!timeValue) {
+        showToast('Please select a time', 'error');
+        return;
+      }
+
+      const formattedTime = formatTime12Hour(timeValue);
+
+      const data = {
+        type: formData.get('type'),
+        date: formData.get('date'),
+        time: formattedTime,
+        location: formData.get('location'),
+        description: formData.get('description') || '',
+        seasonId: currentSeasonId,
+      };
+
+      // Add practiceId if editing
+      if (editingPracticeId) {
+        data.practiceId = editingPracticeId;
+      }
+
+      // Validate we have a season ID
+      if (!currentSeasonId) {
+        showToast('No active season found. Please create a season first.', 'error');
+        return;
+      }
+
+      console.log(editingPracticeId ? 'Updating practice with data:' : 'Creating practice with data:', data);
+
+      // Show loading state
+      document.getElementById('submit-text').style.display = 'none';
+      document.getElementById('submit-spinner').style.display = 'inline-block';
+
+      try {
+        const endpoint = editingPracticeId ? 'practice-update' : 'practice-create';
+        const response = await fetch(`/.netlify/functions/${endpoint}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+
+        const result = await response.json();
+        console.log(editingPracticeId ? 'Update' : 'Create', 'practice response:', result);
+
+        if (result.success) {
+          showToast(editingPracticeId ? 'Practice session updated successfully' : 'Practice session created successfully', 'success');
+          hideCreateForm();
+          loadPractices();
+        } else {
+          console.error(editingPracticeId ? 'Update' : 'Create', 'practice error:', result);
+          showToast(result.error || (editingPracticeId ? 'Failed to update practice' : 'Failed to create practice'), 'error');
+        }
+      } catch (error) {
+        console.error('Error', editingPracticeId ? 'updating' : 'creating', 'practice:', error);
+        showToast(editingPracticeId ? 'Failed to update practice session' : 'Failed to create practice session', 'error');
+      } finally {
+        document.getElementById('submit-text').style.display = 'inline';
+        document.getElementById('submit-spinner').style.display = 'none';
+      }
+    }
+
+    async function viewPoll(practiceId) {
+      try {
+        const response = await fetch(`/.netlify/functions/practice-get?practiceId=${practiceId}`);
+        const data = await response.json();
+
+        if (!data.success || !data.data) {
+          showToast('Failed to load practice details', 'error');
+          return;
+        }
+
+        currentPractice = data.data;
+        renderPollModal(currentPractice);
+        document.getElementById('poll-modal').style.display = 'flex';
+      } catch (error) {
+        console.error('Error loading practice:', error);
+        showToast('Failed to load practice details', 'error');
+      }
+    }
+
+    function renderPollModal(practice) {
+      const typeEmoji = practice.type === 'net' ? '🎾' : '🏟️';
+      const typeName = practice.type === 'net' ? 'Net Session' : 'Field Practice';
+
+      // Practice info
+      document.getElementById('modal-practice-info').innerHTML = `
+        <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">${practice.title}</h3>
+        <p style="color: var(--color-text-muted);">
+          ${formatDateDisplay(practice.date)} at ${practice.time} &nbsp;•&nbsp; <span class="practice-type-badge ${practice.type === 'net' ? 'badge-net' : 'badge-field'}">${typeEmoji} ${typeName}</span>
+        </p>
+      `;
+
+      // Stats
+      let statsHTML = `
+        <div class="stat-item">
+          <span class="stat-label">Responses</span>
+          <span class="stat-value">${practice.stats.respondedCount}/${practice.stats.totalPlayers} (${practice.stats.responseRate}%)</span>
+        </div>
+      `;
+
+      if (practice.type === 'net') {
+        statsHTML += `
+          <div class="stat-item">
+            <span class="stat-label">✓ Yes</span>
+            <span class="stat-value">${practice.stats.yesCount}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Bowling Only</span>
+            <span class="stat-value">${practice.stats.bowlingOnlyCount}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">✗ Not Available</span>
+            <span class="stat-value">${practice.stats.notAvailableCount}</span>
+          </div>
+        `;
+      } else {
+        statsHTML += `
+          <div class="stat-item">
+            <span class="stat-label">✓ Yes</span>
+            <span class="stat-value">${practice.stats.yesCount}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">✗ Not Available</span>
+            <span class="stat-value">${practice.stats.notAvailableCount}</span>
+          </div>
+        `;
+      }
+
+      document.getElementById('modal-stats').innerHTML = statsHTML;
+
+      // Players table
+      const playersHTML = `
+        <table class="players-table">
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th>Status</th>
+              <th>Submitted</th>
+              <th style="width: 120px; text-align: center;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${practice.playerAvailability.map(player => {
+              let badge = '';
+              if (player.response === 'yes') {
+                badge = '<span class="response-badge response-yes">✓ Yes</span>';
+              } else if (player.response === 'bowling-only') {
+                badge = '<span class="response-badge response-bowling">Bowling Only</span>';
+              } else if (player.response === 'not-available') {
+                badge = '<span class="response-badge response-no">✗ Not Available</span>';
+              } else {
+                badge = '<span class="response-badge response-none">- No Response</span>';
+              }
+
+              const submitted = player.submittedAt ? new Date(player.submittedAt).toLocaleString() : '-';
+
+              return `
+                <tr>
+                  <td>${player.playerName}</td>
+                  <td>${badge}</td>
+                  <td>${submitted}</td>
+                  <td style="text-align: center;">
+                    <button class="btn-remove" onclick="removePlayerFromPractice('${player.playerId}', '${player.playerName}')">Remove</button>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+
+      document.getElementById('modal-players-list').innerHTML = playersHTML;
+
+      // Show/hide status dropdown based on practice type
+      const statusContainer = document.getElementById('player-status-select-container');
+      if (practice.type === 'net') {
+        statusContainer.style.display = 'block';
+      } else {
+        statusContainer.style.display = 'none';
+      }
+
+      // Load available players for dropdown
+      loadAvailablePlayers();
+    }
+
+    function closeModal() {
+      document.getElementById('poll-modal').style.display = 'none';
+      currentPractice = null;
+    }
+
+    async function generatePracticeAnnouncement(practiceId) {
+      try {
+        // Fetch the practice details
+        const response = await fetch(`/.netlify/functions/practice-get?practiceId=${practiceId}`);
+
+        if (!response.ok) {
+          showToast('Failed to load practice details', 'error');
+          return;
+        }
+
+        const result = await response.json();
+        const practice = result.data;
+
+        if (!practice) {
+          showToast('Practice not found', 'error');
+          return;
+        }
+
+        const typeEmoji = practice.type === 'net' ? '🎾' : '🏟️';
+        const typeName = practice.type === 'net' ? 'Net Session' : 'Field Practice';
+
+        // Get players who said yes
+        const yesPlayers = practice.playerAvailability
+          .filter(p => p.response === 'yes')
+          .map(p => p.playerName)
+          .sort();
+
+        // Get players who said bowling-only (only for net sessions)
+        const bowlingOnlyPlayers = practice.type === 'net'
+          ? practice.playerAvailability
+              .filter(p => p.response === 'bowling-only')
+              .map(p => p.playerName)
+              .sort()
+          : [];
+
+        let announcement = `${typeEmoji} ${typeName}\n`;
+        announcement += `${formatDateDisplay(practice.date)} at ${practice.time}\n`;
+        announcement += `${practice.location}\n\n`;
+
+        if (yesPlayers.length > 0) {
+          announcement += yesPlayers.map((name, idx) =>
+            `${String(idx + 1).padStart(2, ' ')}.⁠ ⁠@⁨${name}⁩`
+          ).join('\n') + '\n\n';
+        }
+
+        if (bowlingOnlyPlayers.length > 0) {
+          announcement += 'Bowling only:\n';
+          announcement += bowlingOnlyPlayers.map((name, idx) =>
+            `${String(idx + 1).padStart(2, ' ')}.⁠ ⁠@⁨${name}⁩`
+          ).join('\n') + '\n\n';
+        }
+
+        announcement += 'Please be on time to ensure we all get max time to practice!';
+
+        // Show modal with generated message
+        document.getElementById('announcement-text').value = announcement;
+        document.getElementById('announcement-modal').style.display = 'flex';
+      } catch (error) {
+        console.error('Error generating announcement:', error);
+        showToast('Failed to generate announcement', 'error');
+      }
+    }
+
+    function closeAnnouncementModal() {
+      document.getElementById('announcement-modal').style.display = 'none';
+    }
+
+    async function copyAnnouncement() {
+      const textarea = document.getElementById('announcement-text');
+      const text = textarea.value;
+
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast('✓ Copied to clipboard!', 'success');
+
+        // Change button text temporarily
+        const btn = document.getElementById('copy-announcement-btn');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '✓ Copied!';
+        btn.style.background = '#10b981';
+
+        setTimeout(() => {
+          btn.innerHTML = originalText;
+          btn.style.background = '';
+        }, 2000);
+      } catch (error) {
+        // Fallback for older browsers
+        textarea.select();
+        document.execCommand('copy');
+        showToast('✓ Copied to clipboard!', 'success');
+      }
+    }
+
+    async function editPractice(practiceId) {
+      try {
+        // Fetch the practice details
+        const response = await fetch(`/.netlify/functions/practice-get?practiceId=${practiceId}`);
+        const result = await response.json();
+
+        if (!result.success || !result.data) {
+          showToast('Failed to load practice details', 'error');
+          return;
+        }
+
+        const practice = result.data;
+
+        // Set editing mode
+        editingPracticeId = practiceId;
+
+        // Show the form
+        document.getElementById('create-form-container').style.display = 'block';
+        document.getElementById('show-create-form-btn').style.display = 'none';
+
+        // Update form title and button
+        document.querySelector('.card-title').textContent = 'Edit Practice Session';
+        document.getElementById('submit-text').textContent = 'Update Practice';
+
+        // Populate form fields
+        const form = document.getElementById('create-practice-form');
+
+        // Set practice type
+        const typeRadio = form.querySelector(`input[name="type"][value="${practice.type}"]`);
+        if (typeRadio) typeRadio.checked = true;
+
+        // Set date
+        form.querySelector('#date').value = practice.date;
+
+        // Convert time from "2:30 PM" to "14:30" format for time input using utility function
+        const timeForInput = formatTimeForInput(practice.time);
+        if (timeForInput) {
+          form.querySelector('#time').value = timeForInput;
+        }
+
+        // Set location
+        form.querySelector('#location').value = practice.location;
+
+        // Set description
+        form.querySelector('#description').value = practice.description || '';
+
+        // Scroll to form
+        document.getElementById('create-form-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      } catch (error) {
+        console.error('Error loading practice for edit:', error);
+        showToast('Failed to load practice details', 'error');
+      }
+    }
+
+    async function toggleLock(practiceId, currentlyLocked) {
+      const action = currentlyLocked ? 'unlock' : 'lock';
+      const confirmMsg = currentlyLocked
+        ? 'Unlock this practice session? Members will be able to vote and change their votes.'
+        : 'Lock this practice session? Members will not be able to vote or change their votes.';
+
+      if (!confirm(confirmMsg)) {
+        return;
+      }
+
+      try {
+        const response = await fetch('/.netlify/functions/practice-lock', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({
+            practiceId,
+            locked: !currentlyLocked,
+          }),
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          showToast(`Practice ${action}ed successfully`, 'success');
+          loadPractices();
+        } else {
+          showToast(result.error || `Failed to ${action} practice`, 'error');
+        }
+      } catch (error) {
+        console.error(`Error ${action}ing practice:`, error);
+        showToast(`Failed to ${action} practice`, 'error');
+      }
+    }
+
+    async function deletePractice(practiceId, title) {
+      if (!confirm(`Are you sure you want to delete "${title}"? This will remove all availability responses.`)) {
+        return;
+      }
+
+      try {
+        const response = await fetch('/.netlify/functions/practice-delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ practiceId }),
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          showToast('Practice deleted successfully', 'success');
+          loadPractices();
+        } else {
+          showToast(result.error || 'Failed to delete practice', 'error');
+        }
+      } catch (error) {
+        console.error('Error deleting practice:', error);
+        showToast('Failed to delete practice', 'error');
+      }
+    }
+
+    function showError(message) {
+      document.getElementById('error-text').textContent = message;
+      document.getElementById('error-state').style.display = 'block';
+    }
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      toast.textContent = message;
+
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.remove();
+      }, 3000);
+    }
+
+    // Player management functions
+    let allPlayers = [];
+    let availablePlayersForPractice = [];
+    let selectedPlayer = null;
+    let hideDropdownTimeout = null;
+
+    async function loadAvailablePlayers() {
+      try {
+        const response = await fetch('/.netlify/functions/players-list?status=active');
+        const players = await response.json();
+
+        console.log('Loaded players:', players);
+
+        if (Array.isArray(players) && players.length > 0) {
+          // Filter to active players only (query already does this, but double-check)
+          allPlayers = players.filter(p => p.isActive);
+
+          // Get players already in practice
+          const existingPlayerIds = currentPractice.playerAvailability.map(pa => pa.playerId);
+
+          // Filter out players already in the practice
+          availablePlayersForPractice = allPlayers.filter(p => !existingPlayerIds.includes(p.id));
+
+          console.log('Available players to add:', availablePlayersForPractice.length);
+
+          // Clear search input and selection
+          document.getElementById('player-search-input').value = '';
+          selectedPlayer = null;
+          document.getElementById('add-player-btn').disabled = true;
+        } else {
+          console.log('No players available or empty array');
+        }
+      } catch (error) {
+        console.error('Error loading players:', error);
+      }
+    }
+
+    function filterPlayers() {
+      const searchInput = document.getElementById('player-search-input');
+      const dropdown = document.getElementById('player-dropdown');
+      const searchQuery = searchInput.value.toLowerCase().trim();
+
+      // Clear selection if user is typing
+      if (selectedPlayer && searchInput.value !== `${selectedPlayer.firstName} ${selectedPlayer.lastName}`) {
+        selectedPlayer = null;
+        document.getElementById('add-player-btn').disabled = true;
+      }
+
+      // Filter players based on search query
+      let filteredPlayers = availablePlayersForPractice;
+      if (searchQuery) {
+        filteredPlayers = availablePlayersForPractice.filter(p => {
+          const fullName = `${p.firstName} ${p.lastName}`.toLowerCase();
+          return fullName.includes(searchQuery);
+        });
+      }
+
+      // Sort alphabetically
+      filteredPlayers.sort((a, b) =>
+        `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`)
+      );
+
+      // Populate dropdown
+      if (filteredPlayers.length === 0) {
+        dropdown.innerHTML = '<div class="player-dropdown-empty">No players found</div>';
+      } else {
+        dropdown.innerHTML = filteredPlayers
+          .map(p => `
+            <div class="player-dropdown-item" onclick="selectPlayer('${p.id}', '${p.firstName}', '${p.lastName}')">
+              ${p.firstName} ${p.lastName}
+            </div>
+          `)
+          .join('');
+      }
+
+      // Show dropdown
+      dropdown.style.display = 'block';
+    }
+
+    function selectPlayer(playerId, firstName, lastName) {
+      const fullName = `${firstName} ${lastName}`;
+      const player = availablePlayersForPractice.find(p => p.id === playerId);
+
+      if (player) {
+        selectedPlayer = player;
+        document.getElementById('player-search-input').value = fullName;
+        document.getElementById('add-player-btn').disabled = false;
+        hideDropdown();
+      }
+    }
+
+    function hideDropdown() {
+      document.getElementById('player-dropdown').style.display = 'none';
+    }
+
+    function hideDropdownDelayed() {
+      // Delay hiding to allow click events on dropdown items to fire
+      hideDropdownTimeout = setTimeout(() => {
+        hideDropdown();
+      }, 200);
+    }
+
+    async function addPlayerToPractice() {
+      if (!selectedPlayer) {
+        showToast('Please select a player', 'error');
+        return;
+      }
+
+      const playerId = selectedPlayer.id;
+      const playerName = `${selectedPlayer.firstName} ${selectedPlayer.lastName}`;
+
+      // Get initial status based on practice type
+      let initialResponse = null;
+      if (currentPractice.type === 'net') {
+        // For net practices, get selected status from dropdown
+        const statusSelect = document.getElementById('player-status-select');
+        initialResponse = statusSelect.value;
+      } else {
+        // For field practices, always set to 'yes'
+        initialResponse = 'yes';
+      }
+
+      try {
+        const response = await fetch('/.netlify/functions/practice-player-manage', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({
+            practiceId: currentPractice.id,
+            playerId,
+            playerName,
+            action: 'add',
+            initialResponse: initialResponse,
+          }),
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          showToast(result.message, 'success');
+          // Reload the poll modal
+          viewPoll(currentPractice.id);
+        } else {
+          showToast(result.error || 'Failed to add player', 'error');
+        }
+      } catch (error) {
+        console.error('Error adding player:', error);
+        showToast('Failed to add player', 'error');
+      }
+    }
+
+    async function removePlayerFromPractice(playerId, playerName) {
+      if (!confirm(`Remove ${playerName} from this practice session?`)) {
+        return;
+      }
+
+      try {
+        const response = await fetch('/.netlify/functions/practice-player-manage', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({
+            practiceId: currentPractice.id,
+            playerId,
+            action: 'remove',
+          }),
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          showToast(result.message, 'success');
+          // Reload the poll modal
+          viewPoll(currentPractice.id);
+        } else {
+          showToast(result.error || 'Failed to remove player', 'error');
+        }
+      } catch (error) {
+        console.error('Error removing player:', error);
+        showToast('Failed to remove player', 'error');
+      }
+    }
+
+    // Expose functions globally
+    window.viewPoll = viewPoll;
+    window.editPractice = editPractice;
+    window.deletePractice = deletePractice;
+    window.toggleLock = toggleLock;
+    window.generatePracticeAnnouncement = generatePracticeAnnouncement;
+    window.closeAnnouncementModal = closeAnnouncementModal;
+    window.copyAnnouncement = copyAnnouncement;
+    window.addPlayerToPractice = addPlayerToPractice;
+    window.removePlayerFromPractice = removePlayerFromPractice;
+    window.filterPlayers = filterPlayers;
+    window.selectPlayer = selectPlayer;
+    window.hideDropdownDelayed = hideDropdownDelayed;
+  </script>
+</AdminLayout>

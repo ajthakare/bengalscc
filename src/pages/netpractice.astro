@@ -1,0 +1,376 @@
+---
+export const prerender = false;
+
+import Layout from '../layouts/Layout.astro';
+import { validateAdminSession, isMember } from '../middleware/auth';
+import { parseLocalDate, formatDateDisplay } from '../utils';
+import '../styles/admin.css';
+
+// Check authentication
+const cookieHeader = Astro.request.headers.get('cookie');
+const session = validateAdminSession(cookieHeader || '');
+
+// Redirect to login if not authenticated
+if (!session || !isMember(session)) {
+  return Astro.redirect('/login');
+}
+---
+
+<Layout title="Practice Sessions - Golden State Cricket Club">
+  <h1 class="page-title heading-margin-sm">Practice Sessions</h1>
+  <p class="text-intro mb-8">Next 30 days - Mark your availability for upcoming practices</p>
+
+  <div class="max-w-5xl mx-auto px-4 py-8" style="overflow: visible; min-height: auto;">
+
+    <!-- Loading State -->
+    <div id="loading" class="state-container">
+      <div class="spinner"></div>
+      <p class="state-text">Loading practices...</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="error-container" class="alert alert-error" style="display: none;">
+      <p id="error-text"></p>
+    </div>
+
+    <!-- No Practices State -->
+    <div id="no-practices" class="state-container" style="display: none;">
+      <svg class="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      </svg>
+      <p class="empty-text">No upcoming practice sessions in the next 30 days</p>
+      <p class="empty-subtext">Check back later for new practice sessions</p>
+    </div>
+
+    <!-- Practices Grid -->
+    <div id="practices-grid" class="practices-grid" style="display: none;">
+      <!-- Practices will be inserted here -->
+    </div>
+  </div>
+
+  <!-- All practice styles are now in /src/styles/admin.css -->
+  <style is:global>
+    /* Mobile-specific fixes to ensure all content is visible */
+    @media (max-width: 768px) {
+      html,
+      body,
+      main {
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        height: auto !important;
+        min-height: 100vh;
+      }
+
+      #practices-grid,
+      .practices-grid,
+      .practice-card {
+        overflow: visible !important;
+        height: auto !important;
+        min-height: 0 !important;
+      }
+
+      .max-w-5xl {
+        overflow: visible !important;
+        height: auto !important;
+      }
+
+      /* Ensure cards have proper bottom spacing */
+      .practice-card {
+        margin-bottom: 3rem !important;
+        padding-bottom: 2rem !important;
+      }
+
+      .availability-buttons {
+        margin-bottom: 1rem !important;
+      }
+    }
+  </style>
+
+  <script>
+    let practices: any[] = [];
+    let updatingPracticeId: string | null = null;
+
+    // Utility functions for date and time
+    function parseLocalDate(dateString: string): Date {
+      const parts = dateString.split('-');
+      return new Date(
+        parseInt(parts[0]),
+        parseInt(parts[1]) - 1,
+        parseInt(parts[2])
+      );
+    }
+
+    function formatDateDisplay(dateString: string): string {
+      const date = parseLocalDate(dateString);
+      return date.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
+    }
+
+    async function loadPractices() {
+      const loading = document.getElementById('loading');
+      const errorContainer = document.getElementById('error-container');
+      const errorText = document.getElementById('error-text');
+      const noPractices = document.getElementById('no-practices');
+      const practicesGrid = document.getElementById('practices-grid');
+
+      try {
+        loading!.style.display = 'flex';
+        errorContainer!.style.display = 'none';
+        noPractices!.style.display = 'none';
+        practicesGrid!.style.display = 'none';
+
+        console.log('Fetching practices from API...');
+        const response = await fetch('/.netlify/functions/practice-list', {
+          credentials: 'same-origin',
+        });
+
+        console.log('Response status:', response.status);
+
+        if (!response.ok) {
+          const data = await response.json();
+          console.error('API error:', data);
+          throw new Error(data.error || 'Failed to load practices');
+        }
+
+        practices = await response.json();
+        console.log('Loaded practices:', practices);
+
+        loading!.style.display = 'none';
+
+        if (practices.length === 0) {
+          console.log('No practices found');
+          noPractices!.style.display = 'flex';
+        } else {
+          console.log(`Displaying ${practices.length} practices`);
+          practicesGrid!.style.display = 'grid';
+          renderPractices();
+        }
+      } catch (error) {
+        console.error('Error loading practices:', error);
+        loading!.style.display = 'none';
+        errorContainer!.style.display = 'block';
+        errorText!.textContent = error instanceof Error ? error.message : 'Unknown error';
+      }
+    }
+
+    function renderPractices() {
+      const practicesGrid = document.getElementById('practices-grid');
+      if (!practicesGrid) return;
+
+      practicesGrid.innerHTML = '';
+
+      practices.forEach((practice) => {
+        const card = document.createElement('div');
+        card.className = 'practice-card';
+        card.id = `practice-${practice.id}`;
+
+        const typeEmoji = practice.type === 'net' ? '🎾' : '🏟️';
+        const typeName = practice.type === 'net' ? 'Net Session' : 'Field Practice';
+        const typeBadgeClass = practice.type === 'net' ? 'badge-net' : 'badge-field';
+
+        // Format date using utility function
+        const formattedDate = formatDateDisplay(practice.date);
+
+        // Build availability buttons HTML based on practice type
+        const isLocked = practice.locked || false;
+        const disabledAttr = isLocked ? 'disabled' : '';
+
+        let buttonsHTML = '';
+        if (practice.type === 'net') {
+          // Net sessions: Yes, Bowling Only, Not Available
+          const yesClass = practice.myResponse === 'yes' ? 'active-yes' : '';
+          const bowlingClass = practice.myResponse === 'bowling-only' ? 'active-bowling' : '';
+          const noClass = practice.myResponse === 'not-available' ? 'active-no' : '';
+
+          buttonsHTML = `
+            <button class="availability-btn ${yesClass}" onclick="updateAvailability('${practice.id}', 'yes')" ${disabledAttr}>
+              ✓ Yes
+            </button>
+            <button class="availability-btn ${bowlingClass}" onclick="updateAvailability('${practice.id}', 'bowling-only')" ${disabledAttr}>
+              Bowling Only
+            </button>
+            <button class="availability-btn ${noClass}" onclick="updateAvailability('${practice.id}', 'not-available')" ${disabledAttr}>
+              ✗ Not Available
+            </button>
+          `;
+        } else {
+          // Field practices: Yes, Not Available
+          const yesClass = practice.myResponse === 'yes' ? 'active-yes' : '';
+          const noClass = practice.myResponse === 'not-available' ? 'active-no' : '';
+
+          buttonsHTML = `
+            <button class="availability-btn ${yesClass}" onclick="updateAvailability('${practice.id}', 'yes')" ${disabledAttr}>
+              ✓ Yes
+            </button>
+            <button class="availability-btn ${noClass}" onclick="updateAvailability('${practice.id}', 'not-available')" ${disabledAttr}>
+              ✗ Not Available
+            </button>
+          `;
+        }
+
+        // Add lock message if practice is locked
+        const lockMessageHTML = isLocked ? `
+          <div class="lock-message">
+            🔒 This practice session is locked by admin. Please reach out to admin to check if availability change is allowed.
+          </div>
+        ` : '';
+
+        // Build team status HTML based on practice type
+        let teamStatusHTML = '';
+        if (practice.type === 'net') {
+          teamStatusHTML = `
+            <span class="status-count">
+              <span class="status-count-value">${practice.availabilityCounts.yes}</span> yes
+            </span>
+            <span class="status-count">
+              <span class="status-count-value">${practice.availabilityCounts.bowlingOnly}</span> bowling only
+            </span>
+            <span class="status-count">
+              <span class="status-count-value">${practice.availabilityCounts.notAvailable}</span> not available
+            </span>
+          `;
+        } else {
+          teamStatusHTML = `
+            <span class="status-count">
+              <span class="status-count-value">${practice.availabilityCounts.yes}</span> yes
+            </span>
+            <span class="status-count">
+              <span class="status-count-value">${practice.availabilityCounts.notAvailable}</span> not available
+            </span>
+          `;
+        }
+
+        card.innerHTML = `
+          <div class="practice-header">
+            <div class="practice-type-icon">${typeEmoji}</div>
+            <div class="practice-info">
+              <h3 class="practice-title">${practice.title}</h3>
+              <span class="practice-type-badge ${typeBadgeClass}">${typeName}</span>
+            </div>
+          </div>
+
+          <div class="practice-details">
+            <div class="practice-detail">
+              📅 ${formattedDate}
+            </div>
+            <div class="practice-detail">
+              🕐 ${practice.time}
+            </div>
+            <div class="practice-detail">
+              📍 ${practice.location}
+            </div>
+          </div>
+
+          ${practice.description ? `<p style="color: #4b5563; margin-bottom: 1.25rem;">${practice.description}</p>` : ''}
+
+          <div class="availability-section">
+            <label class="availability-label">My Availability:</label>
+            <div class="availability-buttons" id="buttons-${practice.id}">
+              ${buttonsHTML}
+            </div>
+          </div>
+
+          ${lockMessageHTML}
+
+          <div class="team-status">
+            <div class="team-status-title">Team Status:</div>
+            <div class="team-status-counts">
+              ${teamStatusHTML}
+            </div>
+          </div>
+        `;
+
+        practicesGrid.appendChild(card);
+      });
+    }
+
+    async function updateAvailability(practiceId: string, response: string) {
+      // Prevent multiple simultaneous updates
+      if (updatingPracticeId) {
+        console.log('Update already in progress');
+        return;
+      }
+
+      updatingPracticeId = practiceId;
+
+      // Find the practice
+      const practice = practices.find(p => p.id === practiceId);
+      if (!practice) return;
+
+      // If user clicks the same button, remove their response (set to null)
+      const newResponse = practice.myResponse === response ? null : response;
+
+      // Disable all buttons for this practice
+      const buttonsContainer = document.getElementById(`buttons-${practiceId}`);
+      if (!buttonsContainer) return;
+
+      const buttons = buttonsContainer.querySelectorAll('button');
+
+      // Store original HTML for each button
+      const originalHTML = new Map();
+      buttons.forEach((btn, index) => {
+        originalHTML.set(index, btn.innerHTML);
+        btn.disabled = true;
+      });
+
+      // Only show spinner on the clicked button
+      buttons.forEach((btn, index) => {
+        const btnResponse = btn.getAttribute('onclick')?.match(/'([^']+)'\)$/)?.[1];
+        if (btnResponse === response) {
+          btn.innerHTML = '<span class="btn-spinner"></span>';
+        }
+      });
+
+      try {
+        console.log('Updating availability:', practiceId, newResponse);
+
+        const apiResponse = await fetch('/.netlify/functions/practice-availability-update', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'same-origin',
+          body: JSON.stringify({
+            practiceId,
+            response: newResponse,
+          }),
+        });
+
+        if (!apiResponse.ok) {
+          const errorData = await apiResponse.json();
+          throw new Error(errorData.error || 'Failed to update availability');
+        }
+
+        const result = await apiResponse.json();
+        console.log('Update successful:', result);
+
+        // Reload practices to get updated counts
+        await loadPractices();
+
+      } catch (error) {
+        console.error('Error updating availability:', error);
+        alert(error instanceof Error ? error.message : 'Failed to update availability');
+
+        // Re-enable buttons on error
+        buttons.forEach(btn => {
+          btn.disabled = false;
+        });
+        renderPractices();
+      } finally {
+        updatingPracticeId = null;
+      }
+    }
+
+    // Load practices on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      loadPractices();
+    });
+
+    // Expose function globally
+    (window as any).updateAvailability = updateAvailability;
+  </script>
+</Layout>

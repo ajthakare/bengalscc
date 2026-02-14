@@ -12,11 +12,43 @@
 @layer base {
     html {
         scroll-behavior: smooth;
+        overflow-y: auto;
+        overflow-x: hidden;
     }
 
     /* Support iOS safe area insets and mobile browser UI */
     body {
         padding-bottom: env(safe-area-inset-bottom, 0px);
+        overflow-y: auto;
+        overflow-x: hidden;
+        min-height: 100vh;
+    }
+
+    /* Mobile-specific fixes to prevent content cutoff */
+    @media (max-width: 768px) {
+        html,
+        body {
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            height: auto !important;
+            max-height: none !important;
+            min-height: 100vh !important;
+        }
+
+        main,
+        footer,
+        header {
+            position: relative !important;
+            height: auto !important;
+        }
+
+        body {
+            padding-bottom: 2rem !important;
+        }
+
+        footer {
+            margin-top: 2rem;
+        }
     }
 
     /* Typography System - Standardized Heading Sizes */

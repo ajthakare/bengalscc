@@ -9,7 +9,7 @@ interface Props {
   title: string;
   username: string;
   userRole?: 'super_admin' | 'admin';
-  activePage: 'inquiries' | 'users' | 'seasons' | 'fixtures' | 'players' | 'roster' | 'availability' | 'statistics' | 'logs';
+  activePage: 'inquiries' | 'users' | 'seasons' | 'fixtures' | 'players' | 'roster' | 'availability' | 'statistics' | 'logs' | 'practices';
 }
 
 const { title, username, userRole = 'admin', activePage } = Astro.props;
@@ -69,6 +69,14 @@ const isSuperAdmin = userRole === 'super_admin';
               <line x1="6" y1="20" x2="6" y2="14"/>
             </svg>
             <span>Statistics Dashboard</span>
+          </a>
+
+          <a href="/admin/practices" class:list={['nav-item', { active: activePage === 'practices' }]}>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="10" cy="10" r="8"/>
+              <path d="M10 6v4l3 3"/>
+            </svg>
+            <span>Practice Sessions</span>
           </a>
 
           <!-- Season Setup Section -->
@@ -209,7 +217,9 @@ const isSuperAdmin = userRole === 'super_admin';
         display: flex;
         flex-direction: column;
         position: fixed;
-        height: 100vh;
+        min-height: 100vh;
+        max-height: 100vh;
+        overflow-y: auto;
         left: 0;
         top: 0;
         z-index: 100;
@@ -442,7 +452,9 @@ const isSuperAdmin = userRole === 'super_admin';
         flex: 1;
         margin-left: 280px;
         padding: 16px 32px 32px 32px;
+        padding-bottom: max(32px, env(safe-area-inset-bottom, 0px) + 32px);
         min-height: 100vh;
+        overflow: visible;
       }
 
       /* Mobile Menu Button */
@@ -494,7 +506,9 @@ const isSuperAdmin = userRole === 'super_admin';
           position: fixed;
           top: 0;
           left: 0;
-          height: 100vh;
+          min-height: 100vh;
+          max-height: 100vh;
+          overflow-y: auto;
           width: 280px;
           max-width: 85vw;
           z-index: 1000;
@@ -514,10 +528,21 @@ const isSuperAdmin = userRole === 'super_admin';
         .main-content {
           margin-left: 0;
           padding: 60px 16px 16px 16px; /* Add top padding for mobile menu button */
+          padding-bottom: max(32px, env(safe-area-inset-bottom, 0px) + 32px);
+          overflow: visible;
         }
 
         .admin-container {
           flex-direction: column;
+          min-height: 100vh;
+          height: auto;
+        }
+
+        body,
+        html {
+          overflow-y: auto !important;
+          height: auto !important;
+          min-height: 100vh;
         }
 
         /* Hide nav group by default on mobile */

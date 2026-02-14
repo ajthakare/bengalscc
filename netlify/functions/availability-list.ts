@@ -2,6 +2,7 @@ import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
 import { validateAdminSession } from '../../src/middleware/auth';
 import type { FixtureAvailability } from '../../src/types/player';
+import { parseLocalDate } from './_utils';
 
 /**
  * List availability records with filtering
@@ -179,7 +180,7 @@ export const handler: Handler = async (
     // Filter out null records and sort by date (newest first)
     const validRecords = availabilityRecords
       .filter((r) => r !== null)
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      .sort((a, b) => parseLocalDate(b.date).getTime() - parseLocalDate(a.date).getTime());
 
     return {
       statusCode: 200,

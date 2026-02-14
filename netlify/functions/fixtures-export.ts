@@ -3,6 +3,7 @@ import { getStore } from '@netlify/blobs';
 import { validateAdminSession } from '../../src/middleware/auth';
 import type { Fixture } from '../../src/types/player';
 import Papa from 'papaparse';
+import { parseLocalDate } from './_utils';
 
 /**
  * Export fixtures to CSV
@@ -57,13 +58,13 @@ export const handler: Handler = async (
 
     // Sort fixtures by date
     const sortedFixtures = fixtures.sort(
-      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+      (a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime()
     );
 
     // Convert to CSV format
     const csvData = sortedFixtures.map(fixture => ({
       'Game Number': fixture.gameNumber,
-      'Date': new Date(fixture.date).toISOString().split('T')[0], // Format as YYYY-MM-DD
+      'Date': fixture.date, // Already in YYYY-MM-DD format
       'Time': fixture.time,
       'Team': fixture.team,
       'Opponent': fixture.opponent,

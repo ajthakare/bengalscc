@@ -1,6 +1,7 @@
 import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
 import { validateAdminSession } from '../../src/middleware/auth';
+import { parseLocalDate } from './_utils';
 import type {
   Player,
   CoreRosterAssignment,
@@ -307,7 +308,7 @@ export const handler: Handler = async (
             if (!fixture) continue;
 
             const teamName = fixture.team;
-            const fixtureDate = new Date(fixture.date);
+            const fixtureDate = parseLocalDate(fixture.date);
             const isPastFixture = fixtureDate < now;
 
             if (!isPastFixture) continue; // Skip future fixtures
@@ -368,7 +369,7 @@ export const handler: Handler = async (
           // Count ALL past fixtures for this core team
           const allPastFixturesForTeam = fixtures.filter((f) => {
             if (f.team !== coreTeam) return false;
-            const fixtureDate = new Date(f.date);
+            const fixtureDate = parseLocalDate(f.date);
             return fixtureDate < now;
           });
 

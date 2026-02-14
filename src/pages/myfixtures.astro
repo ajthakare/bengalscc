@@ -49,6 +49,45 @@ if (!session || !isMember(session)) {
   <script>
     let fixtures: any[] = [];
 
+    // Calculate deadline for weekend fixtures (Wednesday 6 PM before the weekend)
+    function getFixtureDeadline(fixtureDate: Date) {
+      const dayOfWeek = fixtureDate.getDay(); // 0 = Sunday, 6 = Saturday
+      console.log('Fixture date:', fixtureDate, 'Day of week:', dayOfWeek, '(0=Sun, 1=Mon, ..., 6=Sat)');
+
+      // Include Friday (5), Saturday (6), and Sunday (0) as weekend
+      if (dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0) {
+        let daysBack;
+        if (dayOfWeek === 5) daysBack = 2; // Friday: 2 days back (Wednesday)
+        else if (dayOfWeek === 6) daysBack = 3; // Saturday: 3 days back
+        else daysBack = 4; // Sunday: 4 days back
+
+        const wednesday = new Date(fixtureDate);
+        wednesday.setDate(wednesday.getDate() - daysBack);
+        wednesday.setHours(18, 0, 0, 0); // 6 PM
+        console.log('Deadline calculated:', wednesday);
+        return wednesday;
+      }
+
+      console.log('Not a weekend fixture, no deadline');
+      return null; // No deadline for weekday fixtures (Mon-Thu)
+    }
+
+    function isFixtureLocked(fixtureDate: Date) {
+      const deadline = getFixtureDeadline(fixtureDate);
+      if (!deadline) return false;
+
+      const now = new Date();
+      return now > deadline;
+    }
+
+    function formatDeadline(deadline: Date) {
+      return deadline.toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'short',
+        day: 'numeric',
+      }) + ' at 6:00 PM';
+    }
+
     async function loadFixtures() {
       const loading = document.getElementById('loading');
       const errorContainer = document.getElementById('error-container');
@@ -106,7 +145,14 @@ if (!session || !isMember(session)) {
         const card = document.createElement('div');
         card.className = 'fixture-card';
 
-        const fixtureDate = new Date(fixture.date);
+        // Parse date - handle YYYY-MM-DD format as local date, not UTC
+        const dateParts = fixture.date.split('-');
+        const fixtureDate = new Date(
+          parseInt(dateParts[0]),
+          parseInt(dateParts[1]) - 1,
+          parseInt(dateParts[2])
+        );
+
         const formattedDate = fixtureDate.toLocaleDateString('en-US', {
           weekday: 'short',
           month: 'short',
@@ -139,6 +185,10 @@ if (!session || !isMember(session)) {
         const homeAwayIcon = isHome ? '🏠' : '✈️';
         const homeAwayText = isHome ? 'HOME' : 'AWAY';
         const homeAwayColor = isHome ? 'text-green-700' : 'text-blue-700';
+
+        // Check if fixture is locked
+        const deadline = getFixtureDeadline(fixtureDate);
+        const isLocked = isFixtureLocked(fixtureDate);
 
         // Match fixtures.astro card layout exactly
         card.innerHTML = `
@@ -190,18 +240,45 @@ if (!session || !isMember(session)) {
               <span class="status-badge ${statusClass}">${statusText}</span>
             </div>
 
+            ${isLocked ? `
+              <div class="poll-locked-message">
+                🔒 <strong>Poll is locked.</strong><br>
+                Please contact your team captain if you wish to mark availability.
+              </div>
+            ` : deadline ? `
+              <div class="poll-deadline-message">
+                ⏰ This poll closes on <strong>${formatDeadline(deadline)}</strong>
+              </div>
+            ` : ''}
+
             <div class="availability-buttons">
               <button
-                class="btn-available ${fixture.myAvailability === true ? 'active' : ''}"
+                class="btn-available ${fixture.myAvailability === true ? 'active' : ''} ${isLocked ? 'disabled' : ''}"
                 onclick="updateAvailability('${fixture.id}', true)"
+                ${isLocked ? 'disabled' : ''}
+                data-fixture-id="${fixture.id}"
+                data-availability="true"
               >
-                ✓ Available
+                <span class="btn-text">✓ Available</span>
+                <span class="btn-spinner" style="display: none;">
+                  <svg class="spinner-icon" viewBox="0 0 24 24">
+                    <circle class="spinner-circle" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" stroke-dasharray="31.4 31.4" transform="rotate(-90 12 12)"/>
+                  </svg>
+                </span>
               </button>
               <button
-                class="btn-unavailable ${fixture.myAvailability === false ? 'active' : ''}"
+                class="btn-unavailable ${fixture.myAvailability === false ? 'active' : ''} ${isLocked ? 'disabled' : ''}"
                 onclick="updateAvailability('${fixture.id}', false)"
+                ${isLocked ? 'disabled' : ''}
+                data-fixture-id="${fixture.id}"
+                data-availability="false"
               >
-                ✗ Not Available
+                <span class="btn-text">✗ Not Available</span>
+                <span class="btn-spinner" style="display: none;">
+                  <svg class="spinner-icon" viewBox="0 0 24 24">
+                    <circle class="spinner-circle" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" stroke-dasharray="31.4 31.4" transform="rotate(-90 12 12)"/>
+                  </svg>
+                </span>
               </button>
             </div>
 
@@ -215,8 +292,6 @@ if (!session || !isMember(session)) {
             <p class="text-xs text-gray-600 font-semibold mb-2 uppercase">Team Responses</p>
             <div class="flex gap-3 text-xs">
               <span class="text-green-700 font-medium">✓ ${fixture.availabilityCounts.available} Available</span>
-              <span class="text-red-700 font-medium">✗ ${fixture.availabilityCounts.unavailable} Unavailable</span>
-              <span class="text-gray-600 font-medium">${fixture.availabilityCounts.noResponse} Pending</span>
             </div>
           </div>
         `;
@@ -226,6 +301,21 @@ if (!session || !isMember(session)) {
     }
 
     async function updateAvailability(fixtureId: string, available: boolean) {
+      // Find the button that was clicked
+      const buttons = document.querySelectorAll(`button[data-fixture-id="${fixtureId}"]`);
+      const clickedButton = Array.from(buttons).find(btn => btn.getAttribute('data-availability') === String(available)) as HTMLButtonElement;
+
+      if (!clickedButton) return;
+
+      // Show spinner and disable both buttons
+      const btnText = clickedButton.querySelector('.btn-text') as HTMLElement;
+      const btnSpinner = clickedButton.querySelector('.btn-spinner') as HTMLElement;
+
+      btnText.style.display = 'none';
+      btnSpinner.style.display = 'inline-block';
+
+      buttons.forEach(btn => (btn as HTMLButtonElement).disabled = true);
+
       try {
         const response = await fetch('/.netlify/functions/member-availability-update', {
           method: 'POST',
@@ -239,12 +329,31 @@ if (!session || !isMember(session)) {
         const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(data.error || 'Failed to update availability');
+          if (response.status === 403 && data.error?.includes('locked')) {
+            alert('⚠️ ' + data.error);
+          } else {
+            throw new Error(data.error || 'Failed to update availability');
+          }
+          return;
         }
 
-        // Update local fixture data
+        // Update local fixture data and counts
         const fixtureIndex = fixtures.findIndex(f => f.id === fixtureId);
         if (fixtureIndex !== -1) {
+          const oldAvailability = fixtures[fixtureIndex].myAvailability;
+
+          // Update availability counts based on change
+          if (oldAvailability === true && available === false) {
+            // Changed from available to unavailable
+            fixtures[fixtureIndex].availabilityCounts.available -= 1;
+          } else if (oldAvailability === false && available === true) {
+            // Changed from unavailable to available
+            fixtures[fixtureIndex].availabilityCounts.available += 1;
+          } else if (oldAvailability !== true && oldAvailability !== false && available === true) {
+            // Changed from no response to available
+            fixtures[fixtureIndex].availabilityCounts.available += 1;
+          }
+
           fixtures[fixtureIndex].myAvailability = available;
           fixtures[fixtureIndex].submittedAt = data.submittedAt;
         }
@@ -252,9 +361,14 @@ if (!session || !isMember(session)) {
         // Re-render fixtures
         renderFixtures();
 
-        // Show success message (optional)
+        // Show success message
         showToast(available ? 'Marked as available' : 'Marked as not available');
       } catch (error) {
+        // Hide spinner and re-enable buttons on error
+        btnText.style.display = 'inline';
+        btnSpinner.style.display = 'none';
+        buttons.forEach(btn => (btn as HTMLButtonElement).disabled = false);
+
         alert('Failed to update availability: ' + (error instanceof Error ? error.message : 'Unknown error'));
       }
     }
@@ -409,6 +523,43 @@ if (!session || !isMember(session)) {
       transition: all 0.2s;
       background: white;
       text-align: center;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn-spinner {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .spinner-icon {
+      width: 16px;
+      height: 16px;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .spinner-circle {
+      animation: spin-dash 1.5s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes spin-dash {
+      0% {
+        stroke-dashoffset: 0;
+      }
+      50% {
+        stroke-dashoffset: 15.7;
+      }
+      100% {
+        stroke-dashoffset: 31.4;
+      }
     }
 
     .btn-available {
@@ -461,6 +612,43 @@ if (!session || !isMember(session)) {
       font-size: 11px;
       color: #6b7280;
       margin-top: 6px;
+    }
+
+    .poll-deadline-message {
+      background: #fef3c7;
+      border: 1px solid #fbbf24;
+      color: #78350f;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+
+    .poll-locked-message {
+      background: #fee2e2;
+      border: 1px solid #fca5a5;
+      color: #991b1b;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+
+    .btn-available.disabled,
+    .btn-unavailable.disabled,
+    .btn-available:disabled,
+    .btn-unavailable:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    .btn-available:disabled:not(.disabled),
+    .btn-unavailable:disabled:not(.disabled) {
+      opacity: 0.7;
+      pointer-events: auto;
     }
 
     .toast {

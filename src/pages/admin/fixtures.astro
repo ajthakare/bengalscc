@@ -749,6 +749,16 @@ if (!authenticated) {
   let csvData = null;
   let editingFixtureId = null;
 
+  // Helper function to parse date strings as local dates
+  function parseLocalDate(dateString) {
+    const parts = dateString.split('-');
+    return new Date(
+      parseInt(parts[0]),
+      parseInt(parts[1]) - 1,
+      parseInt(parts[2])
+    );
+  }
+
   // DOM elements
   const loadingState = document.getElementById('loading-state');
   const errorState = document.getElementById('error-state');
@@ -861,10 +871,10 @@ if (!authenticated) {
     today.setHours(0, 0, 0, 0);
 
     // Split fixtures into upcoming and past
-    const upcomingFixtures = fixtures.filter(f => new Date(f.date) >= today);
+    const upcomingFixtures = fixtures.filter(f => parseLocalDate(f.date) >= today);
     const pastFixtures = fixtures
-      .filter(f => new Date(f.date) < today)
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); // Most recent first
+      .filter(f => parseLocalDate(f.date) < today)
+      .sort((a, b) => parseLocalDate(b.date).getTime() - parseLocalDate(a.date).getTime()); // Most recent first
 
     // Helper function to render a fixture row
     const renderFixtureRow = (fixture, isPast) => {
@@ -1023,7 +1033,7 @@ if (!authenticated) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const upcoming = fixtures.filter((f) => new Date(f.date) >= today).length;
+    const upcoming = fixtures.filter((f) => parseLocalDate(f.date) >= today).length;
     const completed = fixtures.length - upcoming;
 
     document.getElementById('stat-total').textContent = fixtures.length;

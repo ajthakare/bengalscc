@@ -167,6 +167,11 @@ if (!authenticated) {
         <button id="mark-all-unavailable-btn" class="btn-secondary">Mark All Unavailable</button>
       </div>
 
+      <!-- Lock Message for Regular Admins -->
+      <div id="past-fixture-lock-message" style="display: none; background: #fef3c7; border: 1px solid #fbbf24; color: #78350f; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 14px;">
+        🔒 <strong>Past fixture is locked.</strong> Only Mr. President can edit the past fixtures now, contact him for any help!
+      </div>
+
       <!-- Players Grid -->
       <div id="players-loading" class="state-container">
         <div class="spinner"></div>
@@ -851,7 +856,7 @@ if (!authenticated) {
   }
 </style>
 
-<script>
+<script define:vars={{ userRole }}>
   let seasons = [];
   let fixtures = [];
   let availabilityRecords = [];
@@ -859,6 +864,8 @@ if (!authenticated) {
   let currentAvailability = null;
   let coreRosterMap = new Map(); // Map of playerId -> { isCore, isCaptain, isViceCaptain }
   let openDropdownPlayerId = null; // Track which dropdown is open
+  const isSuperAdmin = userRole === 'super_admin';
+  let isPastFixture = false; // Track if current fixture is in the past
 
   // Available match duties
   const MATCH_DUTIES = [
@@ -1249,7 +1256,38 @@ if (!authenticated) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const fixtureDate = new Date(currentFixture.date.split('T')[0]);
-      const isPastFixture = fixtureDate < today;
+      isPastFixture = fixtureDate < today; // Set global variable
+
+      // Disable bulk action buttons and save button for past fixtures if not super admin
+      const markAllAvailableBtn = document.getElementById('mark-all-available-btn');
+      const markAllUnavailableBtn = document.getElementById('mark-all-unavailable-btn');
+      const saveAvailabilityBtn = document.getElementById('save-availability-btn');
+      const lockMessage = document.getElementById('past-fixture-lock-message');
+      const isLocked = isPastFixture && !isSuperAdmin;
+
+      if (isLocked) {
+        markAllAvailableBtn.disabled = true;
+        markAllUnavailableBtn.disabled = true;
+        saveAvailabilityBtn.disabled = true;
+        markAllAvailableBtn.style.opacity = '0.5';
+        markAllUnavailableBtn.style.opacity = '0.5';
+        saveAvailabilityBtn.style.opacity = '0.5';
+        markAllAvailableBtn.style.cursor = 'not-allowed';
+        markAllUnavailableBtn.style.cursor = 'not-allowed';
+        saveAvailabilityBtn.style.cursor = 'not-allowed';
+        lockMessage.style.display = 'block';
+      } else {
+        markAllAvailableBtn.disabled = false;
+        markAllUnavailableBtn.disabled = false;
+        saveAvailabilityBtn.disabled = false;
+        markAllAvailableBtn.style.opacity = '1';
+        markAllUnavailableBtn.style.opacity = '1';
+        saveAvailabilityBtn.style.opacity = '1';
+        markAllAvailableBtn.style.cursor = 'pointer';
+        markAllUnavailableBtn.style.cursor = 'pointer';
+        saveAvailabilityBtn.style.cursor = 'pointer';
+        lockMessage.style.display = 'none';
+      }
 
       const matchResultSection = document.getElementById('match-result-section');
       if (isPastFixture) {
@@ -1372,6 +1410,9 @@ if (!authenticated) {
             dutiesCellContent = '<span class="duties-disabled">Not selected</span>';
           }
 
+          // Check if checkboxes should be disabled (past fixture + not super admin)
+          const isLocked = isPastFixture && !isSuperAdmin;
+
           return `
       <tr class="player-row">
         <td><strong>${escapeHtml(player.playerName)}</strong>${badges.join('')}</td>
@@ -1381,6 +1422,7 @@ if (!authenticated) {
             data-player-id="${player.playerId}"
             data-field="wasAvailable"
             ${player.wasAvailable ? 'checked' : ''}
+            ${isLocked ? 'disabled' : ''}
             onchange="handleCheckboxChange(event)"
           />
         </td>
@@ -1390,11 +1432,11 @@ if (!authenticated) {
             data-player-id="${player.playerId}"
             data-field="wasSelected"
             ${player.wasSelected ? 'checked' : ''}
-            ${!player.wasAvailable ? 'disabled' : ''}
+            ${!player.wasAvailable || isLocked ? 'disabled' : ''}
             onchange="handleCheckboxChange(event)"
           />
         </td>
-        <td class="${dutiesCellClass}" ${dutiesCellOnClick}>
+        <td class="${dutiesCellClass}" ${isLocked ? '' : dutiesCellOnClick}>
           <div class="duties-badges">
             ${dutiesCellContent}
           </div>

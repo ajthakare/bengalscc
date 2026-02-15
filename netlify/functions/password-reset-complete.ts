@@ -135,11 +135,13 @@ export const handler: Handler = async (
     const passwordHash = await hashPassword(temporaryPassword);
 
     // Update user password
-    players[userIndex] = {
+    const updatedUser = {
       ...user,
       passwordHash,
       updatedAt: new Date().toISOString(),
+      updatedBy: session.email,
     };
+    players[userIndex] = updatedUser;
 
     // Save updated players
     await playersStore.setJSON('players-all', players);

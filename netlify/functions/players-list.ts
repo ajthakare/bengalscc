@@ -41,20 +41,6 @@ export const handler: Handler = async (
     const players =
       (await store.get('players-all', { type: 'json' })) as Player[] | null;
 
-    // Debug: Log players with auth fields
-    if (players) {
-      const membersWithAuth = players.filter(p => p.passwordHash || p.registrationStatus);
-      console.log('Players with auth fields in database:', membersWithAuth.length);
-      if (membersWithAuth.length > 0) {
-        console.log('Sample member with auth:', {
-          id: membersWithAuth[0].id,
-          email: membersWithAuth[0].email,
-          hasPasswordHash: !!membersWithAuth[0].passwordHash,
-          registrationStatus: membersWithAuth[0].registrationStatus
-        });
-      }
-    }
-
     if (!players || players.length === 0) {
       return {
         statusCode: 200,

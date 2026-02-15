@@ -45,75 +45,7 @@ export const handler: Handler = async (
     // Determine if in production
     const isProduction = process.env.NODE_ENV === 'production';
 
-    // STEP 1: Check admin-users store first
-    const adminStore = getStore({
-      name: 'admin-users',
-      siteID: process.env.SITE_ID || '',
-      token: process.env.NETLIFY_AUTH_TOKEN || '',
-    });
-    const adminUsers =
-      (await adminStore.get('users', { type: 'json' })) as AdminUser[] | null;
-
-    if (adminUsers && adminUsers.length > 0) {
-      const adminUser = adminUsers.find((u) => u.username === loginIdentifier);
-
-      if (adminUser) {
-        // Admin user found - verify password
-        const isValid = await verifyPassword(password, adminUser.passwordHash);
-        if (!isValid) {
-          return {
-            statusCode: 401,
-            body: JSON.stringify({ error: 'Invalid credentials' }),
-          };
-        }
-
-        // Get user role (with fallback for unmigrated users)
-        const userRole = adminUser.role || (loginIdentifier === 'admin' ? 'super_admin' : 'admin');
-
-        // Check if this admin has a linked player record (promoted member)
-        const playersStore = getStore({
-          name: 'players',
-          siteID: process.env.SITE_ID || '',
-          token: process.env.NETLIFY_AUTH_TOKEN || '',
-        });
-        const playersData = await playersStore.get('players-all', { type: 'json' });
-        const players: Player[] = (playersData as Player[]) || [];
-
-        // Find player by email matching admin username
-        const linkedPlayer = players.find(
-          (p) => p.email?.toLowerCase() === adminUser.username.toLowerCase()
-        );
-
-        // Use player ID if linked, otherwise use admin fallback
-        const userId = linkedPlayer ? linkedPlayer.id : 'admin-' + adminUser.username;
-
-        // Create session token
-        const token = createSession(userId, loginIdentifier, userRole, adminUser.username);
-
-        // Create session cookie
-        const cookie = createSessionCookie(token, isProduction);
-
-        return {
-          statusCode: 200,
-          headers: {
-            'Set-Cookie': cookie,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            success: true,
-            message: 'Login successful',
-            user: {
-              email: loginIdentifier,
-              username: adminUser.username,
-              role: userRole,
-            },
-            redirectTo: '/',
-          }),
-        };
-      }
-    }
-
-    // STEP 2: Check players store for member login
+    // Check players store for all logins (members, admins, super_admins)
     const playersStore = getStore({
       name: 'players',
       siteID: process.env.SITE_ID || '',
@@ -181,8 +113,13 @@ export const handler: Handler = async (
     // Get role (default to 'member' if not set)
     const role: AuthRole = player.role_auth || 'member';
 
+    // Create display username (for admins, use name; for members, use email)
+    const displayName = role === 'super_admin' || role === 'admin'
+      ? `${player.firstName} ${player.lastName}`.trim() || player.email
+      : undefined;
+
     // Create session token
-    const token = createSession(player.id, player.email!, role);
+    const token = createSession(player.id, player.email!, role, displayName);
 
     // Create session cookie
     const cookie = createSessionCookie(token, isProduction);
@@ -195,12 +132,15 @@ export const handler: Handler = async (
     });
     const auditLogs = (await auditLogsStore.get('logs', { type: 'json' })) || [];
 
+    // Determine redirect based on role
+    const redirectTo = role === 'super_admin' || role === 'admin' ? '/admin' : '/';
+
     auditLogs.push({
       id: uuidv4(),
       timestamp: new Date().toISOString(),
-      action: 'MEMBER_LOGIN',
+      action: role === 'super_admin' || role === 'admin' ? 'ADMIN_LOGIN' : 'MEMBER_LOGIN',
       username: player.email,
-      details: `Member login: ${player.firstName} ${player.lastName}`,
+      details: `${role} login: ${player.firstName} ${player.lastName}`,
       entityType: 'player',
       entityId: player.id,
     });
@@ -223,7 +163,7 @@ export const handler: Handler = async (
           lastName: player.lastName,
           role,
         },
-        redirectTo: '/',
+        redirectTo,
       }),
     };
   } catch (error) {

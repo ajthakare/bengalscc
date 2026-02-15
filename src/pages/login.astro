@@ -51,9 +51,18 @@ if (cookieHeader) {
           </div>
 
           <div>
-            <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
-              Password
-            </label>
+            <div class="flex justify-between items-center mb-2">
+              <label for="password" class="block text-sm font-medium text-gray-700">
+                Password
+              </label>
+              <button
+                type="button"
+                id="forgot-password-link"
+                class="text-sm text-[#f67280] hover:underline"
+              >
+                Forgot Password?
+              </button>
+            </div>
             <input
               type="password"
               id="password"
@@ -89,6 +98,67 @@ if (cookieHeader) {
         <a href="/" class="hover:text-[#f67280] transition-colors">
           &larr; Back to Website
         </a>
+      </div>
+    </div>
+  </div>
+
+  {/* Forgot Password Modal */}
+  <div id="forgot-password-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Forgot Password?</h2>
+        <button id="modal-close" class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-4 text-gray-700">
+          Enter your email address and we'll submit a password reset request to our administrators.
+          You'll receive a temporary password that you can use to log in and change your password.
+        </p>
+
+        <form id="forgot-password-form">
+          <div class="mb-4">
+            <label for="reset-email" class="block text-sm font-medium text-gray-700 mb-2">
+              Email Address
+            </label>
+            <input
+              type="email"
+              id="reset-email"
+              name="email"
+              required
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#f67280] focus:border-transparent"
+              placeholder="Enter your email"
+            />
+          </div>
+
+          <div id="forgot-error-message" class="hidden mb-4">
+            <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+              <span id="forgot-error-text"></span>
+            </div>
+          </div>
+
+          <div id="forgot-success-message" class="hidden mb-4">
+            <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
+              <span id="forgot-success-text"></span>
+            </div>
+          </div>
+
+          <div class="flex gap-3">
+            <button
+              type="button"
+              id="modal-cancel"
+              class="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              id="forgot-submit-button"
+              class="flex-1 bg-[#f67280] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#e55a6a] transition-colors"
+            >
+              Submit Request
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
@@ -158,6 +228,102 @@ if (cookieHeader) {
       submitButton.textContent = 'Sign In';
     }
   });
+
+  // Forgot password modal handling
+  const forgotPasswordLink = document.getElementById('forgot-password-link') as HTMLButtonElement;
+  const forgotPasswordModal = document.getElementById('forgot-password-modal') as HTMLDivElement;
+  const modalClose = document.getElementById('modal-close') as HTMLButtonElement;
+  const modalCancel = document.getElementById('modal-cancel') as HTMLButtonElement;
+  const forgotPasswordForm = document.getElementById('forgot-password-form') as HTMLFormElement;
+  const forgotSubmitButton = document.getElementById('forgot-submit-button') as HTMLButtonElement;
+  const forgotErrorMessage = document.getElementById('forgot-error-message') as HTMLDivElement;
+  const forgotErrorText = document.getElementById('forgot-error-text') as HTMLSpanElement;
+  const forgotSuccessMessage = document.getElementById('forgot-success-message') as HTMLDivElement;
+  const forgotSuccessText = document.getElementById('forgot-success-text') as HTMLSpanElement;
+
+  function showForgotError(message: string) {
+    forgotErrorText.textContent = message;
+    forgotErrorMessage.classList.remove('hidden');
+    forgotSuccessMessage.classList.add('hidden');
+  }
+
+  function showForgotSuccess(message: string) {
+    forgotSuccessText.textContent = message;
+    forgotSuccessMessage.classList.remove('hidden');
+    forgotErrorMessage.classList.add('hidden');
+  }
+
+  function hideForgotMessages() {
+    forgotErrorMessage.classList.add('hidden');
+    forgotSuccessMessage.classList.add('hidden');
+  }
+
+  function openForgotPasswordModal() {
+    forgotPasswordModal.style.display = 'flex';
+    hideForgotMessages();
+    forgotPasswordForm.reset();
+  }
+
+  function closeForgotPasswordModal() {
+    forgotPasswordModal.style.display = 'none';
+    hideForgotMessages();
+    forgotPasswordForm.reset();
+  }
+
+  forgotPasswordLink.addEventListener('click', openForgotPasswordModal);
+  modalClose.addEventListener('click', closeForgotPasswordModal);
+  modalCancel.addEventListener('click', closeForgotPasswordModal);
+
+  // Close modal when clicking outside
+  forgotPasswordModal.addEventListener('click', (e) => {
+    if (e.target === forgotPasswordModal) {
+      closeForgotPasswordModal();
+    }
+  });
+
+  forgotPasswordForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideForgotMessages();
+
+    const formData = new FormData(forgotPasswordForm);
+    const email = formData.get('email') as string;
+
+    // Disable submit button
+    forgotSubmitButton.disabled = true;
+    forgotSubmitButton.textContent = 'Submitting...';
+
+    try {
+      const response = await fetch('/.netlify/functions/password-reset-request', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        showForgotSuccess(
+          data.message ||
+          'Password reset request submitted successfully! An admin will review your request and contact you with a temporary password. Please check your email or contact the club administrator.'
+        );
+        forgotPasswordForm.reset();
+
+        // Close modal after 5 seconds
+        setTimeout(() => {
+          closeForgotPasswordModal();
+        }, 5000);
+      } else {
+        showForgotError(data.error || 'Failed to submit request. Please try again.');
+      }
+    } catch (error) {
+      showForgotError('Network error. Please try again.');
+    } finally {
+      forgotSubmitButton.disabled = false;
+      forgotSubmitButton.textContent = 'Submit Request';
+    }
+  });
 </script>
 
 <style>
@@ -180,5 +346,65 @@ if (cookieHeader) {
 
   a:hover {
     color: var(--color-primary) !important;
+  }
+
+  /* Modal Styles */
+  .modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+  }
+
+  .modal-content {
+    background: white;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .modal-header h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #111827;
+    margin: 0;
+  }
+
+  .modal-close-btn {
+    background: none;
+    border: none;
+    font-size: 1.75rem;
+    color: #6b7280;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-close-btn:hover {
+    color: #374151;
+  }
+
+  .modal-body {
+    padding: 1.5rem;
   }
 </style>

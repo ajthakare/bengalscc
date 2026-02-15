@@ -59,6 +59,10 @@ if (!isSuperAdmin) {
         Member Registrations
         <span id="pending-count-badge" class="badge" style="display: none;"></span>
       </button>
+      <button class="tab-button" data-tab="password-reset">
+        Password Reset Requests
+        <span id="password-reset-badge" class="badge" style="display: none;"></span>
+      </button>
     </div>
         {/* Admin Users Tab */}
         <div class="tab-content active" data-tab-content="admin-users">
@@ -193,6 +197,85 @@ if (!isSuperAdmin) {
               </div>
               <div id="no-members" class="state-container" style="display: none;">
                 <p class="state-text">No member registrations found</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Password Reset Requests Tab */}
+        <div class="tab-content" data-tab-content="password-reset">
+          <div class="card">
+            <h2 class="card-title">Password Reset Requests</h2>
+            <p class="text-body-base text-gray-600 mb-4">
+              Manage password reset requests from users who forgot their passwords.
+            </p>
+
+            <div id="loading-reset-requests" class="state-container">
+              <div class="spinner"></div>
+              <p class="state-text">Loading password reset requests...</p>
+            </div>
+
+            <div id="reset-requests-error" class="alert alert-error" style="display: none;">
+              <p id="reset-requests-error-text"></p>
+            </div>
+
+            <div id="reset-requests-table-container" style="display: none;">
+              <div class="table-container">
+                <table class="reset-requests-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th>Requested</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="reset-requests-tbody">
+                  </tbody>
+                </table>
+              </div>
+              <div id="no-reset-requests" class="state-container" style="display: none;">
+                <p class="state-text">No password reset requests found</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Password Reset Modal */}
+        <div id="reset-password-modal" class="modal" style="display: none;">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h2>Reset Password</h2>
+              <button class="modal-close" onclick="closeResetPasswordModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+              <div class="alert alert-warning mb-4">
+                <p><strong>⚠️ Important:</strong></p>
+                <p>A temporary password will be generated. You must share this password with the user via phone, text, or in person.</p>
+              </div>
+
+              <div id="reset-password-details" class="member-details mb-4"></div>
+
+              <div id="temp-password-display" class="alert alert-success" style="display: none;">
+                <p><strong>✅ Password Reset Successful!</strong></p>
+                <p class="mt-2 mb-2">Temporary Password:</p>
+                <div class="temp-password-box">
+                  <code id="temp-password-value" class="temp-password-code"></code>
+                  <button onclick="copyTempPassword()" class="copy-btn" title="Copy to clipboard">📋</button>
+                </div>
+                <p class="mt-3 text-sm">Share this password with <strong id="temp-password-user"></strong> via phone or text. They should change it immediately after logging in via their profile page.</p>
+              </div>
+
+              <div id="reset-password-error" class="alert alert-error" style="display: none;">
+                <span id="reset-password-error-text"></span>
+              </div>
+
+              <div class="modal-actions">
+                <button type="button" class="btn-secondary" onclick="closeResetPasswordModal()">Close</button>
+                <button type="button" id="confirm-reset-button" class="btn-primary" onclick="confirmPasswordReset()">
+                  Reset Password
+                </button>
               </div>
             </div>
           </div>
@@ -765,6 +848,250 @@ if (!isSuperAdmin) {
       }
     };
 
+    // Password Reset Requests Management
+    let resetRequests = [];
+    let currentResetRequestId = null;
+    const loadingResetRequests = document.getElementById('loading-reset-requests');
+    const resetRequestsError = document.getElementById('reset-requests-error');
+    const resetRequestsErrorText = document.getElementById('reset-requests-error-text');
+    const resetRequestsTableContainer = document.getElementById('reset-requests-table-container');
+    const resetRequestsTbody = document.getElementById('reset-requests-tbody');
+    const noResetRequests = document.getElementById('no-reset-requests');
+    const passwordResetBadge = document.getElementById('password-reset-badge');
+
+    async function loadResetRequests() {
+      try {
+        loadingResetRequests.style.display = 'flex';
+        resetRequestsError.style.display = 'none';
+        resetRequestsTableContainer.style.display = 'none';
+
+        const response = await fetch('/.netlify/functions/password-reset-requests-list', {
+          credentials: 'same-origin'
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to load password reset requests');
+        }
+
+        resetRequests = await response.json();
+
+        // Count pending requests
+        const pendingCount = resetRequests.filter(r => r.status === 'pending').length;
+        if (pendingCount > 0) {
+          passwordResetBadge.textContent = pendingCount;
+          passwordResetBadge.style.display = 'inline-block';
+        } else {
+          passwordResetBadge.style.display = 'none';
+        }
+
+        loadingResetRequests.style.display = 'none';
+        resetRequestsTableContainer.style.display = 'block';
+
+        renderResetRequests();
+      } catch (error) {
+        loadingResetRequests.style.display = 'none';
+        resetRequestsError.style.display = 'block';
+        resetRequestsErrorText.textContent = error instanceof Error ? error.message : 'Unknown error';
+      }
+    }
+
+    function renderResetRequests() {
+      resetRequestsTbody.innerHTML = '';
+
+      if (resetRequests.length === 0) {
+        resetRequestsTbody.style.display = 'none';
+        noResetRequests.style.display = 'flex';
+        return;
+      }
+
+      resetRequestsTbody.style.display = '';
+      noResetRequests.style.display = 'none';
+
+      resetRequests.forEach((request) => {
+        const row = document.createElement('tr');
+
+        const requestedDate = new Date(request.requestedAt);
+        const formattedDate = requestedDate.toLocaleDateString() + ' ' + requestedDate.toLocaleTimeString();
+
+        const statusColors = {
+          pending: 'bg-yellow-100 text-yellow-800',
+          completed: 'bg-green-100 text-green-800',
+          rejected: 'bg-red-100 text-red-800',
+          closed: 'bg-gray-100 text-gray-800'
+        };
+
+        const statusClass = statusColors[request.status] || '';
+
+        let actions = '';
+        if (request.status === 'pending') {
+          actions = `
+            <button onclick="openResetPasswordModal('${request.id}')" class="btn-approve">Reset Password</button>
+            <button onclick="rejectResetRequest('${request.id}')" class="btn-reject">Reject</button>
+          `;
+        } else if (request.status === 'completed') {
+          const completedDate = request.completedAt ? new Date(request.completedAt).toLocaleDateString() : 'N/A';
+          actions = `
+            <div class="action-group">
+              <span class="text-sm text-gray-600">Completed on ${completedDate}</span>
+              <button onclick="closeResetRequest('${request.id}')" class="btn-close" title="Close after confirming user changed password">Close</button>
+            </div>
+          `;
+        } else if (request.status === 'rejected') {
+          const rejectedDate = request.completedAt ? new Date(request.completedAt).toLocaleDateString() : 'N/A';
+          actions = `<span class="text-sm text-gray-600">Rejected on ${rejectedDate}</span>`;
+        } else if (request.status === 'closed') {
+          const closedDate = request.closedAt ? new Date(request.closedAt).toLocaleDateString() : 'N/A';
+          actions = `<span class="text-sm text-gray-600">✓ Closed on ${closedDate}</span>`;
+        }
+
+        row.innerHTML = `
+          <td class="member-name">${request.firstName} ${request.lastName}</td>
+          <td>${request.email}</td>
+          <td class="member-date">${formattedDate}</td>
+          <td><span class="status-badge ${statusClass}">${request.status}</span></td>
+          <td class="member-actions">${actions}</td>
+        `;
+
+        resetRequestsTbody.appendChild(row);
+      });
+    }
+
+    window.openResetPasswordModal = function(requestId) {
+      currentResetRequestId = requestId;
+      const request = resetRequests.find(r => r.id === requestId);
+      if (!request) return;
+
+      // Show request details
+      document.getElementById('reset-password-details').innerHTML = `
+        <div class="detail-grid">
+          <div><strong>Name:</strong> ${request.firstName} ${request.lastName}</div>
+          <div><strong>Email:</strong> ${request.email}</div>
+          <div><strong>Requested:</strong> ${new Date(request.requestedAt).toLocaleString()}</div>
+        </div>
+      `;
+
+      // Hide temp password display and show reset button
+      document.getElementById('temp-password-display').style.display = 'none';
+      document.getElementById('reset-password-error').style.display = 'none';
+      document.getElementById('confirm-reset-button').style.display = 'block';
+
+      document.getElementById('reset-password-modal').style.display = 'flex';
+    };
+
+    window.closeResetPasswordModal = function() {
+      document.getElementById('reset-password-modal').style.display = 'none';
+      currentResetRequestId = null;
+    };
+
+    window.confirmPasswordReset = async function() {
+      if (!currentResetRequestId) return;
+
+      const confirmResetButton = document.getElementById('confirm-reset-button');
+      const resetPasswordError = document.getElementById('reset-password-error');
+      const resetPasswordErrorText = document.getElementById('reset-password-error-text');
+
+      confirmResetButton.disabled = true;
+      confirmResetButton.textContent = 'Resetting...';
+      resetPasswordError.style.display = 'none';
+
+      try {
+        const response = await fetch('/.netlify/functions/password-reset-complete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ requestId: currentResetRequestId })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to reset password');
+        }
+
+        // Display temporary password
+        document.getElementById('temp-password-value').textContent = data.temporaryPassword;
+        document.getElementById('temp-password-user').textContent = data.userName;
+        document.getElementById('temp-password-display').style.display = 'block';
+        document.getElementById('confirm-reset-button').style.display = 'none';
+
+        // Reload requests list
+        await loadResetRequests();
+      } catch (error) {
+        resetPasswordError.style.display = 'block';
+        resetPasswordErrorText.textContent = error instanceof Error ? error.message : 'Unknown error';
+        confirmResetButton.disabled = false;
+        confirmResetButton.textContent = 'Reset Password';
+      }
+    };
+
+    window.copyTempPassword = function() {
+      const tempPassword = document.getElementById('temp-password-value').textContent;
+      navigator.clipboard.writeText(tempPassword).then(() => {
+        alert('Temporary password copied to clipboard!');
+      }).catch(() => {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = tempPassword;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        alert('Temporary password copied to clipboard!');
+      });
+    };
+
+    window.rejectResetRequest = async function(requestId) {
+      if (!confirm('Are you sure you want to reject this password reset request?')) {
+        return;
+      }
+
+      try {
+        const response = await fetch('/.netlify/functions/password-reset-reject', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ requestId })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to reject request');
+        }
+
+        alert('Password reset request rejected');
+        await loadResetRequests();
+      } catch (error) {
+        alert('Failed to reject request: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      }
+    };
+
+    window.closeResetRequest = async function(requestId) {
+      if (!confirm('Have you confirmed that the user has successfully changed their password?\n\nClick OK to close this request.')) {
+        return;
+      }
+
+      try {
+        const response = await fetch('/.netlify/functions/password-reset-close', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ requestId })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to close request');
+        }
+
+        alert('Password reset request closed successfully!');
+        await loadResetRequests();
+      } catch (error) {
+        alert('Failed to close request: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      }
+    };
+
     // Tab switching event listeners
     tabButtons.forEach(button => {
       button.addEventListener('click', () => {
@@ -790,6 +1117,8 @@ if (!isSuperAdmin) {
         } else if (targetTab === 'admin-users') {
           loadUsers();
           loadMembersForPromotion();
+        } else if (targetTab === 'password-reset') {
+          loadResetRequests();
         }
       });
     });
@@ -1016,7 +1345,7 @@ if (!isSuperAdmin) {
     background: #e5e7eb;
   }
 
-  .btn-approve, .btn-reject, .btn-suspend, .btn-delete {
+  .btn-approve, .btn-reject, .btn-suspend, .btn-delete, .btn-close {
     padding: 6px 12px;
     border: none;
     border-radius: 6px;
@@ -1066,6 +1395,21 @@ if (!isSuperAdmin) {
   .btn-delete.disabled {
     opacity: 0.4;
     cursor: not-allowed;
+  }
+
+  .btn-close {
+    background: #3b82f6;
+    color: white;
+  }
+
+  .btn-close:hover {
+    background: #2563eb;
+  }
+
+  .action-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
   }
 
   /* State Container */
@@ -1248,6 +1592,74 @@ if (!isSuperAdmin) {
     margin-top: 24px;
   }
 
+  /* Temporary Password Display */
+  .temp-password-box {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: white;
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 2px solid #10b981;
+    margin: 8px 0;
+  }
+
+  .temp-password-code {
+    flex: 1;
+    font-family: 'Courier New', monospace;
+    font-size: 18px;
+    font-weight: 600;
+    color: #059669;
+    letter-spacing: 1px;
+  }
+
+  .copy-btn {
+    padding: 6px 12px;
+    background: #10b981;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.2s;
+  }
+
+  .copy-btn:hover {
+    background: #059669;
+    transform: scale(1.05);
+  }
+
+  /* Reset Requests Table */
+  .reset-requests-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .reset-requests-table thead {
+    background: var(--color-bg-card);
+  }
+
+  .reset-requests-table th {
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .reset-requests-table td {
+    padding: 16px;
+    font-size: 14px;
+    color: var(--color-text-body);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .reset-requests-table tbody tr:hover {
+    background: var(--color-bg-card);
+  }
+
   /* Responsive */
   @media (max-width: 768px) {
     .form-grid, .detail-grid {
@@ -1260,6 +1672,15 @@ if (!isSuperAdmin) {
 
     .tab-button {
       white-space: nowrap;
+    }
+
+    .temp-password-box {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .temp-password-code {
+      font-size: 16px;
     }
   }
 </style>

@@ -117,7 +117,7 @@ export const handler: Handler = async (
       token: process.env.NETLIFY_AUTH_TOKEN || '',
     });
 
-    const playersData = await playersStore.get('players', { type: 'json' }) as any[] | null;
+    const playersData = await playersStore.get('players-all', { type: 'json' }) as any[] | null;
     const players = playersData || [];
 
     // Find the user
@@ -142,7 +142,7 @@ export const handler: Handler = async (
     };
 
     // Save updated players
-    await playersStore.set('players', JSON.stringify(players));
+    await playersStore.setJSON('players-all', players);
 
     // Mark request as completed
     requests[requestIndex] = {

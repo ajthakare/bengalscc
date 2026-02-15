@@ -48,7 +48,7 @@ export const handler: Handler = async (
       token: process.env.NETLIFY_AUTH_TOKEN || '',
     });
 
-    const playersData = await playersStore.get('players', { type: 'json' }) as any[] | null;
+    const playersData = await playersStore.get('players-all', { type: 'json' }) as any[] | null;
     const players = playersData || [];
 
     // Find user by email (case-insensitive)

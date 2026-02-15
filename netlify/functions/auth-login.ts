@@ -132,8 +132,8 @@ export const handler: Handler = async (
     });
     const auditLogs = (await auditLogsStore.get('logs', { type: 'json' })) || [];
 
-    // Determine redirect based on role
-    const redirectTo = role === 'super_admin' || role === 'admin' ? '/admin' : '/';
+    // Redirect all users to homepage after login
+    const redirectTo = '/';
 
     auditLogs.push({
       id: uuidv4(),

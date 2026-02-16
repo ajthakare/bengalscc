@@ -29,98 +29,50 @@ export const handler: Handler = async (
       };
     }
 
-    // Determine user type by session role and load user data
-    let userData: any = {};
+    // Load user data from players store only
+    const playersStore = getStore({
+      name: 'players',
+      siteID: process.env.SITE_ID || '',
+      token: process.env.NETLIFY_AUTH_TOKEN || '',
+    });
+    const playersData = await playersStore.get('players-all', { type: 'json' });
+    const players: Player[] = (playersData as Player[]) || [];
 
-    if (session.role === 'super_admin' || session.role === 'admin') {
-      // Load from admin-users store
-      const adminStore = getStore({
-        name: 'admin-users',
-        siteID: process.env.SITE_ID || '',
-        token: process.env.NETLIFY_AUTH_TOKEN || '',
-      });
-      const adminUsers =
-        (await adminStore.get('users', { type: 'json' })) as AdminUser[] | null;
+    const player = players.find((p) => p.id === session.userId);
 
-      if (adminUsers) {
-        const adminUser = adminUsers.find((u) => u.username === session.username);
-        if (adminUser) {
-          // Load full player record if they have one (promoted members)
-          const playersStore = getStore({
-            name: 'players',
-            siteID: process.env.SITE_ID || '',
-            token: process.env.NETLIFY_AUTH_TOKEN || '',
-          });
-          const playersData = await playersStore.get('players-all', { type: 'json' });
-          const players: Player[] = (playersData as Player[]) || [];
-          const player = players.find((p) => p.id === session.userId);
-
-          if (player) {
-            // Return full player data for promoted members
-            userData = {
-              id: player.id,
-              email: player.email,
-              firstName: player.firstName,
-              lastName: player.lastName,
-              phone: player.phone,
-              usacId: player.usacId,
-              role: player.role, // Playing role/position (Batsman, Bowler, etc.)
-              role_auth: session.role, // Authentication role (admin, super_admin)
-            };
-          } else {
-            // Old-style admin without player record
-            userData = {
-              username: adminUser.username,
-              role: session.role,
-              firstName: adminUser.username, // Use username as name
-            };
-          }
-        }
-      }
-    } else if (session.role === 'member') {
-      // Load from players store
-      const playersStore = getStore({
-        name: 'players',
-        siteID: process.env.SITE_ID || '',
-        token: process.env.NETLIFY_AUTH_TOKEN || '',
-      });
-      const playersData = await playersStore.get('players-all', { type: 'json' });
-      const players: Player[] = (playersData as Player[]) || [];
-
-      const player = players.find((p) => p.id === session.userId);
-
-      if (!player) {
-        return {
-          statusCode: 401,
-          body: JSON.stringify({
-            authenticated: false,
-            error: 'User not found',
-          }),
-        };
-      }
-
-      // Check if member is still approved
-      if (player.registrationStatus !== 'approved') {
-        return {
-          statusCode: 401,
-          body: JSON.stringify({
-            authenticated: false,
-            error: 'Account no longer active',
-          }),
-        };
-      }
-
-      userData = {
-        id: player.id,
-        email: player.email,
-        firstName: player.firstName,
-        lastName: player.lastName,
-        phone: player.phone,
-        usacId: player.usacId,
-        role: player.role, // Playing role/position (Batsman, Bowler, etc.)
-        role_auth: session.role, // Authentication role (member, admin, super_admin)
+    if (!player) {
+      return {
+        statusCode: 401,
+        body: JSON.stringify({
+          authenticated: false,
+          error: 'User not found',
+        }),
       };
     }
+
+    // Check if member is still approved (skip check for admins)
+    const isAdminOrSuperAdmin = player.role_auth === 'admin' || player.role_auth === 'super_admin';
+    if (!isAdminOrSuperAdmin && player.registrationStatus !== 'approved') {
+      return {
+        statusCode: 401,
+        body: JSON.stringify({
+          authenticated: false,
+          error: 'Account no longer active',
+        }),
+      };
+    }
+
+    // Return user data with role from database (not JWT token)
+    const userData = {
+      id: player.id,
+      email: player.email,
+      firstName: player.firstName,
+      lastName: player.lastName,
+      phone: player.phone,
+      usacId: player.usacId,
+      role: player.role, // Playing role/position (Batsman, Bowler, etc.)
+      role_auth: player.role_auth || 'member', // Authentication role from database
+    };
 
     return {
       statusCode: 200,

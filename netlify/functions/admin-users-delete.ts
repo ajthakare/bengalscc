@@ -66,48 +66,63 @@ export const handler: Handler = async (
       };
     }
 
-    // Get admin users from Netlify Blobs
-    const store = getStore({
-      name: 'admin-users',
+    // Get players from Netlify Blobs
+    const playersStore = getStore({
+      name: 'players',
       siteID: process.env.SITE_ID || '',
       token: process.env.NETLIFY_AUTH_TOKEN || '',
     });
-    const users =
-      (await store.get('users', { type: 'json' })) as AdminUser[] | null;
+    const playersData = await playersStore.get('players-all', { type: 'json' });
+    const players = (playersData as any[]) || [];
 
-    if (!users || users.length === 0) {
+    // Find user by email
+    const playerIndex = players.findIndex((p: any) => p.email?.toLowerCase() === username.toLowerCase());
+    if (playerIndex === -1) {
       return {
         statusCode: 404,
         body: JSON.stringify({ error: 'User not found' }),
       };
     }
 
-    // Prevent deleting the last admin
-    if (users.length === 1) {
+    const player = players[playerIndex];
+    const oldRole = player.role_auth;
+
+    // Check if this is the last super admin
+    const superAdmins = players.filter((p: any) => p.role_auth === 'super_admin');
+    if (oldRole === 'super_admin' && superAdmins.length === 1) {
       return {
         statusCode: 400,
         body: JSON.stringify({
-          error: 'Cannot delete the last admin user',
+          error: 'Cannot remove the last super admin',
         }),
       };
     }
 
-    // Find user to delete
-    const userIndex = users.findIndex((u) => u.username === username);
-    if (userIndex === -1) {
-      return {
-        statusCode: 404,
-        body: JSON.stringify({ error: 'User not found' }),
-      };
+    // Demote admin to regular member (remove role_auth or set to 'member')
+    players[playerIndex].role_auth = 'member';
+    players[playerIndex].updatedAt = new Date().toISOString();
+    players[playerIndex].updatedBy = session.email || session.username;
+
+    // Save updated players
+    await playersStore.setJSON('players-all', players);
+
+    // Also remove from admin-users store for backwards compatibility
+    const adminStore = getStore({
+      name: 'admin-users',
+      siteID: process.env.SITE_ID || '',
+      token: process.env.NETLIFY_AUTH_TOKEN || '',
+    });
+    const adminUsers = (await adminStore.get('users', { type: 'json' })) as AdminUser[] | null;
+
+    if (adminUsers) {
+      const adminIndex = adminUsers.findIndex((u) => u.username === username);
+      if (adminIndex !== -1) {
+        adminUsers.splice(adminIndex, 1);
+        await adminStore.setJSON('users', adminUsers);
+      }
     }
 
-    const deletedUser = users[userIndex];
-
-    // Remove user from array
-    users.splice(userIndex, 1);
-
-    // Save updated users list
-    await store.set('users', JSON.stringify(users));
+    const deletedUser = { username, role: oldRole };
 
     // Wait for audit log to complete
     try {

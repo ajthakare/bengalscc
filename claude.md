@@ -81,9 +81,7 @@ bengalscc/
 │   │   └── [other functions]
 │   └── edge-functions/             # Edge function handlers
 ├── docs/                           # Project documentation
-│   ├── scripts/                    # Maintenance scripts (moved from root)
-│   │   ├── check-blob-usage.js
-│   │   ├── migrate-*.js
+│   ├── scripts/                    # Production-safe maintenance scripts
 │   │   └── generate-session-secret.cjs
 │   ├── guides/                     # User guides
 │   │   └── PLAYER_MANAGEMENT_GUIDE.md
@@ -91,6 +89,17 @@ bengalscc/
 │   ├── PLAYER_MANAGEMENT_PLAN.md   # Implementation plan
 │   ├── IMPLEMENTATION_STATUS.md    # Current status
 │   └── [other docs]
+├── local-debug/                    # 🚨 GIT-IGNORED: Debug/migration scripts (NEVER commit)
+│   ├── netlify-functions/          # Debug functions (security risk if deployed)
+│   │   ├── check-user.ts
+│   │   ├── fix-admin-role.ts
+│   │   ├── migrate-admins.ts
+│   │   └── debug-availability.ts
+│   ├── scripts/                    # Standalone debug/migration scripts
+│   │   ├── check-*.js
+│   │   ├── migrate-*.js
+│   │   └── migrate-*.mjs
+│   └── README.md                   # Security warnings and usage guidelines
 ├── astro.config.mjs                # Astro configuration
 ├── package.json                    # Dependencies
 ├── tsconfig.json                   # TypeScript config
@@ -454,12 +463,33 @@ try {
 
 ### Run Maintenance Scripts
 ```bash
-node docs/scripts/script-name.js
+# Production-safe scripts only
+node docs/scripts/generate-session-secret.cjs
 ```
 
-### Generate New Admin Session Secret
+### Run Debug Scripts (Local Only)
 ```bash
-node docs/scripts/generate-session-secret.cjs
+# Standalone scripts
+node local-debug/scripts/check-blob-usage.js
+node local-debug/scripts/migrate-admins-to-players.mjs
+
+# Test Netlify functions locally (temporary)
+cp local-debug/netlify-functions/check-user.ts netlify/functions/
+# Access at: http://localhost:8888/.netlify/functions/check-user
+rm netlify/functions/check-user.ts  # MUST remove after testing
+```
+
+### Create New Debug Script
+**ALWAYS create in `/local-debug/` folder - NEVER in production folders**
+```bash
+# For Netlify Functions
+touch local-debug/netlify-functions/debug-feature-name.ts
+
+# For standalone scripts
+touch local-debug/scripts/check-data-integrity.js
+
+# Update documentation
+# Add entry to local-debug/README.md with purpose and risks
 ```
 
 ## Important Technical Notes
@@ -545,6 +575,57 @@ node docs/scripts/generate-session-secret.cjs
 - Input sanitization
 - CSRF protection via same-origin policy
 - No sensitive data in client-side code
+
+### Debug Scripts and Security Risk Management
+
+**🚨 CRITICAL: Debug scripts are NEVER committed to production**
+
+**Location:** `/local-debug/` (git-ignored)
+
+**Why this matters:**
+- Scripts in `netlify/functions/` become publicly accessible at `/.netlify/functions/[script-name]`
+- Debug functions often bypass authentication for quick testing
+- Can expose sensitive user data or allow unauthorized modifications
+- Migration scripts can alter production data if accidentally triggered
+
+**When creating debug/migration scripts:**
+
+1. **Always create in `/local-debug/`** - Never in `netlify/functions/` or `docs/scripts/`
+2. **Folder structure:**
+   - `/local-debug/netlify-functions/` - Debug Netlify Functions (highest security risk)
+   - `/local-debug/scripts/` - Standalone Node.js scripts (lower risk)
+3. **Naming convention:**
+   - Prefix with purpose: `check-`, `fix-`, `migrate-`, `debug-`
+   - Include date for migrations: `migrate-admins-2026-02.ts`
+4. **Add documentation:** Update `/local-debug/README.md` with script purpose and risks
+
+**Testing debug functions locally:**
+```bash
+# Temporarily copy to netlify/functions for testing
+cp local-debug/netlify-functions/check-user.ts netlify/functions/
+# Test at: http://localhost:8888/.netlify/functions/check-user
+
+# MUST remove immediately after testing!
+rm netlify/functions/check-user.ts
+```
+
+**Common debug script types:**
+- `check-user.ts` - Query user status and roles
+- `fix-admin-role.ts` - Manually update user roles
+- `migrate-*.ts` - One-time data migrations
+- `debug-*.ts` - Debug specific features
+- `check-blob-usage.js` - Storage usage utilities
+
+**Before every commit:**
+```bash
+# Verify nothing from local-debug/ is staged
+git status | grep local-debug  # Should return nothing
+
+# Check for accidentally committed debug functions
+ls netlify/functions/ | grep -E "(check|fix|debug|migrate)"
+```
+
+**See `/local-debug/README.md` for complete usage guidelines and current script inventory.**
 
 ## Future Enhancements (Planned)
 

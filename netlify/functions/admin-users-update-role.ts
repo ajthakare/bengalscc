@@ -65,33 +65,28 @@ export const handler: Handler = async (
       };
     }
 
-    // Get admin users from Netlify Blobs
-    const store = getStore({
-      name: 'admin-users',
+    // Get players from Netlify Blobs
+    const playersStore = getStore({
+      name: 'players',
       siteID: process.env.SITE_ID || '',
       token: process.env.NETLIFY_AUTH_TOKEN || '',
     });
-    const users =
-      (await store.get('users', { type: 'json' })) as AdminUser[] | null;
+    const playersData = await playersStore.get('players-all', { type: 'json' });
+    const players = (playersData as any[]) || [];
 
-    if (!users || users.length === 0) {
+    // Find user by email (username is email)
+    const playerIndex = players.findIndex((p: any) => p.email?.toLowerCase() === username.toLowerCase());
+    if (playerIndex === -1) {
       return {
         statusCode: 404,
         body: JSON.stringify({ error: 'User not found' }),
       };
     }
 
-    // Find user
-    const userIndex = users.findIndex((u) => u.username === username);
-    if (userIndex === -1) {
-      return {
-        statusCode: 404,
-        body: JSON.stringify({ error: 'User not found' }),
-      };
-    }
+    const player = players[playerIndex];
 
     // Prevent removing super_admin from yourself
-    if (username === session.username && role !== 'super_admin') {
+    if (username === session.email && role !== 'super_admin') {
       return {
         statusCode: 400,
         body: JSON.stringify({
@@ -100,13 +95,31 @@ export const handler: Handler = async (
       };
     }
 
-    const oldRole = users[userIndex].role;
+    const oldRole = player.role_auth;
 
-    // Update user role
-    users[userIndex].role = role as AdminRole;
+    // Update user role in players store
+    players[playerIndex].role_auth = role;
+    players[playerIndex].updatedAt = new Date().toISOString();
+    players[playerIndex].updatedBy = session.email || session.username;
 
-    // Save updated users
-    await store.set('users', JSON.stringify(users));
+    // Save updated players
+    await playersStore.setJSON('players-all', players);
+
+    // Also update admin-users store for backwards compatibility
+    const adminStore = getStore({
+      name: 'admin-users',
+      siteID: process.env.SITE_ID || '',
+      token: process.env.NETLIFY_AUTH_TOKEN || '',
+    });
+    const adminUsers = (await adminStore.get('users', { type: 'json' })) as AdminUser[] | null;
+
+    if (adminUsers) {
+      const adminIndex = adminUsers.findIndex((u) => u.username === username);
+      if (adminIndex !== -1) {
+        adminUsers[adminIndex].role = role as AdminRole;
+        await adminStore.setJSON('users', adminUsers);
+      }
+    }
 
     // Wait for audit log to complete
     try {

@@ -37,16 +37,21 @@ export const handler: Handler = async (
       };
     }
 
-    // Get admin users from Netlify Blobs
-    const store = getStore({
-      name: 'admin-users',
+    // Get all players and filter for admins
+    const playersStore = getStore({
+      name: 'players',
       siteID: process.env.SITE_ID || '',
       token: process.env.NETLIFY_AUTH_TOKEN || '',
     });
-    const users =
-      (await store.get('users', { type: 'json' })) as AdminUser[] | null;
+    const playersData = await playersStore.get('players-all', { type: 'json' });
+    const players = (playersData as any[]) || [];
 
-    if (!users) {
+    // Filter players who have admin or super_admin role
+    const adminPlayers = players.filter(
+      (p: any) => p.role_auth === 'admin' || p.role_auth === 'super_admin'
+    );
+
+    if (!adminPlayers || adminPlayers.length === 0) {
       return {
         statusCode: 200,
         headers: {
@@ -57,10 +62,10 @@ export const handler: Handler = async (
     }
 
     // Return users without password hashes
-    const safeUsers = users.map((user) => ({
-      username: user.username,
-      role: user.role || (user.username === 'admin' ? 'super_admin' : 'admin'),
-      createdAt: user.createdAt,
+    const safeUsers = adminPlayers.map((player: any) => ({
+      username: player.email,
+      role: player.role_auth,
+      createdAt: player.createdAt || player.dateJoined,
     }));
 
     return {

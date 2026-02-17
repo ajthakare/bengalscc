@@ -253,43 +253,6 @@ if (!authenticated) {
         </div>
       </div>
 
-      <!-- Instagram Generation Section -->
-      <div id="instagram-generation-section" class="instagram-generation" style="display: none;">
-        <div class="section-header">
-          <h3>Generate Instagram Images</h3>
-          <p class="section-subtitle">Create shareable images for social media</p>
-        </div>
-
-        <div class="instagram-buttons">
-          <button
-            id="generate-post-btn"
-            class="btn-secondary btn-instagram"
-            type="button"
-            disabled
-          >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="3" width="14" height="14" rx="2"/>
-              <circle cx="10" cy="10" r="3"/>
-              <circle cx="15" cy="5" r="1" fill="currentColor"/>
-            </svg>
-            Generate Instagram Post
-          </button>
-
-          <button
-            id="generate-story-btn"
-            class="btn-secondary btn-instagram"
-            type="button"
-            disabled
-          >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="6" y="2" width="8" height="16" rx="1"/>
-              <circle cx="10" cy="10" r="2"/>
-            </svg>
-            Generate Instagram Story
-          </button>
-        </div>
-      </div>
-
       <!-- YouTube Video Section (for all fixtures) -->
       <div id="youtube-video-section" style="margin-top: 1rem; padding-top: 1.5rem; border-top: 2px solid #e5e7eb; padding: 1.5rem;">
         <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.5rem; color: #111827;">
@@ -801,45 +764,29 @@ if (!authenticated) {
     font-style: italic;
   }
 
-  /* Instagram Generation Section */
-  .instagram-generation {
-    margin-top: 2rem;
-    padding: 1.5rem;
-    background: linear-gradient(135deg, rgba(249, 115, 22, 0.05) 0%, rgba(249, 115, 22, 0.02) 100%);
-    border: 2px dashed rgba(249, 115, 22, 0.3);
-    border-radius: 12px;
-  }
-
-  .instagram-generation .section-header h3 {
-    font-size: 1.25rem;
-    font-weight: 700;
-    margin: 0 0 0.5rem 0;
-  }
-
-  .instagram-generation .section-subtitle {
-    font-size: 0.875rem;
-    color: var(--color-text-muted);
-    margin: 0 0 1rem 0;
-  }
-
-  .instagram-buttons {
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
-  }
-
-  .btn-instagram {
-    flex: 1;
-    min-width: 200px;
+  /* Modal styles for proper scrolling */
+  .modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
+    z-index: 9999;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
-  .btn-instagram:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  .modal-content {
+    background: white;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 900px;
+    max-height: 90vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 20px auto;
+    position: relative;
   }
 
   /* Mobile Responsive Styles */
@@ -891,10 +838,25 @@ if (!authenticated) {
       z-index: -1;
     }
 
-    /* Availability editor modal - full width */
-    .availability-modal .modal-content {
+    /* Modal - full width and scrollable on mobile */
+    .modal {
+      align-items: flex-start;
+      padding: 0;
+    }
+
+    .modal-content {
+      width: 100%;
       max-width: 100%;
-      max-height: 95vh;
+      max-height: 100vh;
+      margin: 0;
+      border-radius: 0;
+      overflow-y: auto;
+    }
+
+    /* Table wrapper - horizontal scroll if needed */
+    .table-container {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
     }
 
     /* Player availability grid - stack on mobile */
@@ -1163,6 +1125,34 @@ if (!authenticated) {
                 >
                   📱 Generate Announcement
                 </button>
+                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                  <button
+                    class="btn btn-sm"
+                    style="padding: 0.375rem 0.65rem; font-size: 0.8rem; background: #667eea; color: white; border: none; flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.3rem;"
+                    onclick="event.stopPropagation(); generateInstagramPostForFixture('${fixture.id}')"
+                    title="Generate Instagram post image"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                      <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                    </svg>
+                    Post
+                  </button>
+                  <button
+                    class="btn btn-sm"
+                    style="padding: 0.375rem 0.65rem; font-size: 0.8rem; background: #764ba2; color: white; border: none; flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.3rem;"
+                    onclick="event.stopPropagation(); generateInstagramStoryForFixture('${fixture.id}')"
+                    title="Generate Instagram story image"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                      <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                    </svg>
+                    Story
+                  </button>
+                </div>
               ` : ''}
             </div>
           </div>
@@ -2284,143 +2274,109 @@ Please let the captain know if you need an extra colored jersey.`;
 
   // ==================== Instagram Image Generation Functions ====================
 
-  // Show Instagram generation section when 11 players are selected
-  function updateInstagramButtonsVisibility() {
-    const selectedCount = currentAvailability?.playerAvailability.filter(p => p.wasSelected).length || 0;
-    const section = document.getElementById('instagram-generation-section');
-    const postBtn = document.getElementById('generate-post-btn');
-    const storyBtn = document.getElementById('generate-story-btn');
-
-    if (selectedCount === 11) {
-      section.style.display = 'block';
-      postBtn.disabled = false;
-      storyBtn.disabled = false;
-    } else {
-      section.style.display = 'none';
-      postBtn.disabled = true;
-      storyBtn.disabled = true;
-    }
-  }
-
-  // Call update visibility after rendering players
-  const originalRenderPlayers = renderPlayers;
-  renderPlayers = function() {
-    originalRenderPlayers();
-    updateInstagramButtonsVisibility();
-  };
-
-  // Generate Instagram Post
-  async function generateInstagramPost() {
-    if (!currentFixture || !currentAvailability) return;
-
-    const btn = document.getElementById('generate-post-btn');
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '<span class="spinner"></span> Generating...';
-    btn.disabled = true;
-
+  // Generate Instagram Post from fixture card
+  window.generateInstagramPostForFixture = async (fixtureId) => {
     try {
-      const selectedPlayers = currentAvailability.playerAvailability
+      const fixture = fixtures.find(f => f.id === fixtureId);
+      if (!fixture) return;
+
+      // Get availability data
+      const response = await fetch(`/.netlify/functions/availability-get?fixtureId=${fixtureId}`);
+      if (!response.ok) {
+        toast.error('Failed to load availability data');
+        return;
+      }
+
+      const availability = await response.json();
+      const selectedPlayers = availability.playerAvailability
         .filter(p => p.wasSelected)
         .sort((a, b) => a.playerName.localeCompare(b.playerName));
 
       if (selectedPlayers.length !== 11) {
-        toast.error('Please select exactly 11 players');
+        toast.error('Please select exactly 11 players first');
         return;
       }
 
-      // Determine captain
-      const captain = selectedPlayers.find(p => {
-        const rosterData = coreRosterMap.get(p.playerId);
-        return rosterData && rosterData.isCaptain;
-      });
+      // Load roster data to identify captain
+      let captainId = null;
+      try {
+        const rosterResponse = await fetch(
+          `/.netlify/functions/core-roster-list?seasonId=${fixture.seasonId}&teamName=${encodeURIComponent(fixture.team)}`
+        );
+        if (rosterResponse.ok) {
+          const roster = await rosterResponse.json();
+          const captain = roster.find(r => r.isCaptain);
+          if (captain) captainId = captain.playerId;
+        }
+      } catch (err) {
+        console.warn('Could not load captain data:', err);
+      }
 
-      const playersData = selectedPlayers.map((p, idx) => ({
-        name: `${p.playerName}`,
-        isCaptain: captain && p.playerId === captain.playerId
+      const playersData = selectedPlayers.map(p => ({
+        name: p.playerName,
+        isCaptain: captainId && p.playerId === captainId
       }));
 
-      // Check if html2canvas is loaded
-      if (typeof html2canvas === 'undefined') {
-        toast.error('Image generation library not loaded. Please refresh the page.');
-        return;
-      }
-
-      // Create template
-      const container = document.createElement('div');
-      container.style.position = 'absolute';
-      container.style.left = '-9999px';
-      container.style.top = '0';
-      document.body.appendChild(container);
-
-      const template = createPostTemplate(currentFixture, playersData);
-      container.innerHTML = template;
-
-      // Wait for fonts to load
-      await document.fonts.ready;
-
-      // Convert to canvas
-      const canvas = await window.html2canvas(container.firstElementChild, {
-        width: 1080,
-        height: 1350,
-        scale: 2,
-        backgroundColor: null,
-        logging: false,
-        useCORS: true,
-      });
-
-      // Convert to blob and download
-      canvas.toBlob((blob) => {
-        if (blob) {
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = `${currentFixture.team.replace(/\s+/g, '-')}-vs-${currentFixture.opponent.replace(/\s+/g, '-')}-post.png`;
-          link.click();
-          URL.revokeObjectURL(url);
-          toast.success('Instagram post generated successfully!');
-        }
-      }, 'image/png');
-
-      document.body.removeChild(container);
+      await generateInstagramImage(fixture, playersData, 'post');
     } catch (error) {
       console.error('Error generating post:', error);
       toast.error('Failed to generate Instagram post');
-    } finally {
-      btn.innerHTML = originalText;
-      btn.disabled = false;
     }
-  }
+  };
 
-  // Generate Instagram Story
-  async function generateInstagramStory() {
-    if (!currentFixture || !currentAvailability) return;
-
-    const btn = document.getElementById('generate-story-btn');
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '<span class="spinner"></span> Generating...';
-    btn.disabled = true;
-
+  // Generate Instagram Story from fixture card
+  window.generateInstagramStoryForFixture = async (fixtureId) => {
     try {
-      const selectedPlayers = currentAvailability.playerAvailability
+      const fixture = fixtures.find(f => f.id === fixtureId);
+      if (!fixture) return;
+
+      // Get availability data
+      const response = await fetch(`/.netlify/functions/availability-get?fixtureId=${fixtureId}`);
+      if (!response.ok) {
+        toast.error('Failed to load availability data');
+        return;
+      }
+
+      const availability = await response.json();
+      const selectedPlayers = availability.playerAvailability
         .filter(p => p.wasSelected)
         .sort((a, b) => a.playerName.localeCompare(b.playerName));
 
       if (selectedPlayers.length !== 11) {
-        toast.error('Please select exactly 11 players');
+        toast.error('Please select exactly 11 players first');
         return;
       }
 
-      // Determine captain
-      const captain = selectedPlayers.find(p => {
-        const rosterData = coreRosterMap.get(p.playerId);
-        return rosterData && rosterData.isCaptain;
-      });
+      // Load roster data to identify captain
+      let captainId = null;
+      try {
+        const rosterResponse = await fetch(
+          `/.netlify/functions/core-roster-list?seasonId=${fixture.seasonId}&teamName=${encodeURIComponent(fixture.team)}`
+        );
+        if (rosterResponse.ok) {
+          const roster = await rosterResponse.json();
+          const captain = roster.find(r => r.isCaptain);
+          if (captain) captainId = captain.playerId;
+        }
+      } catch (err) {
+        console.warn('Could not load captain data:', err);
+      }
 
-      const playersData = selectedPlayers.map((p, idx) => ({
-        name: `${p.playerName}`,
-        isCaptain: captain && p.playerId === captain.playerId
+      const playersData = selectedPlayers.map(p => ({
+        name: p.playerName,
+        isCaptain: captainId && p.playerId === captainId
       }));
 
+      await generateInstagramImage(fixture, playersData, 'story');
+    } catch (error) {
+      console.error('Error generating story:', error);
+      toast.error('Failed to generate Instagram story');
+    }
+  };
+
+  // Generate Instagram Image (refactored for both post and story)
+  async function generateInstagramImage(fixture, playersData, type = 'post') {
+    try {
       // Check if html2canvas is loaded
       if (typeof html2canvas === 'undefined') {
         toast.error('Image generation library not loaded. Please refresh the page.');
@@ -2434,16 +2390,22 @@ Please let the captain know if you need an extra colored jersey.`;
       container.style.top = '0';
       document.body.appendChild(container);
 
-      const template = createStoryTemplate(currentFixture, playersData);
+      const template = type === 'post'
+        ? createPostTemplate(fixture, playersData)
+        : createStoryTemplate(fixture, playersData);
       container.innerHTML = template;
 
       // Wait for fonts to load
       await document.fonts.ready;
 
       // Convert to canvas
+      const dimensions = type === 'post'
+        ? { width: 1080, height: 1350 }
+        : { width: 1080, height: 1920 };
+
       const canvas = await window.html2canvas(container.firstElementChild, {
-        width: 1080,
-        height: 1920,
+        width: dimensions.width,
+        height: dimensions.height,
         scale: 2,
         backgroundColor: null,
         logging: false,
@@ -2456,20 +2418,17 @@ Please let the captain know if you need an extra colored jersey.`;
           const url = URL.createObjectURL(blob);
           const link = document.createElement('a');
           link.href = url;
-          link.download = `${currentFixture.team.replace(/\s+/g, '-')}-vs-${currentFixture.opponent.replace(/\s+/g, '-')}-story.png`;
+          link.download = `${fixture.team.replace(/\s+/g, '-')}-vs-${fixture.opponent.replace(/\s+/g, '-')}-${type}.png`;
           link.click();
           URL.revokeObjectURL(url);
-          toast.success('Instagram story generated successfully!');
+          toast.success(`Instagram ${type} generated successfully!`);
         }
       }, 'image/png');
 
       document.body.removeChild(container);
     } catch (error) {
-      console.error('Error generating story:', error);
-      toast.error('Failed to generate Instagram story');
-    } finally {
-      btn.innerHTML = originalText;
-      btn.disabled = false;
+      console.error(`Error generating ${type}:`, error);
+      toast.error(`Failed to generate Instagram ${type}`);
     }
   }
 
@@ -2604,7 +2563,4 @@ Please let the captain know if you need an extra colored jersey.`;
     return `${days[date.getDay()]}, ${months[date.getMonth()]} ${date.getDate()} ${date.getFullYear()}`;
   }
 
-  // Add event listeners
-  document.getElementById('generate-post-btn')?.addEventListener('click', generateInstagramPost);
-  document.getElementById('generate-story-btn')?.addEventListener('click', generateInstagramStory);
 </script>

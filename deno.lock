@@ -30,6 +30,7 @@
         "npm:bcryptjs@^3.0.3",
         "npm:blobshape@1",
         "npm:cookie@^1.1.1",
+        "npm:html2canvas@^1.4.1",
         "npm:jsonwebtoken@^9.0.3",
         "npm:marked-shiki@^1.2.1",
         "npm:marked@17",

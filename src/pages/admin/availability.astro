@@ -253,6 +253,43 @@ if (!authenticated) {
         </div>
       </div>
 
+      <!-- Instagram Generation Section -->
+      <div id="instagram-generation-section" class="instagram-generation" style="display: none;">
+        <div class="section-header">
+          <h3>Generate Instagram Images</h3>
+          <p class="section-subtitle">Create shareable images for social media</p>
+        </div>
+
+        <div class="instagram-buttons">
+          <button
+            id="generate-post-btn"
+            class="btn-secondary btn-instagram"
+            type="button"
+            disabled
+          >
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="14" height="14" rx="2"/>
+              <circle cx="10" cy="10" r="3"/>
+              <circle cx="15" cy="5" r="1" fill="currentColor"/>
+            </svg>
+            Generate Instagram Post
+          </button>
+
+          <button
+            id="generate-story-btn"
+            class="btn-secondary btn-instagram"
+            type="button"
+            disabled
+          >
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="6" y="2" width="8" height="16" rx="1"/>
+              <circle cx="10" cy="10" r="2"/>
+            </svg>
+            Generate Instagram Story
+          </button>
+        </div>
+      </div>
+
       <!-- YouTube Video Section (for all fixtures) -->
       <div id="youtube-video-section" style="margin-top: 1rem; padding-top: 1.5rem; border-top: 2px solid #e5e7eb; padding: 1.5rem;">
         <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.5rem; color: #111827;">
@@ -340,6 +377,9 @@ if (!authenticated) {
       </div>
     </div>
   </div>
+
+  <!-- Load html2canvas from CDN -->
+  <script is:inline src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </AdminLayout>
 
 <style is:global>
@@ -759,6 +799,47 @@ if (!authenticated) {
     font-size: 0.75rem;
     color: #6b7280;
     font-style: italic;
+  }
+
+  /* Instagram Generation Section */
+  .instagram-generation {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.05) 0%, rgba(249, 115, 22, 0.02) 100%);
+    border: 2px dashed rgba(249, 115, 22, 0.3);
+    border-radius: 12px;
+  }
+
+  .instagram-generation .section-header h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+  }
+
+  .instagram-generation .section-subtitle {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    margin: 0 0 1rem 0;
+  }
+
+  .instagram-buttons {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .btn-instagram {
+    flex: 1;
+    min-width: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .btn-instagram:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   /* Mobile Responsive Styles */
@@ -2002,6 +2083,35 @@ if (!authenticated) {
     return div.innerHTML;
   }
 
+  // Toast notification helper
+  const toast = {
+    success: (message) => showToast(message, 'success'),
+    error: (message) => showToast(message, 'error'),
+    info: (message) => showToast(message, 'info')
+  };
+
+  function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    toast.style.cssText = `
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      padding: 1rem 1.5rem;
+      background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+      color: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 10000;
+      animation: slideIn 0.3s ease;
+    `;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+      toast.remove();
+    }, 3000);
+  }
+
   function formatDate(dateStr) {
     // Extract just the date part (YYYY-MM-DD) from ISO timestamp or date string
     const datePart = dateStr.split('T')[0]; // Handles both "2026-02-08" and "2026-02-08T00:00:00.000Z"
@@ -2171,4 +2281,330 @@ Please let the captain know if you need an extra colored jersey.`;
       closeAvailabilityModal();
     }
   });
+
+  // ==================== Instagram Image Generation Functions ====================
+
+  // Show Instagram generation section when 11 players are selected
+  function updateInstagramButtonsVisibility() {
+    const selectedCount = currentAvailability?.playerAvailability.filter(p => p.wasSelected).length || 0;
+    const section = document.getElementById('instagram-generation-section');
+    const postBtn = document.getElementById('generate-post-btn');
+    const storyBtn = document.getElementById('generate-story-btn');
+
+    if (selectedCount === 11) {
+      section.style.display = 'block';
+      postBtn.disabled = false;
+      storyBtn.disabled = false;
+    } else {
+      section.style.display = 'none';
+      postBtn.disabled = true;
+      storyBtn.disabled = true;
+    }
+  }
+
+  // Call update visibility after rendering players
+  const originalRenderPlayers = renderPlayers;
+  renderPlayers = function() {
+    originalRenderPlayers();
+    updateInstagramButtonsVisibility();
+  };
+
+  // Generate Instagram Post
+  async function generateInstagramPost() {
+    if (!currentFixture || !currentAvailability) return;
+
+    const btn = document.getElementById('generate-post-btn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner"></span> Generating...';
+    btn.disabled = true;
+
+    try {
+      const selectedPlayers = currentAvailability.playerAvailability
+        .filter(p => p.wasSelected)
+        .sort((a, b) => a.playerName.localeCompare(b.playerName));
+
+      if (selectedPlayers.length !== 11) {
+        toast.error('Please select exactly 11 players');
+        return;
+      }
+
+      // Determine captain
+      const captain = selectedPlayers.find(p => {
+        const rosterData = coreRosterMap.get(p.playerId);
+        return rosterData && rosterData.isCaptain;
+      });
+
+      const playersData = selectedPlayers.map((p, idx) => ({
+        name: `${p.playerName}`,
+        isCaptain: captain && p.playerId === captain.playerId
+      }));
+
+      // Check if html2canvas is loaded
+      if (typeof html2canvas === 'undefined') {
+        toast.error('Image generation library not loaded. Please refresh the page.');
+        return;
+      }
+
+      // Create template
+      const container = document.createElement('div');
+      container.style.position = 'absolute';
+      container.style.left = '-9999px';
+      container.style.top = '0';
+      document.body.appendChild(container);
+
+      const template = createPostTemplate(currentFixture, playersData);
+      container.innerHTML = template;
+
+      // Wait for fonts to load
+      await document.fonts.ready;
+
+      // Convert to canvas
+      const canvas = await window.html2canvas(container.firstElementChild, {
+        width: 1080,
+        height: 1350,
+        scale: 2,
+        backgroundColor: null,
+        logging: false,
+        useCORS: true,
+      });
+
+      // Convert to blob and download
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `${currentFixture.team.replace(/\s+/g, '-')}-vs-${currentFixture.opponent.replace(/\s+/g, '-')}-post.png`;
+          link.click();
+          URL.revokeObjectURL(url);
+          toast.success('Instagram post generated successfully!');
+        }
+      }, 'image/png');
+
+      document.body.removeChild(container);
+    } catch (error) {
+      console.error('Error generating post:', error);
+      toast.error('Failed to generate Instagram post');
+    } finally {
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+    }
+  }
+
+  // Generate Instagram Story
+  async function generateInstagramStory() {
+    if (!currentFixture || !currentAvailability) return;
+
+    const btn = document.getElementById('generate-story-btn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner"></span> Generating...';
+    btn.disabled = true;
+
+    try {
+      const selectedPlayers = currentAvailability.playerAvailability
+        .filter(p => p.wasSelected)
+        .sort((a, b) => a.playerName.localeCompare(b.playerName));
+
+      if (selectedPlayers.length !== 11) {
+        toast.error('Please select exactly 11 players');
+        return;
+      }
+
+      // Determine captain
+      const captain = selectedPlayers.find(p => {
+        const rosterData = coreRosterMap.get(p.playerId);
+        return rosterData && rosterData.isCaptain;
+      });
+
+      const playersData = selectedPlayers.map((p, idx) => ({
+        name: `${p.playerName}`,
+        isCaptain: captain && p.playerId === captain.playerId
+      }));
+
+      // Check if html2canvas is loaded
+      if (typeof html2canvas === 'undefined') {
+        toast.error('Image generation library not loaded. Please refresh the page.');
+        return;
+      }
+
+      // Create template
+      const container = document.createElement('div');
+      container.style.position = 'absolute';
+      container.style.left = '-9999px';
+      container.style.top = '0';
+      document.body.appendChild(container);
+
+      const template = createStoryTemplate(currentFixture, playersData);
+      container.innerHTML = template;
+
+      // Wait for fonts to load
+      await document.fonts.ready;
+
+      // Convert to canvas
+      const canvas = await window.html2canvas(container.firstElementChild, {
+        width: 1080,
+        height: 1920,
+        scale: 2,
+        backgroundColor: null,
+        logging: false,
+        useCORS: true,
+      });
+
+      // Convert to blob and download
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `${currentFixture.team.replace(/\s+/g, '-')}-vs-${currentFixture.opponent.replace(/\s+/g, '-')}-story.png`;
+          link.click();
+          URL.revokeObjectURL(url);
+          toast.success('Instagram story generated successfully!');
+        }
+      }, 'image/png');
+
+      document.body.removeChild(container);
+    } catch (error) {
+      console.error('Error generating story:', error);
+      toast.error('Failed to generate Instagram story');
+    } finally {
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+    }
+  }
+
+  // Create Post Template HTML
+  function createPostTemplate(fixture, players) {
+    const teamName = fixture.team.toUpperCase();
+    const opponent = fixture.opponent.toUpperCase();
+    const venue = fixture.venue.toUpperCase();
+    const address = fixture.groundAddress || '';
+    const date = formatDateForInstagram(fixture.date);
+    const time = fixture.time;
+
+    return `
+      <div style="width: 1080px; height: 1350px; position: relative; background: url('/insta_post_template.png') center/cover; font-family: 'Inter Variable', sans-serif; color: white; padding: 0; margin: 0;">
+
+        <!-- Team Name (left aligned, moved right) -->
+        <div style="position: absolute; top: 130px; left: 200px; right: 80px; text-align: left;">
+          <h1 style="font-family: 'Libre Baskerville', serif; font-size: 64px; font-weight: 700; color: #d4af37; letter-spacing: 2px; margin: 0; padding: 0; line-height: 1.0;">
+            ${teamName}
+          </h1>
+        </div>
+
+        <!-- Opponent (left aligned, moved right) -->
+        <div style="position: absolute; top: 210px; left: 200px; right: 80px; text-align: left;">
+          <h2 style="font-family: 'Montserrat', sans-serif; font-size: 42px; font-weight: 600; color: white; margin: 0; padding: 0; line-height: 1.0;">
+            VS ${opponent}
+          </h2>
+        </div>
+
+        <!-- Players list (moved right and down) -->
+        <div style="position: absolute; top: 460px; left: 140px; right: 540px;">
+          <ol style="list-style: none; padding: 0; margin: 0;">
+            ${players.map((player, index) => {
+              const firstName = player.name.split(' ')[0];
+              return `
+              <li style="font-family: 'Libre Baskerville', serif; font-size: 32px; font-weight: 700; color: #d4af37; margin-bottom: 12px; line-height: 1.1;">
+                <span style="display: inline-block; width: 55px;">${index + 1}.</span>
+                <span>${firstName.toUpperCase()}</span>
+                ${player.isCaptain ? '<span style="color: white; font-weight: 700; margin-left: 8px;">(C)</span>' : ''}
+              </li>
+            `;
+            }).join('')}
+          </ol>
+        </div>
+
+        <!-- Venue details (moved up and right, added spacing) -->
+        <div style="position: absolute; bottom: 130px; left: 140px; right: 100px; text-align: left;">
+          <div style="font-family: 'Montserrat', sans-serif; font-size: 28px; font-weight: 700; color: white; text-transform: uppercase; margin-bottom: 4px; line-height: 1.1;">
+            ${venue}
+          </div>
+          ${address ? `<div style="font-family: 'Montserrat', sans-serif; font-size: 24px; font-weight: 500; color: white; margin-bottom: 18px; line-height: 1.1;">
+            ${address.toUpperCase()}
+          </div>` : ''}
+          <div style="font-family: 'Montserrat', sans-serif; font-size: 28px; font-weight: 700; color: white; margin-bottom: 4px; line-height: 1.1;">
+            ${date}
+          </div>
+          <div style="font-family: 'Montserrat', sans-serif; font-size: 28px; font-weight: 700; color: white; line-height: 1.1;">
+            ${time}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Create Story Template HTML
+  function createStoryTemplate(fixture, players) {
+    const teamName = fixture.team.toUpperCase();
+    const opponent = fixture.opponent.toUpperCase();
+    const venue = fixture.venue.toUpperCase();
+    const address = fixture.groundAddress || '';
+    const date = formatDateForInstagram(fixture.date);
+    const time = fixture.time;
+
+    return `
+      <div style="width: 1080px; height: 1920px; position: relative; background: url('/insta_story_template.png') center/cover; font-family: 'Inter Variable', sans-serif; color: white; padding: 0; margin: 0;">
+
+        <!-- Team Name (below logo, left aligned) -->
+        <div style="position: absolute; top: 550px; left: 100px; right: 100px; text-align: left;">
+          <h1 style="font-family: 'Libre Baskerville', serif; font-size: 68px; font-weight: 700; color: #d4af37; letter-spacing: 2px; margin: 0; padding: 0; line-height: 1.0;">
+            ${teamName}
+          </h1>
+        </div>
+
+        <!-- Opponent (below team name, left aligned) -->
+        <div style="position: absolute; top: 630px; left: 100px; right: 100px; text-align: left;">
+          <h2 style="font-family: 'Montserrat', sans-serif; font-size: 48px; font-weight: 600; color: white; margin: 0; padding: 0; line-height: 1.0;">
+            VS ${opponent}
+          </h2>
+        </div>
+
+        <!-- Players list (below STARTING XI heading, moved right) -->
+        <div style="position: absolute; top: 900px; left: 150px; right: 120px;">
+          <ol style="list-style: none; padding: 0; margin: 0;">
+            ${players.map((player, index) => {
+              const firstName = player.name.split(' ')[0];
+              return `
+              <li style="font-family: 'Libre Baskerville', serif; font-size: 36px; font-weight: 700; color: #d4af37; margin-bottom: 14px; line-height: 1.1;">
+                <span style="display: inline-block; width: 70px;">${index + 1}.</span>
+                <span>${firstName.toUpperCase()}</span>
+                ${player.isCaptain ? '<span style="color: white; font-weight: 700; margin-left: 10px;">(C)</span>' : ''}
+              </li>
+            `;
+            }).join('')}
+          </ol>
+        </div>
+
+        <!-- Venue details (bottom, left aligned) -->
+        <div style="position: absolute; bottom: 160px; left: 120px; right: 120px; text-align: left;">
+          <div style="font-family: 'Montserrat', sans-serif; font-size: 30px; font-weight: 700; color: white; text-transform: uppercase; margin-bottom: 4px; line-height: 1.1;">
+            ${venue}
+          </div>
+          ${address ? `<div style="font-family: 'Montserrat', sans-serif; font-size: 26px; font-weight: 500; color: white; margin-bottom: 20px; line-height: 1.1;">
+            ${address.toUpperCase()}
+          </div>` : ''}
+          <div style="font-family: 'Montserrat', sans-serif; font-size: 32px; font-weight: 700; color: white; margin-bottom: 4px; line-height: 1.1;">
+            ${date}
+          </div>
+          <div style="font-family: 'Montserrat', sans-serif; font-size: 32px; font-weight: 700; color: white; line-height: 1.1;">
+            ${time}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Format date for Instagram images
+  function formatDateForInstagram(isoDate) {
+    const date = new Date(isoDate);
+    const days = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+    const months = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
+
+    return `${days[date.getDay()]}, ${months[date.getMonth()]} ${date.getDate()} ${date.getFullYear()}`;
+  }
+
+  // Add event listeners
+  document.getElementById('generate-post-btn')?.addEventListener('click', generateInstagramPost);
+  document.getElementById('generate-story-btn')?.addEventListener('click', generateInstagramStory);
 </script>

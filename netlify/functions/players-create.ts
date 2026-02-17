@@ -10,7 +10,7 @@ import { addAuditLog } from '../../src/utils/auditLog';
  * Create a new player in the global pool
  * POST /api/players-create
  * Requires: Valid admin session
- * Body: { firstName, lastName, email, usacId, role, isActive }
+ * Body: { firstName, lastName, email, phone, emergencyContactName, emergencyContactNumber, jobCompany, jobTitle, usacId, role, isActive }
  * Returns: Created player
  */
 export const handler: Handler = async (
@@ -39,7 +39,19 @@ export const handler: Handler = async (
 
     // Parse request body
     const body = JSON.parse(event.body || '{}');
-    const { firstName, lastName, email, phone, usacId, role, isActive } = body;
+    const {
+      firstName,
+      lastName,
+      email,
+      phone,
+      emergencyContactName,
+      emergencyContactNumber,
+      jobCompany,
+      jobTitle,
+      usacId,
+      role,
+      isActive
+    } = body;
 
     // Validate required fields (only firstName and lastName are mandatory)
     if (!firstName || !lastName) {
@@ -116,6 +128,41 @@ export const handler: Handler = async (
       };
     }
 
+    // Validate emergency contact name if provided
+    if (emergencyContactName && (emergencyContactName.trim().length < 1 || emergencyContactName.trim().length > 100)) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'Emergency contact name must be between 1 and 100 characters' }),
+      };
+    }
+
+    // Validate emergency contact number if provided
+    if (emergencyContactNumber && emergencyContactNumber.trim()) {
+      const emergencyPhoneRegex = /^\+\d{1,4}\s\d{7,15}$/;
+      if (!emergencyPhoneRegex.test(emergencyContactNumber.trim())) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({ error: 'Invalid emergency contact number format. Expected format: +1 1234567890' }),
+        };
+      }
+    }
+
+    // Validate job company if provided
+    if (jobCompany && jobCompany.trim().length > 200) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'Job company must be less than 200 characters' }),
+      };
+    }
+
+    // Validate job title if provided
+    if (jobTitle && jobTitle.trim().length > 200) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'Job title must be less than 200 characters' }),
+      };
+    }
+
     // Get players from Netlify Blobs
     const store = getStore({
       name: 'players',
@@ -161,6 +208,10 @@ export const handler: Handler = async (
       lastName: lastName.trim(),
       email: email ? email.trim().toLowerCase() : undefined,
       phone: phone ? phone.trim() : undefined,
+      emergencyContactName: emergencyContactName ? emergencyContactName.trim() : undefined,
+      emergencyContactNumber: emergencyContactNumber ? emergencyContactNumber.trim() : undefined,
+      jobCompany: jobCompany ? jobCompany.trim() : undefined,
+      jobTitle: jobTitle ? jobTitle.trim() : undefined,
       usacId: usacId ? usacId.trim() : undefined,
       role: role || undefined,
       isActive: isActive !== undefined ? isActive : true,

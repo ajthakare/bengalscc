@@ -111,6 +111,41 @@ export const handler: Handler = async (
       };
     }
 
+    // Validate emergency contact name if provided
+    if (updates.emergencyContactName && (updates.emergencyContactName.trim().length < 1 || updates.emergencyContactName.trim().length > 100)) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'Emergency contact name must be between 1 and 100 characters' }),
+      };
+    }
+
+    // Validate emergency contact number if provided
+    if (updates.emergencyContactNumber && updates.emergencyContactNumber.trim()) {
+      const emergencyPhoneRegex = /^\+\d{1,4}\s\d{7,15}$/;
+      if (!emergencyPhoneRegex.test(updates.emergencyContactNumber.trim())) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({ error: 'Invalid emergency contact number format. Expected format: +1 1234567890' }),
+        };
+      }
+    }
+
+    // Validate job company if provided
+    if (updates.jobCompany && updates.jobCompany.trim().length > 200) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'Job company must be less than 200 characters' }),
+      };
+    }
+
+    // Validate job title if provided
+    if (updates.jobTitle && updates.jobTitle.trim().length > 200) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'Job title must be less than 200 characters' }),
+      };
+    }
+
     // Get players from Netlify Blobs
     const store = getStore({
       name: 'players',

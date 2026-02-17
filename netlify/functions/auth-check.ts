@@ -72,6 +72,8 @@ export const handler: Handler = async (
       usacId: player.usacId,
       role: player.role, // Playing role/position (Batsman, Bowler, etc.)
       role_auth: player.role_auth || 'member', // Authentication role from database
+      emergencyContactName: player.emergencyContactName,
+      emergencyContactNumber: player.emergencyContactNumber,
     };
 
     return {

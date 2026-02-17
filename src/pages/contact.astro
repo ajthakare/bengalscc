@@ -80,13 +80,9 @@ import { SITE_CONFIG } from '../config';
                     ></textarea>
                 </div>
 
-                {/* Netlify reCAPTCHA v2 */}
-                <div data-netlify-recaptcha="true"></div>
-
-                <button type="submit" id="submit-btn" disabled class="btn btn-lg w-full opacity-50 cursor-not-allowed">
+                <button type="submit" id="submit-btn" class="btn btn-lg w-full">
                     Send Message
                 </button>
-                <p class="text-sm text-gray-600 text-center">Please complete the reCAPTCHA to submit</p>
             </form>
         </Section>
 
@@ -134,30 +130,4 @@ import { SITE_CONFIG } from '../config';
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     }
-
-    // Watch for reCAPTCHA completion
-    function checkRecaptcha() {
-        const recaptchaResponse = document.querySelector('[name="g-recaptcha-response"]');
-        const submitBtn = document.getElementById('submit-btn');
-
-        if (recaptchaResponse && submitBtn) {
-            if (recaptchaResponse.value) {
-                // reCAPTCHA is completed
-                submitBtn.disabled = false;
-                submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                submitBtn.classList.add('cursor-pointer');
-            } else {
-                // reCAPTCHA not completed
-                submitBtn.disabled = true;
-                submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                submitBtn.classList.remove('cursor-pointer');
-            }
-        }
-    }
-
-    // Check periodically (every 500ms)
-    setInterval(checkRecaptcha, 500);
-
-    // Also set up global callback for reCAPTCHA
-    window.onRecaptchaSuccess = checkRecaptcha;
 </script>

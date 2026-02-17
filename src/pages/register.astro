@@ -256,9 +256,6 @@ if (session) {
           </div>
         </div>
 
-        <!-- Netlify reCAPTCHA v2 -->
-        <div data-netlify-recaptcha="true"></div>
-
         <!-- Error Message -->
         <div id="error-message" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded"></div>
 
@@ -377,10 +374,6 @@ if (session) {
         return;
       }
 
-      // Get reCAPTCHA response (optional in development, required in production)
-      const recaptchaResponse = document.querySelector('[name="g-recaptcha-response"]') as HTMLInputElement;
-      const captchaToken = recaptchaResponse?.value || undefined;
-
       // Disable submit button
       submitBtn.disabled = true;
       submitBtn.textContent = 'Registering...';
@@ -391,10 +384,7 @@ if (session) {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            ...data,
-            captchaToken: captchaToken
-          }),
+          body: JSON.stringify(data),
         });
 
         const result = await response.json();

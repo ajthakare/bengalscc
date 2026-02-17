@@ -5,9 +5,9 @@ import { validateAdminSession, isMember, verifyPassword, hashPassword } from '..
 import type { Player } from '../../src/types/player';
 
 /**
- * Update member profile (phone, password, usacId, and/or playerRole)
+ * Update member profile (phone, password, usacId, playerRole, emergency contact, and/or job info)
  * POST /.netlify/functions/profile-update
- * Body: { phone?, currentPassword?, newPassword?, usacId?, playerRole? }
+ * Body: { phone?, currentPassword?, newPassword?, usacId?, playerRole?, emergencyContactName?, emergencyContactNumber?, jobCompany?, jobTitle? }
  */
 export const handler: Handler = async (
   event: HandlerEvent,
@@ -31,10 +31,21 @@ export const handler: Handler = async (
     }
 
     // Parse request
-    const { phone, currentPassword, newPassword, usacId, playerRole } = JSON.parse(event.body || '{}');
+    const {
+      phone,
+      currentPassword,
+      newPassword,
+      usacId,
+      playerRole,
+      emergencyContactName,
+      emergencyContactNumber,
+      jobCompany,
+      jobTitle
+    } = JSON.parse(event.body || '{}');
 
     // Must provide at least one field to update
-    if (!phone && !currentPassword && !newPassword && usacId === undefined && !playerRole) {
+    if (!phone && !currentPassword && !newPassword && usacId === undefined && !playerRole &&
+        !emergencyContactName && !emergencyContactNumber && jobCompany === undefined && jobTitle === undefined) {
       return {
         statusCode: 400,
         body: JSON.stringify({ error: 'No fields to update' }),
@@ -139,6 +150,74 @@ export const handler: Handler = async (
       player.role = playerRole;
     }
 
+    // Update emergency contact name if provided
+    if (emergencyContactName !== undefined) {
+      if (!emergencyContactName.trim()) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({ error: 'Emergency contact name cannot be empty' }),
+        };
+      }
+      if (emergencyContactName.length > 100) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({ error: 'Emergency contact name must be max 100 characters' }),
+        };
+      }
+      player.emergencyContactName = emergencyContactName.trim();
+    }
+
+    // Update emergency contact number if provided
+    if (emergencyContactNumber !== undefined) {
+      if (!emergencyContactNumber.trim()) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({ error: 'Emergency contact number cannot be empty' }),
+        };
+      }
+      // Validate emergency phone format (expecting: "+1 1234567890")
+      const emergencyPhoneRegex = /^\+\d{1,4}\s\d{7,15}$/;
+      if (!emergencyPhoneRegex.test(emergencyContactNumber.trim())) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({ error: 'Invalid emergency contact number format. Expected format: +1 1234567890' }),
+        };
+      }
+      player.emergencyContactNumber = emergencyContactNumber.trim();
+    }
+
+    // Update job company if provided
+    if (jobCompany !== undefined) {
+      // Allow empty string to clear job company
+      if (jobCompany.trim()) {
+        if (jobCompany.length > 200) {
+          return {
+            statusCode: 400,
+            body: JSON.stringify({ error: 'Company name must be max 200 characters' }),
+          };
+        }
+        player.jobCompany = jobCompany.trim();
+      } else {
+        player.jobCompany = undefined;
+      }
+    }
+
+    // Update job title if provided
+    if (jobTitle !== undefined) {
+      // Allow empty string to clear job title
+      if (jobTitle.trim()) {
+        if (jobTitle.length > 200) {
+          return {
+            statusCode: 400,
+            body: JSON.stringify({ error: 'Job title must be max 200 characters' }),
+          };
+        }
+        player.jobTitle = jobTitle.trim();
+      } else {
+        player.jobTitle = undefined;
+      }
+    }
+
     const now = new Date().toISOString();
     player.updatedAt = now;
     player.updatedBy = session.email;
@@ -159,6 +238,10 @@ export const handler: Handler = async (
     if (newPassword) updates.push('password');
     if (usacId !== undefined) updates.push('USAC ID');
     if (playerRole) updates.push('playing role');
+    if (emergencyContactName !== undefined) updates.push('emergency contact name');
+    if (emergencyContactNumber !== undefined) updates.push('emergency contact number');
+    if (jobCompany !== undefined) updates.push('job company');
+    if (jobTitle !== undefined) updates.push('job title');
 
     auditLogs.push({
       id: uuidv4(),

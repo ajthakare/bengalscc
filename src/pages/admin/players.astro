@@ -84,20 +84,25 @@ if (!authenticated) {
         <option value="All-rounder">All-rounder</option>
         <option value="Wicket-keeper">Wicket-keeper</option>
       </select>
-      <button id="add-player-btn" class="btn-primary">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="10" y1="5" x2="10" y2="15"/>
-          <line x1="5" y1="10" x2="15" y2="10"/>
-        </svg>
-        Add Player
-      </button>
-      <a href="/admin/players/import" class="btn-secondary">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 17v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2M7 9l5 5m0 0l5-5m-5 5V3"/>
-        </svg>
-        Import Players
-      </a>
-      <div id="bulk-actions" class="bulk-actions" style="display: none;">
+      {userRole === 'super_admin' && (
+        <>
+          <button id="add-player-btn" class="btn-primary">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="10" y1="5" x2="10" y2="15"/>
+              <line x1="5" y1="10" x2="15" y2="10"/>
+            </svg>
+            Add Player
+          </button>
+          <a href="/admin/players/import" class="btn-secondary">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 17v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2M7 9l5 5m0 0l5-5m-5 5V3"/>
+            </svg>
+            Import Players
+          </a>
+        </>
+      )}
+      {userRole === 'super_admin' && (
+        <div id="bulk-actions" class="bulk-actions" style="display: none;">
         <span id="selected-count" class="selected-count">0 selected</span>
         <button id="change-status-btn" class="btn-secondary">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
@@ -117,7 +122,8 @@ if (!authenticated) {
           </svg>
           Export
         </button>
-      </div>
+        </div>
+      )}
     </div>
 
     <!-- Loading State -->
@@ -149,13 +155,14 @@ if (!authenticated) {
       <table class="data-table">
         <thead>
           <tr>
-            <th style="width: 40px;">
-              <input type="checkbox" id="select-all" />
-            </th>
+            {userRole === 'super_admin' && (
+              <th style="width: 40px;">
+                <input type="checkbox" id="select-all" />
+              </th>
+            )}
             <th>Name</th>
-            <th>Email</th>
-            <th>USAC ID</th>
-            <th>Role</th>
+            <th>Contact Number</th>
+            <th>Emergency Contact</th>
             <th>Status</th>
             <th style="width: 120px;">Actions</th>
           </tr>
@@ -252,6 +259,69 @@ if (!authenticated) {
 
         <div class="form-grid">
           <div class="form-group">
+            <label for="emergency-contact-name" class="form-label">Emergency Contact Name</label>
+            <input
+              type="text"
+              id="emergency-contact-name"
+              name="emergencyContactName"
+              maxlength="100"
+              class="form-input"
+              placeholder="Jane Doe"
+            />
+          </div>
+          <div class="form-group">
+            <label for="emergency-contact-number" class="form-label">Emergency Contact Number</label>
+            <div class="phone-input-container">
+              <select id="emergency-country" class="phone-country-select">
+                <option value="+1">🇺🇸 +1</option>
+                <option value="+91">🇮🇳 +91</option>
+                <option value="+44">🇬🇧 +44</option>
+                <option value="+61">🇦🇺 +61</option>
+                <option value="+86">🇨🇳 +86</option>
+                <option value="+81">🇯🇵 +81</option>
+                <option value="+49">🇩🇪 +49</option>
+                <option value="+33">🇫🇷 +33</option>
+                <option value="+971">🇦🇪 +971</option>
+                <option value="+65">🇸🇬 +65</option>
+              </select>
+              <input
+                type="tel"
+                id="emergency-number"
+                class="phone-number-input"
+                placeholder="1234567890"
+                pattern="[0-9]{7,15}"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="job-company" class="form-label">Company (Optional)</label>
+            <input
+              type="text"
+              id="job-company"
+              name="jobCompany"
+              maxlength="200"
+              class="form-input"
+              placeholder="ABC Corp"
+            />
+          </div>
+          <div class="form-group">
+            <label for="job-title" class="form-label">Job Title (Optional)</label>
+            <input
+              type="text"
+              id="job-title"
+              name="jobTitle"
+              maxlength="200"
+              class="form-input"
+              placeholder="Software Engineer"
+            />
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
             <label for="usac-id" class="form-label">USAC ID (Optional)</label>
             <input
               type="text"
@@ -290,6 +360,65 @@ if (!authenticated) {
           <button type="submit" id="submit-btn" class="btn-primary">Add Player</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- View Player Modal (Read-Only for Regular Admins) -->
+  <div id="view-player-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">View Player Details</h2>
+        <button class="modal-close" onclick="closeViewPlayerModal()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="form">
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">First Name</label>
+            <div id="view-first-name" class="view-field"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Last Name</label>
+            <div id="view-last-name" class="view-field"></div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Contact Number</label>
+          <div id="view-phone" class="view-field"></div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Emergency Contact Name</label>
+            <div id="view-emergency-contact-name" class="view-field"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Emergency Contact Number</label>
+            <div id="view-emergency-contact-number" class="view-field"></div>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">USAC ID</label>
+            <div id="view-usac-id" class="view-field"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Role</label>
+            <div id="view-role" class="view-field"></div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-primary" onclick="closeViewPlayerModal()">Close</button>
+        </div>
+      </div>
     </div>
   </div>
 </AdminLayout>
@@ -381,6 +510,16 @@ if (!authenticated) {
     font-weight: 500;
   }
 
+  .view-field {
+    padding: 0.75rem;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    color: #374151;
+    font-size: 0.875rem;
+    min-height: 42px;
+  }
+
   .btn-icon {
     padding: 0.5rem;
     border: none;
@@ -421,6 +560,41 @@ if (!authenticated) {
     margin-bottom: 1rem;
   }
 
+  .form-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    background: white;
+    transition: all 0.2s;
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: #f67280;
+    box-shadow: 0 0 0 3px rgba(246, 114, 128, 0.1);
+  }
+
+  .form-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 6px;
+  }
+
+  .form-group {
+    margin-bottom: 0;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
   .phone-input-container {
     display: flex;
     gap: 8px;
@@ -429,19 +603,34 @@ if (!authenticated) {
   .phone-country-select {
     width: 110px;
     padding: 10px 8px;
-    border: 1px solid var(--color-border);
-    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
     font-size: 14px;
     background: white;
     cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .phone-country-select:focus {
+    outline: none;
+    border-color: #f67280;
+    box-shadow: 0 0 0 3px rgba(246, 114, 128, 0.1);
   }
 
   .phone-number-input {
     flex: 1;
-    padding: 10px 14px;
-    border: 1px solid var(--color-border);
-    border-radius: 8px;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
     font-size: 14px;
+    background: white;
+    transition: all 0.2s;
+  }
+
+  .phone-number-input:focus {
+    outline: none;
+    border-color: #f67280;
+    box-shadow: 0 0 0 3px rgba(246, 114, 128, 0.1);
   }
 
   .phone-country-select:focus,
@@ -450,9 +639,34 @@ if (!authenticated) {
     border-color: var(--color-primary);
     box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
   }
+
+  /* Modal scrolling fixes for mobile */
+  .modal {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .modal-content {
+    max-height: 90vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: auto;
+  }
+
+  @media (max-width: 768px) {
+    .modal-content {
+      max-height: 95vh;
+      width: 95%;
+      margin: 20px auto;
+    }
+
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+  }
 </style>
 
-<script>
+<script define:vars={{ userRole }}>
   let players = [];
   let filteredPlayers = [];
   let selectedPlayerIds = new Set();
@@ -680,8 +894,9 @@ if (!authenticated) {
   }
 
   function renderPlayers() {
+    const colspan = userRole === 'super_admin' ? '6' : '5';
     if (filteredPlayers.length === 0) {
-      playersTbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: #6b7280;">No players found</td></tr>';
+      playersTbody.innerHTML = `<tr><td colspan="${colspan}" style="text-align: center; padding: 2rem; color: #6b7280;">No players found</td></tr>`;
       return;
     }
 
@@ -689,6 +904,7 @@ if (!authenticated) {
       .map(
         (player) => `
       <tr>
+        ${userRole === 'super_admin' ? `
         <td>
           <input
             type="checkbox"
@@ -697,26 +913,42 @@ if (!authenticated) {
             ${selectedPlayerIds.has(player.id) ? 'checked' : ''}
           />
         </td>
+        ` : ''}
         <td><strong>${escapeHtml(player.firstName)} ${escapeHtml(player.lastName)}</strong></td>
-        <td>${player.email ? escapeHtml(player.email) : '<span style="color: #9ca3af;">-</span>'}</td>
-        <td>${player.usacId ? escapeHtml(player.usacId) : '<span style="color: #9ca3af;">-</span>'}</td>
-        <td>${player.role ? '<span class="role-badge">' + escapeHtml(player.role) + '</span>' : '<span style="color: #9ca3af;">-</span>'}</td>
+        <td>${player.phone ? escapeHtml(player.phone) : '<span style="color: #9ca3af;">-</span>'}</td>
+        <td>
+          ${player.emergencyContactName || player.emergencyContactNumber ? `
+            <div style="font-size: 0.875rem;">
+              <div style="font-weight: 500;">${player.emergencyContactName ? escapeHtml(player.emergencyContactName) : '-'}</div>
+              <div style="color: #6b7280; margin-top: 2px;">${player.emergencyContactNumber ? escapeHtml(player.emergencyContactNumber) : '-'}</div>
+            </div>
+          ` : '<span style="color: #9ca3af;">-</span>'}
+        </td>
         <td>
           <span class="status-badge ${player.isActive ? 'status-active' : 'status-inactive'}">
             ${player.isActive ? 'Active' : 'Inactive'}
           </span>
         </td>
         <td>
-          <button class="btn-icon" onclick="editPlayer('${player.id}')" title="Edit">
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M13 3l2 2-9 9H4v-2l9-9z"/>
-            </svg>
-          </button>
-          <button class="btn-icon btn-danger-icon" onclick="deletePlayer('${player.id}')" title="Delete">
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M2 4h14M6 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1m2 0v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4h10z"/>
-            </svg>
-          </button>
+          ${(userRole === 'super_admin' || userRole === 'superadmin' || userRole === 'super admin') ? `
+            <button class="btn-icon" onclick="editPlayer('${player.id}')" title="Edit">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M13 3l2 2-9 9H4v-2l9-9z"/>
+              </svg>
+            </button>
+            <button class="btn-icon btn-danger-icon" onclick="deletePlayer('${player.id}')" title="Delete">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M2 4h14M6 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1m2 0v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4h10z"/>
+              </svg>
+            </button>
+          ` : `
+            <button class="btn-icon" onclick="viewPlayer('${player.id}')" title="View">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 9s3-6 8-6 8 6 8 6-3 6-8 6-8-6-8-6z"/>
+                <circle cx="9" cy="9" r="2"/>
+              </svg>
+            </button>
+          `}
         </td>
       </tr>
     `
@@ -791,6 +1023,27 @@ if (!authenticated) {
       phoneNumberInput.value = '';
     }
 
+    // Populate emergency contact fields
+    document.getElementById('emergency-contact-name').value = player.emergencyContactName || '';
+    const emergencyCountrySelect = document.getElementById('emergency-country');
+    const emergencyNumberInput = document.getElementById('emergency-number');
+    if (player.emergencyContactNumber) {
+      const emergencyMatch = player.emergencyContactNumber.match(/^(\+\d+)\s*(.+)$/);
+      if (emergencyMatch) {
+        emergencyCountrySelect.value = emergencyMatch[1];
+        emergencyNumberInput.value = emergencyMatch[2];
+      } else {
+        emergencyNumberInput.value = player.emergencyContactNumber;
+      }
+    } else {
+      emergencyCountrySelect.value = '+1';
+      emergencyNumberInput.value = '';
+    }
+
+    // Populate job fields
+    document.getElementById('job-company').value = player.jobCompany || '';
+    document.getElementById('job-title').value = player.jobTitle || '';
+
     document.getElementById('usac-id').value = player.usacId || '';
     document.getElementById('role').value = player.role || '';
     document.getElementById('is-active').checked = player.isActive;
@@ -844,6 +1097,14 @@ if (!authenticated) {
         const phoneNumber = document.getElementById('phone-number').value.trim();
         return phoneNumber ? `${phoneCountry} ${phoneNumber}` : '';
       })(),
+      emergencyContactName: formData.get('emergencyContactName'),
+      emergencyContactNumber: (() => {
+        const emergencyCountry = document.getElementById('emergency-country').value;
+        const emergencyNumber = document.getElementById('emergency-number').value.trim();
+        return emergencyNumber ? `${emergencyCountry} ${emergencyNumber}` : '';
+      })(),
+      jobCompany: formData.get('jobCompany'),
+      jobTitle: formData.get('jobTitle'),
       usacId: formData.get('usacId'),
       role: formData.get('role'),
       isActive: document.getElementById('is-active').checked,
@@ -886,6 +1147,30 @@ if (!authenticated) {
     editingPlayerId = null;
   };
 
+  // View player (read-only for regular admins)
+  window.viewPlayer = (playerId) => {
+    const player = players.find((p) => p.id === playerId);
+    if (!player) return;
+
+    const viewPlayerModal = document.getElementById('view-player-modal');
+
+    // Populate read-only fields
+    document.getElementById('view-first-name').textContent = player.firstName || '-';
+    document.getElementById('view-last-name').textContent = player.lastName || '-';
+    document.getElementById('view-phone').textContent = player.phone || '-';
+    document.getElementById('view-emergency-contact-name').textContent = player.emergencyContactName || '-';
+    document.getElementById('view-emergency-contact-number').textContent = player.emergencyContactNumber || '-';
+    document.getElementById('view-usac-id').textContent = player.usacId || '-';
+    document.getElementById('view-role').textContent = player.role || '-';
+
+    viewPlayerModal.style.display = 'flex';
+  };
+
+  window.closeViewPlayerModal = () => {
+    const viewPlayerModal = document.getElementById('view-player-modal');
+    viewPlayerModal.style.display = 'none';
+  };
+
   // Helper functions
   function escapeHtml(text) {
     const div = document.createElement('div');
@@ -909,6 +1194,14 @@ if (!authenticated) {
   playerModal?.addEventListener('click', (e) => {
     if (e.target === playerModal) {
       closePlayerModal();
+    }
+  });
+
+  // Close view modal on outside click
+  const viewPlayerModal = document.getElementById('view-player-modal');
+  viewPlayerModal?.addEventListener('click', (e) => {
+    if (e.target === viewPlayerModal) {
+      closeViewPlayerModal();
     }
   });
 </script>

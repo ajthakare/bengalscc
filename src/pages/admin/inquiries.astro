@@ -289,7 +289,6 @@ if (!authenticated) {
     filteredSubmissions.forEach((submission) => {
       const row = document.createElement('tr');
       row.className = submission.read ? 'row-read' : 'row-unread';
-      row.onclick = () => showSubmissionDetail(submission);
 
       const date = new Date(submission.createdAt);
       const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -308,14 +307,21 @@ if (!authenticated) {
         </td>
         <td class="col-name">${submission.name}</td>
         <td class="col-email">${submission.email}</td>
-        <td onclick="event.stopPropagation();">
-          <button class="btn-view" onclick="showSubmissionDetail(${JSON.stringify(submission).replace(/"/g, '&quot;')})">
-            View
-          </button>
+        <td>
+          <button class="btn-view">View</button>
         </td>
       `;
 
       submissionsTbody.appendChild(row);
+
+      // Add click event to View button only
+      const viewBtn = row.querySelector('.btn-view');
+      if (viewBtn) {
+        viewBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          showSubmissionDetail(submission);
+        });
+      }
     });
   }
 
@@ -391,6 +397,7 @@ if (!authenticated) {
       </div>
     `;
 
+    modal.style.display = '';  // Remove inline display style
     modal.classList.add('modal-open');
     document.body.style.overflow = 'hidden';
 
@@ -436,6 +443,7 @@ if (!authenticated) {
       e.stopPropagation();
     }
     modal.classList.remove('modal-open');
+    modal.style.display = 'none';  // Re-add inline display none
     document.body.style.overflow = '';
     currentSubmission = null;
   }

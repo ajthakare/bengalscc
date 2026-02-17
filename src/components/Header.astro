@@ -165,10 +165,10 @@ const currentPath = Astro.url.pathname;
                     {isMember && (
                         <li>
                             <a
-                                href="/netpractice"
-                                class={`inline-block px-1.5 py-1 xl:px-3 xl:py-2 text-xs xl:text-sm font-bold whitespace-nowrap ${currentPath === '/netpractice' ? 'nav-active' : ''}`}
+                                href="/mypractice"
+                                class={`inline-block px-1.5 py-1 xl:px-3 xl:py-2 text-xs xl:text-sm font-bold whitespace-nowrap ${currentPath === '/mypractice' ? 'nav-active' : ''}`}
                             >
-                                Net Practice
+                                Practice Sessions
                             </a>
                         </li>
                     )}
@@ -235,8 +235,8 @@ const currentPath = Astro.url.pathname;
                             </a>
                         )}
                         {isMember && (
-                            <a href="/netpractice" class="mobile-nav-link">
-                                Net Practice
+                            <a href="/mypractice" class="mobile-nav-link">
+                                Practice Sessions
                             </a>
                         )}
                         {isAdmin && (

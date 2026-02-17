@@ -113,6 +113,30 @@ try {
               <p class="info-value">{player.role || 'Not set'}</p>
               <p class="info-hint">Update below</p>
             </div>
+
+            <div class="info-item">
+              <label class="info-label">Emergency Contact Name</label>
+              <p class="info-value">{player.emergencyContactName || 'Not set'}</p>
+              <p class="info-hint">Update below</p>
+            </div>
+
+            <div class="info-item">
+              <label class="info-label">Emergency Contact Number</label>
+              <p class="info-value">{player.emergencyContactNumber || 'Not set'}</p>
+              <p class="info-hint">Update below</p>
+            </div>
+
+            <div class="info-item">
+              <label class="info-label">Company</label>
+              <p class="info-value">{player.jobCompany || 'Not set'}</p>
+              <p class="info-hint">Update below</p>
+            </div>
+
+            <div class="info-item">
+              <label class="info-label">Job Title</label>
+              <p class="info-value">{player.jobTitle || 'Not set'}</p>
+              <p class="info-hint">Update below</p>
+            </div>
           </div>
         </div>
 
@@ -161,6 +185,123 @@ try {
 
             <button type="submit" id="player-info-button" class="btn btn-lg">
               Update Player Info
+            </button>
+          </form>
+        </div>
+
+        {/* Update Emergency Contact */}
+        <div class="card mb-6">
+          <h2 class="card-title">Emergency Contact Information</h2>
+          <p class="text-sm text-gray-600 mb-4">Required for all members. This person will be contacted in case of emergency.</p>
+
+          <form id="emergency-form" class="form" method="post" action="javascript:void(0);">
+            <div class="form-group">
+              <label for="emergency-contact-name" class="form-label">
+                Emergency Contact Name <span class="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                id="emergency-contact-name"
+                name="emergencyContactName"
+                required
+                maxlength="100"
+                class="form-input"
+                placeholder="Jane Doe"
+                value={player.emergencyContactName || ''}
+              />
+              <p class="form-hint">Person to contact in case of emergency</p>
+            </div>
+
+            <div class="form-group">
+              <label for="emergency-contact-number" class="form-label">
+                Emergency Contact Number <span class="text-red-500">*</span>
+              </label>
+              <div class="flex gap-2">
+                <select
+                  id="emergency-country"
+                  name="emergencyCountry"
+                  class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f67280] w-28"
+                >
+                  <option value="+1">🇺🇸 +1</option>
+                  <option value="+91">🇮🇳 +91</option>
+                  <option value="+44">🇬🇧 +44</option>
+                  <option value="+61">🇦🇺 +61</option>
+                  <option value="+86">🇨🇳 +86</option>
+                  <option value="+81">🇯🇵 +81</option>
+                  <option value="+49">🇩🇪 +49</option>
+                  <option value="+33">🇫🇷 +33</option>
+                  <option value="+971">🇦🇪 +971</option>
+                  <option value="+65">🇸🇬 +65</option>
+                </select>
+                <input
+                  type="tel"
+                  id="emergency-number"
+                  name="emergencyNumber"
+                  required
+                  class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f67280]"
+                  placeholder="1234567890"
+                  pattern="[0-9]{7,15}"
+                />
+              </div>
+              <p class="form-hint">Emergency contact's phone number</p>
+            </div>
+
+            <div id="emergency-error" class="alert alert-error" style="display: none;">
+              <span id="emergency-error-text"></span>
+            </div>
+
+            <div id="emergency-success" class="alert alert-success" style="display: none;">
+              <span id="emergency-success-text"></span>
+            </div>
+
+            <button type="submit" id="emergency-button" class="btn btn-lg">
+              Update Emergency Contact
+            </button>
+          </form>
+        </div>
+
+        {/* Update Job Information */}
+        <div class="card mb-6">
+          <h2 class="card-title">Job Information</h2>
+          <p class="text-sm text-gray-600 mb-4">Optional. Help the community with job referrals by sharing your employment details.</p>
+
+          <form id="job-form" class="form" method="post" action="javascript:void(0);">
+            <div class="form-group">
+              <label for="job-company" class="form-label">Company (Optional)</label>
+              <input
+                type="text"
+                id="job-company"
+                name="jobCompany"
+                maxlength="200"
+                class="form-input"
+                placeholder="ABC Corp"
+                value={player.jobCompany || ''}
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="job-title" class="form-label">Job Title (Optional)</label>
+              <input
+                type="text"
+                id="job-title"
+                name="jobTitle"
+                maxlength="200"
+                class="form-input"
+                placeholder="Software Engineer"
+                value={player.jobTitle || ''}
+              />
+            </div>
+
+            <div id="job-error" class="alert alert-error" style="display: none;">
+              <span id="job-error-text"></span>
+            </div>
+
+            <div id="job-success" class="alert alert-success" style="display: none;">
+              <span id="job-success-text"></span>
+            </div>
+
+            <button type="submit" id="job-button" class="btn btn-lg">
+              Update Job Information
             </button>
           </form>
         </div>
@@ -276,7 +417,212 @@ try {
     )}
   </div>
 
-  <script define:vars={{ playerPhone: player?.phone, playerUsacId: player?.usacId, playerRole: player?.role }}>
+  <script define:vars={{
+    playerPhone: player?.phone,
+    playerUsacId: player?.usacId,
+    playerRole: player?.role,
+    playerEmergencyContactName: player?.emergencyContactName,
+    playerEmergencyContactNumber: player?.emergencyContactNumber,
+    playerJobCompany: player?.jobCompany,
+    playerJobTitle: player?.jobTitle
+  }}>
+
+    // Check if emergency contact info is missing and show warning
+    const hasEmergencyInfo = playerEmergencyContactName && playerEmergencyContactNumber;
+
+    if (!hasEmergencyInfo) {
+      // Show warning modal on page load
+      const showWarningModal = () => {
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 9999;
+        `;
+
+        modal.innerHTML = `
+          <div style="background: white; padding: 32px; border-radius: 12px; max-width: 500px; margin: 20px;">
+            <h2 style="font-size: 24px; font-weight: 700; color: #dc2626; margin-bottom: 16px;">⚠️ Emergency Contact Required</h2>
+            <p style="font-size: 16px; color: #374151; margin-bottom: 24px;">
+              Please scroll down and fill in the "Emergency Contact Information" section.
+            </p>
+            <button id="close-warning-modal" style="width: 100%; padding: 12px 24px; background: #f67280; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">
+              I Understand
+            </button>
+          </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        document.getElementById('close-warning-modal').addEventListener('click', () => {
+          modal.remove();
+          // Scroll to emergency contact form
+          document.getElementById('emergency-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+      };
+
+      // Show modal after a short delay
+      setTimeout(showWarningModal, 500);
+
+      // Prevent navigation away from page
+      window.addEventListener('beforeunload', (e) => {
+        e.preventDefault();
+        e.returnValue = 'You must fill in emergency contact information before leaving this page.';
+        return 'You must fill in emergency contact information before leaving this page.';
+      });
+    }
+
+    // Parse existing emergency contact number and populate form
+    if (playerEmergencyContactNumber) {
+      const emergencyCountrySelect = document.getElementById('emergency-country');
+      const emergencyNumberInput = document.getElementById('emergency-number');
+
+      if (emergencyCountrySelect && emergencyNumberInput) {
+        // Try to extract country code from phone (e.g., "+1 1234567890")
+        const phoneMatch = playerEmergencyContactNumber.match(/^(\+\d+)\s*(.+)$/);
+        if (phoneMatch) {
+          const countryCode = phoneMatch[1];
+          const number = phoneMatch[2];
+
+          // Set country code if it exists in options
+          const option = Array.from(emergencyCountrySelect.options).find(opt => opt.value === countryCode);
+          if (option) {
+            emergencyCountrySelect.value = countryCode;
+          }
+          emergencyNumberInput.value = number;
+        }
+      }
+    }
+
+    // Emergency contact update form
+    const emergencyForm = document.getElementById('emergency-form');
+    const emergencyButton = document.getElementById('emergency-button');
+    const emergencyError = document.getElementById('emergency-error');
+    const emergencyErrorText = document.getElementById('emergency-error-text');
+    const emergencySuccess = document.getElementById('emergency-success');
+    const emergencySuccessText = document.getElementById('emergency-success-text');
+
+    if (emergencyForm) {
+      emergencyForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        emergencyError.style.display = 'none';
+        emergencySuccess.style.display = 'none';
+
+        const formData = new FormData(emergencyForm);
+        const emergencyContactName = formData.get('emergencyContactName');
+        const emergencyCountry = formData.get('emergencyCountry');
+        const emergencyNumber = formData.get('emergencyNumber');
+        const emergencyContactNumber = `${emergencyCountry} ${emergencyNumber}`;
+
+        emergencyButton.disabled = true;
+        emergencyButton.textContent = 'Updating...';
+
+        try {
+          const response = await fetch('/.netlify/functions/profile-update', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({
+              emergencyContactName,
+              emergencyContactNumber
+            }),
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || 'Failed to update emergency contact');
+          }
+
+          emergencySuccess.style.display = 'block';
+          emergencySuccessText.textContent = data.message || 'Emergency contact updated successfully!';
+
+          // Remove beforeunload listener if emergency info was just filled
+          if (!hasEmergencyInfo) {
+            window.removeEventListener('beforeunload', () => {});
+          }
+
+          // Reload page after 1 second to show updated info
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+        } catch (error) {
+          emergencyError.style.display = 'block';
+          emergencyErrorText.textContent = error.message || 'Unknown error';
+        } finally {
+          emergencyButton.disabled = false;
+          emergencyButton.textContent = 'Update Emergency Contact';
+        }
+      });
+    }
+
+    // Job information update form
+    const jobForm = document.getElementById('job-form');
+    const jobButton = document.getElementById('job-button');
+    const jobError = document.getElementById('job-error');
+    const jobErrorText = document.getElementById('job-error-text');
+    const jobSuccess = document.getElementById('job-success');
+    const jobSuccessText = document.getElementById('job-success-text');
+
+    if (jobForm) {
+      jobForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        jobError.style.display = 'none';
+        jobSuccess.style.display = 'none';
+
+        const formData = new FormData(jobForm);
+        const jobCompany = formData.get('jobCompany');
+        const jobTitle = formData.get('jobTitle');
+
+        jobButton.disabled = true;
+        jobButton.textContent = 'Updating...';
+
+        try {
+          const response = await fetch('/.netlify/functions/profile-update', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({
+              jobCompany: jobCompany || undefined,
+              jobTitle: jobTitle || undefined
+            }),
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || 'Failed to update job information');
+          }
+
+          jobSuccess.style.display = 'block';
+          jobSuccessText.textContent = data.message || 'Job information updated successfully!';
+
+          // Reload page after 1 second to show updated info
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+        } catch (error) {
+          jobError.style.display = 'block';
+          jobErrorText.textContent = error.message || 'Unknown error';
+        } finally {
+          jobButton.disabled = false;
+          jobButton.textContent = 'Update Job Information';
+        }
+      });
+    }
 
     // Player info update form
     const playerInfoForm = document.getElementById('player-info-form');

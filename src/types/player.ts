@@ -75,6 +75,14 @@ export interface Player {
   approvedAt?: string;           // When super admin approved (ISO date)
   approvedBy?: string;           // Super admin username who approved
   lastLogin?: string;            // Track member activity (ISO date)
+
+  // Emergency Contact Information (mandatory for members)
+  emergencyContactName?: string;  // Emergency contact name
+  emergencyContactNumber?: string; // Emergency contact phone number
+
+  // Job Information (optional)
+  jobCompany?: string;            // Company name
+  jobTitle?: string;              // Job title
 }
 
 // Valid role values

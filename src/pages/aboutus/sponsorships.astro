@@ -1,0 +1,212 @@
+---
+export const prerender = false;
+
+import Layout from '../../layouts/Layout.astro';
+import Section from '../../components/Section.astro';
+import SponsorTierCard from '../../components/SponsorTierCard.astro';
+import SponsorLogo from '../../components/SponsorLogo.astro';
+import SponsorTimelineYear from '../../components/SponsorTimelineYear.astro';
+import { SPONSORS } from '../../config';
+
+// Organize past sponsors by year for timeline
+const sponsorsByYear = [
+    {
+        year: 2024,
+        platinum: SPONSORS.past.filter((s) => s.years?.includes(2024) && s.tier === 'platinum'),
+        gold: SPONSORS.past.filter((s) => s.years?.includes(2024) && s.tier === 'gold')
+    },
+    {
+        year: 2023,
+        platinum: SPONSORS.past.filter((s) => s.years?.includes(2023) && s.tier === 'platinum'),
+        gold: SPONSORS.past.filter((s) => s.years?.includes(2023) && s.tier === 'gold')
+    },
+    {
+        year: 2022,
+        platinum: SPONSORS.past.filter((s) => s.years?.includes(2022) && s.tier === 'platinum'),
+        gold: SPONSORS.past.filter((s) => s.years?.includes(2022) && s.tier === 'gold')
+    }
+];
+---
+
+<Layout title="Sponsorships - Golden State Cricket Club">
+    <!-- Hero Section -->
+    <div class="text-center mb-12">
+        <h1 class="page-title heading-margin-sm">Partner With Us</h1>
+        <p class="text-intro max-w-3xl mx-auto text-gray-600">
+            Join leading Bay Area businesses in supporting local cricket while gaining visibility across our community of passionate players and fans.
+        </p>
+    </div>
+
+    <!-- Why Sponsor Section -->
+    <Section title="Why Sponsor Golden State Cricket Club?" variant="alternate">
+        <div class="grid md:grid-cols-3 gap-8 mb-12">
+            <!-- Why -->
+            <div class="card-elevated p-6">
+                <div class="text-4xl mb-4">🎯</div>
+                <h3 class="subsection-heading mb-3">Why Sponsor?</h3>
+                <ul class="space-y-2 text-body">
+                    <li>• Brand visibility supporting local community</li>
+                    <li>• Social media presence with active tagging</li>
+                    <li>• Reach across 8 Bay Area counties</li>
+                </ul>
+            </div>
+
+            <!-- What -->
+            <div class="card-elevated p-6">
+                <div class="text-4xl mb-4">💼</div>
+                <h3 class="subsection-heading mb-3">What You Get</h3>
+                <ul class="space-y-2 text-body">
+                    <li>• Promotional campaigns to exclusive members</li>
+                    <li>• Access to corporate & university connections</li>
+                    <li>• Support cross-community events</li>
+                </ul>
+            </div>
+
+            <!-- Where -->
+            <div class="card-elevated p-6">
+                <div class="text-4xl mb-4">📍</div>
+                <h3 class="subsection-heading mb-3">Where You're Featured</h3>
+                <ul class="space-y-2 text-body">
+                    <li>• Team jerseys</li>
+                    <li>• Social media & YouTube livestreams</li>
+                    <li>• Club events & hosting opportunities</li>
+                </ul>
+            </div>
+        </div>
+    </Section>
+
+    <!-- Sponsorship Tiers -->
+    <Section title="Sponsorship Tiers">
+        <div class="section-centered">
+            <p class="text-body-lg text-center mb-8 text-gray-600">
+                Choose the sponsorship level that fits your business goals. All sponsorships are for one full season and renewable annually.
+            </p>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+            {SPONSORS.tiers.map((tier) => <SponsorTierCard tier={tier} />)}
+        </div>
+    </Section>
+
+    <!-- Current Sponsors -->
+    <Section title="Our Current Sponsors" variant="alternate">
+        <div class="section-centered mb-6">
+            <p class="text-body-lg text-center text-gray-600">We're proud to partner with these outstanding Bay Area businesses</p>
+        </div>
+
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {SPONSORS.current.map((sponsor) => <SponsorLogo sponsor={sponsor} showDescription={true} />)}
+        </div>
+    </Section>
+
+    <!-- Brand Representation Details -->
+    <Section title="How Your Brand is Represented">
+        <div class="section-centered">
+            <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-8 border-2 border-blue-300">
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div class="text-left">
+                        <h3 class="subsection-heading mb-4 text-blue-900 text-center">Jersey Placement</h3>
+                        <ul class="space-y-3 text-body text-left">
+                            <li class="flex items-start justify-start">
+                                <span class="text-gray-500 font-bold text-lg flex-shrink-0 mr-2">★</span>
+                                <span><strong>Platinum:</strong> Logo on front AND back of jersey</span>
+                            </li>
+                            <li class="flex items-start justify-start">
+                                <span class="font-bold text-lg flex-shrink-0 mr-2" style="color: #D4AF37;">★</span>
+                                <span><strong>Gold:</strong> Logo on side sleeve (one sleeve)</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="subsection-heading mb-4 text-blue-900">Media Exposure</h3>
+                        <ul class="space-y-3 text-body pl-8">
+                            <li class="flex items-start gap-3">
+                                <span class="text-2xl flex-shrink-0">📱</span>
+                                <span>Instagram posts & stories</span>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <span class="text-2xl flex-shrink-0">📺</span>
+                                <span>YouTube match livestreams</span>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <span class="text-2xl flex-shrink-0">🎉</span>
+                                <span>Club events & gatherings</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </Section>
+
+    <!-- Previous Seasons Timeline -->
+    <Section title="Our Previous Season Sponsors" variant="alternate">
+        <div class="section-centered mb-8">
+            <p class="text-body-lg text-center text-gray-600">Thank you to all our past sponsors who have supported Golden State Cricket Club</p>
+        </div>
+
+        <div class="space-y-12 max-w-6xl mx-auto">
+            {
+                sponsorsByYear.map((yearData) => (
+                    <SponsorTimelineYear
+                        year={yearData.year}
+                        sponsors={{
+                            platinum: yearData.platinum,
+                            gold: yearData.gold
+                        }}
+                    />
+                ))
+            }
+        </div>
+    </Section>
+
+    <!-- How to Become a Sponsor -->
+    <Section title="Ready to Become a Sponsor?" id="contact">
+        <div class="section-centered">
+            <div class="accent-box text-center p-8">
+                <h3 class="subsection-heading mb-4">Let's Talk Partnership</h3>
+                <p class="text-body-lg mb-6 text-gray-700">
+                    Interested in supporting Golden State Cricket Club? Get in touch with us to discuss sponsorship opportunities.
+                </p>
+                <div class="text-center">
+                    <a href="/contact" class="btn btn-lg"> Contact Us </a>
+                </div>
+            </div>
+        </div>
+    </Section>
+
+    <!-- Important Notes -->
+    <Section variant="alternate">
+        <div class="max-w-4xl mx-auto px-4">
+            <div class="bg-gray-50 border-2 border-gray-300 rounded-xl p-6">
+                <h3 class="subsection-heading mb-3 text-gray-900 text-center">Important Information</h3>
+                <ul class="space-y-2 text-sm text-gray-700 text-left">
+                    <li class="flex items-start gap-2">
+                        <span class="text-blue-600 font-bold flex-shrink-0">•</span>
+                        <span>Sponsorship is for one full season and can be renewed at the end of each season</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-blue-600 font-bold flex-shrink-0">•</span>
+                        <span>Jersey will have sponsor logo and will be in compliance with league rules</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-blue-600 font-bold flex-shrink-0">•</span>
+                        <span>Bengals Inc. is a 501(c)(3) non-profit organization. Sponsorships may be tax-deductible - consult your tax advisor</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-blue-600 font-bold flex-shrink-0">•</span>
+                        <span>Sponsorship does not guarantee any direct revenue generation opportunity</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-blue-600 font-bold flex-shrink-0">•</span>
+                        <span>All data shared will be with consent of members of the club. No PII data will be shared to potential sponsors</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-blue-600 font-bold flex-shrink-0">•</span>
+                        <span>Club or executives representing the club will not be responsible for any financial obligations</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </Section>
+</Layout>

@@ -1,0 +1,81 @@
+/**
+ * MOBILE RESPONSIVE STYLES
+ *
+ * Consolidated mobile-specific fixes and responsive utilities.
+ * Imported by both globals.css and admin.css to ensure consistent mobile behavior.
+ *
+ * Last updated: February 2026
+ */
+
+/* Mobile browser safe area utilities */
+.safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.safe-bottom-lg {
+    /* Extra padding for mobile browser UI + iOS safe area */
+    padding-bottom: max(2.5rem, calc(1rem + env(safe-area-inset-bottom, 0px) + 2rem));
+}
+
+/* Mobile-specific fixes to prevent content cutoff */
+@media (max-width: 768px) {
+    html,
+    body {
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        height: auto !important;
+        max-height: none !important;
+        min-height: 100vh !important;
+    }
+
+    main,
+    footer,
+    header {
+        position: relative !important;
+        height: auto !important;
+    }
+
+    body {
+        padding-bottom: 2rem !important;
+    }
+
+    footer {
+        margin-top: 2rem;
+    }
+
+    /* Prevent horizontal scroll on mobile */
+    * {
+        max-width: 100vw;
+    }
+
+    /* Mobile-friendly touch targets */
+    button,
+    a,
+    input,
+    select,
+    textarea {
+        min-height: 44px; /* iOS recommended touch target size */
+    }
+
+    /* Mobile table responsiveness */
+    table {
+        font-size: 0.875rem;
+    }
+
+    /* Mobile form improvements */
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="tel"],
+    input[type="number"],
+    input[type="date"],
+    textarea,
+    select {
+        font-size: 16px; /* Prevents iOS zoom on focus */
+    }
+}
+
+/* Tablet breakpoint adjustments */
+@media (min-width: 769px) and (max-width: 1024px) {
+    /* Tablet-specific styles if needed */
+}

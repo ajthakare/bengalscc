@@ -1,19 +1,11 @@
 /**
  * THEME CONFIGURATION
  *
- * Switch between themes by changing the import below.
- * Each theme file is a complete standalone theme (colors + design).
+ * Active Theme: Golden State Cricket Club v2
+ * Location: ./themes/theme-golden-state-v2.css
  *
- * Available themes:
- * - theme-bengals.css       = Bengals Cricket Club (Orange/Blue)
- * - theme-golden-state.css  = Golden State CC (TBD - awaiting brand colors)
- *
- * TO SWITCH THEMES: Change the @import line below!
+ * This is the primary and only theme for the GSCC website.
+ * The theme defines all CSS custom properties (variables) used throughout the site.
  */
 
-/* Active theme */
 @import './themes/theme-golden-state-v2.css';
-
-/* Other available themes: */
-/* @import './themes/theme-bengals.css'; */
-/* @import './themes/theme-golden-state.css'; */

@@ -2,14 +2,15 @@
 interface Props {
     title?: string;
     variant?: 'default' | 'alternate';
+    id?: string;
 }
 
-const { title, variant = 'default' } = Astro.props;
+const { title, variant = 'default', id } = Astro.props;
 const bgClass = variant === 'alternate' ? '' : '';
 const bgStyle = variant === 'alternate' ? `background-color: var(--color-bg-section-alt);` : '';
 ---
 
-<section class={`section-spacing ${bgClass}`} style={bgStyle}>
+<section class={`section-spacing ${bgClass}`} style={bgStyle} id={id}>
     <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         {title && (
             <h2 class="section-heading text-center">

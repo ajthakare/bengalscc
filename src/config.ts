@@ -47,3 +47,137 @@ export const SITE_CONFIG = {
         }
     }
 };
+
+// Sponsorship Configuration
+export const SPONSORS = {
+    tiers: [
+        {
+            id: 'platinum',
+            name: 'Platinum Sponsor',
+            price: '$1,500/Annual',
+            color: 'platinum' as const,
+            benefits: [
+                '"Brand" logo on both front and back of jersey',
+                '"Brand" promotion on social media channel',
+                'Invitation to annual member gathering',
+                'Member activation (minimum 3 times per season)'
+            ]
+        },
+        {
+            id: 'gold',
+            name: 'Gold Sponsor',
+            price: '$1,000/Annual',
+            color: 'gold' as const,
+            benefits: [
+                '"Brand" logo on side sleeve of jersey (one sleeve)',
+                'Member activation (1 time per season)'
+            ]
+        }
+    ],
+
+    current: [
+        {
+            name: 'MAZALA Pizza',
+            tier: 'platinum' as const,
+            description: 'Indian Pizza, Chicago-based, first store in Downtown San Jose',
+            logo: '/sponsors/mazala.png',
+            website: 'https://mazalapizza.com',
+            year: 2025
+        },
+        {
+            name: 'T10 Sports',
+            tier: 'gold' as const,
+            description: 'Official Jersey & Kit Partner',
+            logo: '/sponsors/t10.png',
+            website: '#',
+            year: 2025
+        },
+        {
+            name: 'NACL Sports Center',
+            tier: 'gold' as const,
+            description: 'Practice & Ground Sponsor',
+            logo: '/sponsors/nacl.png',
+            website: '#',
+            year: 2025
+        }
+    ],
+
+    past: [
+        {
+            name: 'Parktown Pizza Company',
+            tier: 'platinum' as const,
+            description: 'India Fusion Pizza & Wings with 5 Outlets in Bay Area',
+            years: [2023, 2024],
+            logo: '/sponsors/parktown.png'
+        },
+        {
+            name: 'Realty ++',
+            tier: 'platinum' as const,
+            description: 'Real Estate Broker & Realtor, Fremont Bay Area',
+            years: [2022],
+            logo: '/sponsors/realty.png'
+        },
+        {
+            name: 'Parktown Pizza',
+            tier: 'gold' as const,
+            description: 'India Fusion Pizza & Wings with 5 Outlets in Bay Area',
+            years: [2022],
+            logo: '/sponsors/parktown.png'
+        },
+        {
+            name: 'Ascend Technology Inc',
+            tier: 'gold' as const,
+            description: 'IT Managed Services Company, San Jose, Bay Area',
+            years: [2022, 2023, 2024],
+            logo: '/sponsors/ascend.png'
+        },
+        {
+            name: 'T10 Sports',
+            tier: 'gold' as const,
+            description: 'Official Jersey & Kit Partner',
+            years: [2023, 2024],
+            logo: '/sponsors/t10.png'
+        },
+        {
+            name: 'NACL Sports Center',
+            tier: 'gold' as const,
+            description: 'Practice & Ground Sponsor',
+            years: [2024],
+            logo: '/sponsors/nacl.png'
+        }
+    ],
+
+    benefits: {
+        why: [
+            {
+                title: 'Brand Visibility',
+                description: 'Support local community while gaining exposure across 8 Bay Area counties'
+            },
+            {
+                title: 'Social Media Presence',
+                description: 'Tagging sponsors on all communications across Instagram and YouTube channels'
+            }
+        ],
+        what: [
+            {
+                title: 'Promotional Campaigns',
+                description: 'Run targeted campaigns to our exclusive club members'
+            },
+            {
+                title: 'Target Member Connections',
+                description: 'Access to corporate connections and student community (SJSU and Santa Clara University)'
+            },
+            {
+                title: 'Community Events',
+                description: 'Ability to support cross-community events and gain local recognition'
+            }
+        ],
+        where: [
+            'Team Jerseys',
+            'Social Media Communications',
+            'YouTube Live Stream',
+            'Club Events',
+            'Event Hosting Opportunities'
+        ]
+    }
+};

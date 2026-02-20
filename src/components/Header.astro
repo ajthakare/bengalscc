@@ -6,8 +6,15 @@ import '@fontsource/libre-baskerville/700.css';
 
 const navItems = [
     { linkText: 'Home', href: '/' },
-    { linkText: 'About Us', href: '/about' },
-    { linkText: 'Non-Profit', href: '/non-profit' },
+    {
+        linkText: 'About Us',
+        href: '/aboutus/club',
+        dropdown: [
+            { linkText: 'The Club', href: '/aboutus/club' },
+            { linkText: 'Non-Profit', href: '/aboutus/non-profit' },
+            { linkText: 'Sponsorships', href: '/aboutus/sponsorships' }
+        ]
+    },
     { linkText: 'Teams', href: '/teams' },
     { linkText: 'Fixtures', href: '/fixtures' },
     { linkText: 'Members', href: '/members' },
@@ -134,14 +141,38 @@ const currentPath = Astro.url.pathname;
                         {navItems.map((item) => {
                             // Highlight all pages except Home
                             const isActive = item.href !== '/' && (currentPath === item.href || currentPath.startsWith(item.href));
+                            const hasDropdown = item.dropdown && item.dropdown.length > 0;
+
                             return (
-                                <li>
+                                <li class={hasDropdown ? 'relative dropdown-container' : ''}>
                                     <a
                                         href={item.href}
-                                        class={`inline-block px-1.5 py-1 xl:px-3 xl:py-2 text-xs xl:text-sm font-bold whitespace-nowrap ${isActive ? 'nav-active' : ''}`}
+                                        class={`inline-flex items-center gap-1 px-1.5 py-1 xl:px-3 xl:py-2 text-xs xl:text-sm font-bold whitespace-nowrap ${isActive ? 'nav-active' : ''}`}
                                     >
                                         {item.linkText}
+                                        {hasDropdown && (
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                            </svg>
+                                        )}
                                     </a>
+                                    {hasDropdown && (
+                                        <ul class="dropdown-menu absolute left-0 mt-1 bg-gray-900 rounded-lg shadow-lg py-2 min-w-[180px] opacity-0 invisible transition-all duration-200">
+                                            {item.dropdown.map((dropdownItem) => {
+                                                const isDropdownActive = currentPath === dropdownItem.href || currentPath.startsWith(dropdownItem.href);
+                                                return (
+                                                    <li>
+                                                        <a
+                                                            href={dropdownItem.href}
+                                                            class={`block px-4 py-2 text-xs xl:text-sm font-bold hover:bg-white/10 transition-colors ${isDropdownActive ? 'text-amber-400' : 'text-white'}`}
+                                                        >
+                                                            {dropdownItem.linkText}
+                                                        </a>
+                                                    </li>
+                                                );
+                                            })}
+                                        </ul>
+                                    )}
                                 </li>
                             );
                         })}
@@ -212,13 +243,41 @@ const currentPath = Astro.url.pathname;
             )}
 
             {
-                navItems.map((item) => {
+                navItems.map((item, index) => {
                     const isActive = item.href !== '/' && (currentPath === item.href || currentPath.startsWith(item.href));
+                    const hasDropdown = item.dropdown && item.dropdown.length > 0;
+
                     return (
                         <li>
-                            <a href={item.href} class={`mobile-nav-link ${isActive ? 'mobile-nav-active' : ''}`}>
-                                {item.linkText}
-                            </a>
+                            {hasDropdown ? (
+                                <button
+                                    class={`mobile-nav-link w-full text-left flex items-center justify-between mobile-dropdown-toggle ${isActive ? 'mobile-nav-active' : ''}`}
+                                    data-dropdown-id={`mobile-dropdown-${index}`}
+                                >
+                                    <span>{item.linkText}</span>
+                                    <svg class="w-4 h-4 transition-transform mobile-dropdown-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </button>
+                            ) : (
+                                <a href={item.href} class={`mobile-nav-link ${isActive ? 'mobile-nav-active' : ''}`}>
+                                    {item.linkText}
+                                </a>
+                            )}
+                            {hasDropdown && (
+                                <ul class="ml-4 mt-1 space-y-1 hidden mobile-dropdown-content" id={`mobile-dropdown-${index}`}>
+                                    {item.dropdown.map((dropdownItem) => {
+                                        const isDropdownActive = currentPath === dropdownItem.href || currentPath.startsWith(dropdownItem.href);
+                                        return (
+                                            <li>
+                                                <a href={dropdownItem.href} class={`mobile-nav-link text-sm ${isDropdownActive ? 'mobile-nav-active' : ''}`}>
+                                                    {dropdownItem.linkText}
+                                                </a>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            )}
                         </li>
                     );
                 })
@@ -302,6 +361,16 @@ const currentPath = Astro.url.pathname;
         text-decoration-color: #d4af37;
         text-decoration-thickness: 2px;
         text-underline-offset: 4px;
+    }
+
+    /* Dropdown Menu Styles */
+    .dropdown-container:hover .dropdown-menu {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .dropdown-menu {
+        z-index: 1000;
     }
 
     /* Mobile Menu Styles */
@@ -421,5 +490,21 @@ const currentPath = Astro.url.pathname;
         if (e.key === 'Escape' && mobileMenu?.classList.contains('active')) {
             toggleMobileMenu();
         }
+    });
+
+    // Mobile dropdown toggle
+    const mobileDropdownToggles = document.querySelectorAll('.mobile-dropdown-toggle');
+    mobileDropdownToggles?.forEach((toggle) => {
+        toggle.addEventListener('click', (e) => {
+            e.preventDefault();
+            const dropdownId = toggle.getAttribute('data-dropdown-id');
+            const dropdownContent = document.getElementById(dropdownId);
+            const icon = toggle.querySelector('.mobile-dropdown-icon');
+
+            if (dropdownContent) {
+                dropdownContent.classList.toggle('hidden');
+                icon?.classList.toggle('rotate-180');
+            }
+        });
     });
 </script>

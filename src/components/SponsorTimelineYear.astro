@@ -1,0 +1,87 @@
+---
+interface Props {
+  year: number;
+  sponsors: {
+    platinum: Array<{ name: string; description: string; logo: string }>;
+    gold: Array<{ name: string; description: string; logo: string }>;
+  };
+}
+
+const { year, sponsors } = Astro.props;
+
+// Combine all sponsors with tier information
+const allSponsors = [
+  ...sponsors.platinum.map(s => ({ ...s, tier: 'platinum' as const })),
+  ...sponsors.gold.map(s => ({ ...s, tier: 'gold' as const }))
+];
+
+// Tier styling (matching SponsorLogo component)
+const tierStyles = {
+  platinum: 'border-gray-300',
+  gold: 'border-amber-300'
+};
+
+const tierCardBg = {
+  platinum: 'linear-gradient(to bottom right, #FFFFFF, #CECECE)',
+  gold: 'linear-gradient(to bottom right, #FFFFFF, #D4AF37)'
+};
+
+const tierBadgeStyles = {
+  platinum: 'text-gray-800 border-gray-400',
+  gold: 'text-white border-amber-600'
+};
+
+const tierBadgeBg = {
+  platinum: '#CECECE',
+  gold: '#D4AF37'
+};
+---
+
+<div class="sponsor-year-section">
+  <!-- Year Header -->
+  <div class="flex items-center justify-center mb-6">
+    <div class="bg-gradient-to-r from-amber-500 to-amber-600 text-white px-8 py-3 rounded-lg shadow-lg">
+      <span class="text-3xl font-bold">{year}</span>
+    </div>
+  </div>
+
+  <!-- All Sponsors in One Row -->
+  {allSponsors.length > 0 && (
+    <div class="flex flex-wrap justify-center gap-3">
+      {allSponsors.map(sponsor => (
+        <div class={`card ${tierStyles[sponsor.tier]} hover:shadow-lg transition-all duration-300 w-full sm:w-48 lg:w-52 xl:w-56`} style={`background: ${tierCardBg[sponsor.tier]}`}>
+          <div class="p-4 flex flex-col items-center">
+            <!-- Logo - Fixed Height -->
+            <div class="h-16 flex items-center justify-center mb-3 w-full">
+              <img
+                src={sponsor.logo}
+                alt={sponsor.name}
+                class="max-h-16 w-auto object-contain"
+              />
+            </div>
+
+            <!-- Name - Fixed Height -->
+            <div class="h-12 flex items-center justify-center mb-2">
+              <h3 class="text-base font-bold text-gray-900 text-center line-clamp-2">{sponsor.name}</h3>
+            </div>
+
+            <!-- Tier Badge - Fixed Height -->
+            <div class="h-7 flex items-center justify-center mb-2">
+              <span
+                class={`${tierBadgeStyles[sponsor.tier]} text-xs font-semibold px-2 py-1 rounded-full border`}
+                style={tierBadgeBg[sponsor.tier] ? `background-color: ${tierBadgeBg[sponsor.tier]}` : ''}
+              >
+                {sponsor.tier.charAt(0).toUpperCase() + sponsor.tier.slice(1)} Sponsor
+              </span>
+            </div>
+
+            <!-- Description - Fixed Height -->
+            <div class="h-16 flex items-start justify-center">
+              <p class="text-xs text-gray-600 text-center line-clamp-3">{sponsor.description}</p>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )}
+</div>

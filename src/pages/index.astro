@@ -8,6 +8,7 @@ import Section from '../components/Section.astro';
 import Card from '../components/Card.astro';
 import { readdir } from 'node:fs/promises';
 import { join } from 'node:path';
+import { SPONSORS } from '../config';
 
 const highlights = [
     { label: 'Founded', value: '2018' },
@@ -65,7 +66,7 @@ try {
             <p class="text-body-lg text-justified mb-6">
                 Founded in 2018, Golden State Cricket Club (GSCC) is part of Bengals Inc., a 501(c)(3) non-profit organization. We bring together 160+ players from diverse backgrounds with a shared passion for competitive cricket, sportsmanship, and continuous growth. We compete in Northern California Cricket Association (NCCA) and Bay Area Cricket Alliance (BACA) leagues.
             </p>
-            <a href="/about" class="btn">Learn More About Us</a>
+            <a href="/aboutus/club" class="btn">Learn More About Us</a>
         </div>
     </Section>
 
@@ -129,6 +130,45 @@ try {
 
         <div class="text-center">
             <a href="/gallery" class="btn btn-lg">View Full Gallery</a>
+        </div>
+    </Section>
+
+    <!-- Current Sponsors Section -->
+    <Section title="Our Sponsors" variant="alternate">
+        <div class="section-centered mb-6">
+            <p class="text-body-lg text-center text-gray-600">
+                Thank you to our valued sponsors who support Golden State Cricket Club
+            </p>
+        </div>
+
+        <!-- Sponsor logos in a responsive grid -->
+        <div class="flex flex-wrap justify-center items-center gap-8 max-w-4xl mx-auto">
+            {SPONSORS.current.map(sponsor => (
+                <div class="sponsor-logo-home">
+                    {sponsor.website && sponsor.website !== '#' ? (
+                        <a href={sponsor.website} target="_blank" rel="noopener noreferrer" class="block hover:opacity-80 transition-opacity">
+                            <img
+                                src={sponsor.logo}
+                                alt={`${sponsor.name} logo`}
+                                class="h-20 w-auto object-contain grayscale hover:grayscale-0 transition-all"
+                            />
+                        </a>
+                    ) : (
+                        <img
+                            src={sponsor.logo}
+                            alt={`${sponsor.name} logo`}
+                            class="h-20 w-auto object-contain grayscale hover:grayscale-0 transition-all"
+                        />
+                    )}
+                </div>
+            ))}
+        </div>
+
+        <!-- CTA to sponsorships page -->
+        <div class="text-center mt-8">
+            <a href="/aboutus/sponsorships" class="btn-secondary">
+                Learn About Sponsorship Opportunities
+            </a>
         </div>
     </Section>
 </Layout>

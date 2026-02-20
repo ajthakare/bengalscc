@@ -1,0 +1,77 @@
+---
+interface Props {
+  sponsor: {
+    name: string;
+    tier: 'platinum' | 'gold';
+    logo: string;
+    description?: string;
+    website?: string;
+  };
+  showDescription?: boolean;
+}
+
+const { sponsor, showDescription = false } = Astro.props;
+
+// Tier styling
+const tierStyles = {
+  platinum: 'border-gray-300',
+  gold: 'border-amber-300'
+};
+
+const tierCardBg = {
+  platinum: 'linear-gradient(to bottom right, #FFFFFF, #CECECE)',
+  gold: 'linear-gradient(to bottom right, #FFFFFF, #D4AF37)'
+};
+
+const tierBadgeStyles = {
+  platinum: 'text-gray-800 border-gray-400',
+  gold: 'text-white border-amber-600'
+};
+
+const tierBadgeBg = {
+  platinum: '#CECECE',
+  gold: '#D4AF37'
+};
+
+const style = tierStyles[sponsor.tier];
+const badgeStyle = tierBadgeStyles[sponsor.tier];
+---
+
+<div class={`card ${style} hover:shadow-lg transition-all duration-300`} style={`background: ${tierCardBg[sponsor.tier]}`}>
+  <div class="p-6 flex flex-col items-center">
+    <!-- Logo -->
+    {sponsor.website && sponsor.website !== '#' ? (
+      <a href={sponsor.website} target="_blank" rel="noopener noreferrer" class="block mb-4">
+        <img
+          src={sponsor.logo}
+          alt={`${sponsor.name} logo`}
+          class="h-24 w-auto object-contain"
+        />
+      </a>
+    ) : (
+      <div class="mb-4">
+        <img
+          src={sponsor.logo}
+          alt={`${sponsor.name} logo`}
+          class="h-24 w-auto object-contain"
+        />
+      </div>
+    )}
+
+    <!-- Name -->
+    <h3 class="text-lg font-bold text-gray-900 text-center mb-2">{sponsor.name}</h3>
+
+    <!-- Tier Badge -->
+    <span
+      class={`${badgeStyle} text-xs font-semibold px-3 py-1 rounded-full border mb-2`}
+      style={tierBadgeBg[sponsor.tier] ? `background-color: ${tierBadgeBg[sponsor.tier]}` : ''}
+    >
+      {sponsor.tier.charAt(0).toUpperCase() + sponsor.tier.slice(1)} Sponsor
+    </span>
+
+    <!-- Description (optional) -->
+    {showDescription && sponsor.description && (
+      <p class="text-sm text-gray-600 text-center">{sponsor.description}</p>
+    )}
+  </div>
+</div>

@@ -1,0 +1,68 @@
+---
+interface Props {
+  tier: {
+    name: string;
+    price: string;
+    color: 'platinum' | 'gold';
+    benefits: string[];
+  };
+}
+
+const { tier } = Astro.props;
+
+// Color mapping
+const colorStyles = {
+  platinum: {
+    border: 'border-gray-300',
+    bgGradient: 'linear-gradient(to bottom right, #FFFFFF, #CECECE)',
+    badge: '',
+    badgeBg: '#CECECE',
+    badgeText: '#1f2937',
+    text: 'text-gray-900',
+    icon: 'text-gray-600'
+  },
+  gold: {
+    border: 'border-amber-300',
+    bgGradient: 'linear-gradient(to bottom right, #FFFFFF, #D4AF37)',
+    badge: '',
+    badgeBg: '#D4AF37',
+    badgeText: '#ffffff',
+    text: 'text-gray-900',
+    icon: 'text-amber-700'
+  }
+};
+
+const style = colorStyles[tier.color];
+---
+
+<div class={`card ${style.border} hover:shadow-xl transition-all duration-300`} style={`background: ${style.bgGradient}`}>
+  <div class="p-5">
+    <!-- Tier Badge -->
+    <div class="flex items-center justify-between mb-3">
+      <h3 class={`text-xl font-bold ${style.text}`}>{tier.name}</h3>
+      <span
+        class={`${style.badge} px-3 py-1.5 rounded-full font-bold text-base`}
+        style={`background-color: ${style.badgeBg}; color: ${style.badgeText};`}
+      >
+        {tier.price}
+      </span>
+    </div>
+
+    <!-- Benefits List -->
+    <ul class="space-y-2 mb-5">
+      {tier.benefits.map(benefit => (
+        <li class="flex items-start gap-2">
+          <svg class={`w-4 h-4 ${style.icon} flex-shrink-0 mt-0.5`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+          <span class="text-sm text-gray-700">{benefit}</span>
+        </li>
+      ))}
+    </ul>
+
+    <!-- CTA Button -->
+    <a href="#contact" class="btn w-full text-center">
+      Become a {tier.name}
+    </a>
+  </div>
+</div>

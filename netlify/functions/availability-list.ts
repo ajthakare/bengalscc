@@ -71,7 +71,6 @@ export const handler: Handler = async (
 
     // If no index exists, build it from fixtures store
     if (!index || index.length === 0) {
-      console.log('[Availability List] No index found, checking for availability records...');
 
       // Get all fixtures for the season
       const fixturesStore = getStore({

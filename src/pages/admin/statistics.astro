@@ -40,148 +40,188 @@ if (!authenticated) {
     <!-- Page Header -->
     <div class="page-header">
       <h1 class="page-title">Statistics Dashboard</h1>
-      <div class="page-subheader">
-        <p class="page-description">Player availability and performance statistics</p>
-        <div id="last-calculated" class="last-calculated" style="display: none;">
-          <span class="last-calculated-label">Last calculated:</span>
-          <span id="last-calculated-time" class="last-calculated-time">-</span>
+      <p class="page-description">Player availability and performance statistics</p>
+    </div>
+
+    <!-- Last Updated Badge -->
+    <div id="last-calculated" class="last-calculated-badge" style="display: none;">
+      <div class="badge-label">Last Updated</div>
+      <div id="last-calculated-time" class="badge-time">-</div>
+    </div>
+
+    <!-- Tabs Container -->
+    <div class="tabs-container">
+      <!-- Tab Navigation -->
+      <div class="tabs-nav">
+        <button class="tab-btn active" data-tab="overview">
+          Overview
+        </button>
+        <button class="tab-btn" data-tab="advanced">
+          Advanced Stats
+        </button>
+        <button class="tab-btn" data-tab="financial">
+          Financial
+        </button>
+      </div>
+
+      <!-- Tab Content Panels -->
+      <div class="tabs-content">
+        <!-- Overview Tab (default) -->
+        <div id="tab-overview" class="tab-panel active">
+          <!-- Filters Toolbar -->
+          <div class="toolbar">
+            <select id="season-filter" class="filter-select">
+              <option value="">Loading seasons...</option>
+            </select>
+            <select id="team-filter" class="filter-select">
+              <option value="">All Teams</option>
+              <option value="Bengal Tigers">Bengal Tigers</option>
+              <option value="Bengal Bulls">Bengal Bulls</option>
+              <option value="Bengal Thunder Cats">Bengal Thunder Cats</option>
+            </select>
+            <div class="view-mode-toggle">
+              <button id="season-view-btn" class="toggle-btn active">Season View</button>
+              <button id="career-view-btn" class="toggle-btn">Career View</button>
+            </div>
+            <div class="toolbar-actions">
+              <button id="recalculate-btn" class="btn-secondary">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2a1 1 0 0 1 1 1v4h-4M4 16a1 1 0 0 1-1-1v-4h4"/>
+                  <path d="M15 7A7 7 0 0 0 4 9m-1 4a7 7 0 0 0 11-2"/>
+                </svg>
+                Recalculate
+              </button>
+              <button id="export-btn" class="btn-primary">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M2 10v3a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-3M8 2v8m0 0L5 7m3 3l3-3"/>
+                </svg>
+                Export CSV
+              </button>
+            </div>
+          </div>
+
+          <!-- Stats Cards -->
+          <div id="stats-grid" class="stats-grid" style="display: none;">
+            <div class="stat-card">
+              <div class="stat-label">Total Players</div>
+              <div class="stat-value" id="stat-total-players">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Total Fixtures</div>
+              <div class="stat-value" id="stat-total-fixtures">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Avg Availability</div>
+              <div class="stat-value stat-success" id="stat-avg-availability">0%</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Avg Selection Rate</div>
+              <div class="stat-value stat-primary" id="stat-avg-selection">0%</div>
+            </div>
+          </div>
+
+          <!-- Loading State -->
+          <div id="loading-state" class="state-container">
+            <div class="spinner"></div>
+            <p class="state-text">Loading statistics...</p>
+          </div>
+
+          <!-- Error State -->
+          <div id="error-state" class="alert alert-error" style="display: none;">
+            <div>
+              <p class="alert-title">Error loading statistics</p>
+              <p id="error-text"></p>
+            </div>
+          </div>
+
+          <!-- Empty State -->
+          <div id="empty-state" class="state-container" style="display: none;">
+            <div class="empty-icon">📊</div>
+            <p class="state-title">No statistics available</p>
+            <p class="state-text">Calculate statistics to view player performance data</p>
+            <button class="btn-primary" onclick="document.getElementById('recalculate-btn').click()">
+              Calculate Statistics
+            </button>
+          </div>
+
+          <!-- Player Statistics Table -->
+          <div id="table-container" class="table-container" style="display: none;">
+            <h2 class="section-heading">Player Availability Statistics</h2>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th class="sortable" data-sort="playerName">
+                    Player Name
+                    <svg class="sort-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M4 6l4-4 4 4M4 10l4 4 4-4"/>
+                    </svg>
+                  </th>
+                  <th class="sortable" data-sort="team">
+                    Team(s)
+                    <svg class="sort-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M4 6l4-4 4 4M4 10l4 4 4-4"/>
+                    </svg>
+                  </th>
+                  <th class="sortable" data-sort="totalFixtures" style="text-align: center;">
+                    Fixtures
+                    <svg class="sort-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M4 6l4-4 4 4M4 10l4 4 4-4"/>
+                    </svg>
+                  </th>
+                  <th class="sortable" data-sort="timesAvailable" style="text-align: center;">
+                    Available
+                    <svg class="sort-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M4 6l4-4 4 4M4 10l4 4 4-4"/>
+                    </svg>
+                  </th>
+                  <th class="sortable" data-sort="gamesPlayed" style="text-align: center;">
+                    Played
+                    <svg class="sort-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M4 6l4-4 4 4M4 10l4 4 4-4"/>
+                    </svg>
+                  </th>
+                  <th class="sortable" data-sort="availabilityRate" style="text-align: center;">
+                    Availability %
+                    <svg class="sort-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M4 6l4-4 4 4M4 10l4 4 4-4"/>
+                    </svg>
+                  </th>
+                  <th class="sortable" data-sort="selectionRate" style="text-align: center;">
+                    Selection %
+                    <svg class="sort-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M4 6l4-4 4 4M4 10l4 4 4-4"/>
+                    </svg>
+                  </th>
+                </tr>
+              </thead>
+              <tbody id="stats-tbody">
+                <!-- Statistics will be inserted here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Advanced Stats Tab -->
+        <div id="tab-advanced" class="tab-panel">
+          <div class="tab-loading" style="display: none;">
+            <div class="spinner"></div>
+            <p class="state-text">Loading advanced statistics...</p>
+          </div>
+          <div id="advanced-stats-content"></div>
+        </div>
+
+        <!-- Financial Tab -->
+        <div id="tab-financial" class="tab-panel">
+          <div class="tab-loading" style="display: none;">
+            <div class="spinner"></div>
+            <p class="state-text">Loading financial data...</p>
+          </div>
+          <div id="financial-stats-content"></div>
         </div>
       </div>
     </div>
 
-    <!-- Filters Toolbar -->
-    <div class="toolbar">
-      <select id="season-filter" class="filter-select">
-        <option value="">Loading seasons...</option>
-      </select>
-      <select id="team-filter" class="filter-select">
-        <option value="">All Teams</option>
-        <option value="Bengal Tigers">Bengal Tigers</option>
-        <option value="Bengal Bulls">Bengal Bulls</option>
-        <option value="Bengal Thunder Cats">Bengal Thunder Cats</option>
-      </select>
-      <div class="view-mode-toggle">
-        <button id="season-view-btn" class="toggle-btn active">Season View</button>
-        <button id="career-view-btn" class="toggle-btn">Career View</button>
-      </div>
-      <div class="toolbar-actions">
-        <button id="recalculate-btn" class="btn-secondary">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 2a1 1 0 0 1 1 1v4h-4M4 16a1 1 0 0 1-1-1v-4h4"/>
-            <path d="M15 7A7 7 0 0 0 4 9m-1 4a7 7 0 0 0 11-2"/>
-          </svg>
-          Recalculate
-        </button>
-        <button id="export-btn" class="btn-primary">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M2 10v3a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-3M8 2v8m0 0L5 7m3 3l3-3"/>
-          </svg>
-          Export CSV
-        </button>
-      </div>
-    </div>
-
-    <!-- Stats Cards -->
-    <div id="stats-grid" class="stats-grid" style="display: none;">
-      <div class="stat-card">
-        <div class="stat-label">Total Players</div>
-        <div class="stat-value" id="stat-total-players">0</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Total Fixtures</div>
-        <div class="stat-value" id="stat-total-fixtures">0</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Avg Availability</div>
-        <div class="stat-value stat-success" id="stat-avg-availability">0%</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Avg Selection Rate</div>
-        <div class="stat-value stat-primary" id="stat-avg-selection">0%</div>
-      </div>
-    </div>
-
-    <!-- Loading State -->
-    <div id="loading-state" class="state-container">
-      <div class="spinner"></div>
-      <p class="state-text">Loading statistics...</p>
-    </div>
-
-    <!-- Error State -->
-    <div id="error-state" class="alert alert-error" style="display: none;">
-      <div>
-        <p class="alert-title">Error loading statistics</p>
-        <p id="error-text"></p>
-      </div>
-    </div>
-
-    <!-- Empty State -->
-    <div id="empty-state" class="state-container" style="display: none;">
-      <div class="empty-icon">📊</div>
-      <p class="state-title">No statistics available</p>
-      <p class="state-text">Calculate statistics to view player performance data</p>
-      <button class="btn-primary" onclick="document.getElementById('recalculate-btn').click()">
-        Calculate Statistics
-      </button>
-    </div>
-
-    <!-- Player Statistics Table -->
-    <div id="table-container" class="table-container" style="display: none;">
-      <h2 class="section-heading">Player Availability Statistics</h2>
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th class="sortable" data-sort="playerName">
-              Player Name
-              <svg class="sort-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M4 6l4-4 4 4M4 10l4 4 4-4"/>
-              </svg>
-            </th>
-            <th class="sortable" data-sort="team">
-              Team(s)
-              <svg class="sort-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M4 6l4-4 4 4M4 10l4 4 4-4"/>
-              </svg>
-            </th>
-            <th class="sortable" data-sort="totalFixtures" style="text-align: center;">
-              Fixtures
-              <svg class="sort-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M4 6l4-4 4 4M4 10l4 4 4-4"/>
-              </svg>
-            </th>
-            <th class="sortable" data-sort="timesAvailable" style="text-align: center;">
-              Available
-              <svg class="sort-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M4 6l4-4 4 4M4 10l4 4 4-4"/>
-              </svg>
-            </th>
-            <th class="sortable" data-sort="gamesPlayed" style="text-align: center;">
-              Played
-              <svg class="sort-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M4 6l4-4 4 4M4 10l4 4 4-4"/>
-              </svg>
-            </th>
-            <th class="sortable" data-sort="availabilityRate" style="text-align: center;">
-              Availability %
-              <svg class="sort-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M4 6l4-4 4 4M4 10l4 4 4-4"/>
-              </svg>
-            </th>
-            <th class="sortable" data-sort="selectionRate" style="text-align: center;">
-              Selection %
-              <svg class="sort-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M4 6l4-4 4 4M4 10l4 4 4-4"/>
-              </svg>
-            </th>
-          </tr>
-        </thead>
-        <tbody id="stats-tbody">
-          <!-- Statistics will be inserted here -->
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Advanced Statistics Sections -->
+    <!-- Advanced Statistics Sections (will be moved to tab dynamically) -->
     <div id="advanced-stats-container" style="display: none;">
       <!-- Two Column Layout -->
       <div class="advanced-stats-grid">
@@ -247,34 +287,138 @@ if (!authenticated) {
   </div>
 </AdminLayout>
 
-<style>
+<style is:global>
   .statistics-page {
-    max-width: 1400px;
-    margin: 0 auto;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
   }
 
-  .statistics-page .page-header {
-    margin-bottom: 2rem;
+  /* Last Calculated Badge */
+  .last-calculated-badge {
+    background: linear-gradient(135deg, #f3f4f6 0%, #ffffff 100%);
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 0.875rem 1.5rem;
+    max-width: 300px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    margin: 1rem auto 1.5rem auto;
+    text-align: center;
   }
 
-  .page-subheader {
-    margin-bottom: 0.5rem;
-  }
-
-  .last-calculated {
-    font-size: 0.75rem;
-    color: #6b7280;
-    margin-top: 0.25rem;
-  }
-
-  .last-calculated-label {
-    font-weight: 400;
-    margin-right: 0.25rem;
-  }
-
-  .last-calculated-time {
-    color: #374151;
+  .badge-label {
+    font-size: 0.6875rem;
     font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.375rem;
+  }
+
+  .badge-time {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #111827;
+    line-height: 1.5;
+  }
+
+  /* Stale data warning */
+  .last-calculated-badge[style*="color: rgb(220, 38, 38)"] {
+    border-color: #fca5a5;
+    background: linear-gradient(135deg, #fee2e2 0%, #fef2f2 100%);
+  }
+
+  .last-calculated-badge[style*="color: rgb(220, 38, 38)"] .badge-time {
+    color: #dc2626;
+  }
+
+  /* Mobile responsive */
+  @media (max-width: 768px) {
+    .last-calculated-badge {
+      max-width: 100%;
+      margin: 1rem 0 1.5rem 0;
+    }
+  }
+
+  /* Tab Navigation Styles */
+  .tabs-container {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+    margin-top: 2rem;
+  }
+
+  .tabs-nav {
+    display: flex;
+    border-bottom: 2px solid #e5e7eb;
+    padding: 0 1.5rem;
+    gap: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tab-btn {
+    padding: 1rem 2rem;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.9375rem;
+    color: #6b7280;
+    position: relative;
+    transition: all 0.2s;
+    white-space: nowrap;
+    border-bottom: 3px solid transparent;
+  }
+
+  .tab-btn:hover {
+    color: #111827;
+    background: #f9fafb;
+  }
+
+  .tab-btn.active {
+    color: #8C1D18;
+    background: transparent;
+    font-weight: 600;
+    border-bottom: 3px solid #8C1D18;
+  }
+
+  .tabs-content {
+    padding: 1.5rem;
+  }
+
+  .tab-panel {
+    display: none;
+  }
+
+  .tab-panel.active {
+    display: block;
+    animation: fadeIn 0.3s ease-in;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .tab-loading {
+    text-align: center;
+    padding: 3rem 1rem;
+  }
+
+  /* Mobile responsive tabs */
+  @media (max-width: 768px) {
+    .tab-btn {
+      padding: 0.75rem 1rem;
+      font-size: 0.875rem;
+    }
   }
 
   .toolbar {
@@ -442,29 +586,51 @@ if (!authenticated) {
   }
 
   .advanced-stats-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
+    flex-direction: column;
     gap: 2rem;
-    margin-top: 2rem;
-  }
-
-  @media (max-width: 1200px) {
-    .advanced-stats-grid {
-      grid-template-columns: 1fr;
-    }
+    margin-top: 0;
   }
 
   .stats-column {
     display: flex;
     flex-direction: column;
     gap: 2rem;
+    width: 100%;
   }
 
   .stats-section {
     background: white;
     border-radius: 12px;
-    padding: 1.5rem;
+    padding: 0;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+  }
+
+  .stats-section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: linear-gradient(135deg, #f67280 0%, #355c7d 100%);
+    padding: 1rem 1.5rem;
+    margin: 0;
+  }
+
+  .stats-section-icon {
+    font-size: 1.5rem;
+    line-height: 1;
+  }
+
+  .stats-section-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: white;
+    margin: 0;
+    line-height: 1;
+  }
+
+  .stats-section > div:not(.stats-section-header) {
+    padding: 1.5rem;
   }
 
   .section-heading {
@@ -531,12 +697,126 @@ if (!authenticated) {
     text-align: center;
   }
 
+  .table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    position: relative;
+  }
+
+  @media (max-width: 768px) {
+    /* Sticky first column on mobile - for Advanced/Financial tabs */
+    .table-responsive .data-mini-table th:first-child,
+    .table-responsive .data-mini-table td:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 2;
+      background: white;
+      box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .table-responsive .data-mini-table thead th:first-child {
+      z-index: 3;
+      background: #f9fafb;
+    }
+
+    .table-responsive .data-mini-table tbody tr:nth-child(even) td:first-child {
+      background: #f9fafb;
+    }
+
+    .table-responsive .data-mini-table tbody tr:hover td:first-child {
+      background: #f3f4f6;
+    }
+
+    /* Sticky first column on mobile - for Overview tab */
+    .table-container .data-table th:first-child,
+    .table-container .data-table td:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 2;
+      background: white;
+      box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .table-container .data-table thead th:first-child {
+      z-index: 3;
+      background: #f9fafb;
+    }
+
+    .table-container .data-table tbody tr:nth-child(even) td:first-child {
+      background: #f9fafb;
+    }
+
+    .table-container .data-table tbody tr:hover td:first-child {
+      background: #f3f4f6;
+    }
+  }
+
   .data-mini-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.875rem;
     margin-top: 1rem;
     border: 1px solid #e5e7eb;
+  }
+
+  /* Compact layout for umpire fees table */
+  .umpire-fees-table {
+    width: auto !important;
+    table-layout: fixed !important;
+  }
+
+  .umpire-fees-table th,
+  .umpire-fees-table td {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .umpire-fees-table th:first-child,
+  .umpire-fees-table td:first-child {
+    width: 200px !important;
+    white-space: normal !important;
+    word-wrap: break-word;
+    line-height: 1.4;
+  }
+
+  .umpire-fees-table th:nth-child(2),
+  .umpire-fees-table td:nth-child(2) {
+    width: 120px !important;
+  }
+
+  .umpire-fees-table th:nth-child(3),
+  .umpire-fees-table td:nth-child(3) {
+    width: 140px !important;
+  }
+
+  /* Venue table with fixed narrow first column */
+  .venue-table {
+    table-layout: fixed !important;
+    min-width: 450px !important;
+  }
+
+  .venue-table th:first-child,
+  .venue-table td:first-child {
+    width: 120px !important;
+    min-width: 120px !important;
+    max-width: 120px !important;
+    white-space: normal;
+    word-wrap: break-word;
+    line-height: 1.3;
+  }
+
+  .venue-table th:nth-child(2) { width: 80px !important; }
+  .venue-table th:nth-child(3) { width: 70px !important; }
+  .venue-table th:nth-child(4) { width: 70px !important; }
+  .venue-table th:nth-child(5) { width: 90px !important; }
+
+  /* Stats summary box */
+  .stats-summary-box {
+    padding: 1rem;
+    background: #f3f4f6;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    font-weight: 600;
   }
 
   .data-mini-table thead {
@@ -550,7 +830,6 @@ if (!authenticated) {
     color: #374151;
     border-bottom: 2px solid #d1d5db;
     border-right: 1px solid #e5e7eb;
-    white-space: nowrap;
   }
 
   .data-mini-table th:last-child {
@@ -673,16 +952,28 @@ if (!authenticated) {
       margin: 0 -1rem;
       padding: 0;
       border-radius: 0;
+      position: relative;
     }
 
     .data-table {
       min-width: 700px;
     }
 
-    /* Advanced stats grid - single column on mobile */
-    .advanced-stats-grid {
-      grid-template-columns: 1fr;
-      gap: 1.5rem;
+    .data-table th {
+      white-space: nowrap;
+    }
+
+    .data-table th:first-child {
+      min-width: 120px;
+      max-width: 140px;
+    }
+
+    .data-table td:first-child {
+      min-width: 120px;
+      max-width: 140px;
+      white-space: normal;
+      word-wrap: break-word;
+      line-height: 1.4;
     }
 
     .stats-section {
@@ -699,6 +990,18 @@ if (!authenticated) {
       height: auto !important;
     }
 
+    /* Tabs navigation */
+    .tabs-nav {
+      padding: 0 0.5rem;
+      gap: 0.25rem;
+    }
+
+    .tab-btn {
+      padding: 0.75rem 1rem;
+      font-size: 0.875rem;
+      white-space: nowrap;
+    }
+
     /* Team chart grid - single column */
     .team-win-loss-grid {
       grid-template-columns: 1fr;
@@ -706,23 +1009,46 @@ if (!authenticated) {
 
     /* Mini table scrollable */
     .data-mini-table {
-      font-size: 0.8125rem;
-      display: block;
-      overflow-x: auto;
+      font-size: 0.75rem;
+      min-width: 600px;
+    }
+
+    .data-mini-table th {
+      padding: 0.5rem 0.375rem;
       white-space: nowrap;
     }
 
-    .data-mini-table thead,
-    .data-mini-table tbody,
-    .data-mini-table tr {
-      display: table;
-      width: 100%;
-      table-layout: fixed;
+    .data-mini-table td {
+      padding: 0.5rem 0.375rem;
     }
 
-    .data-mini-table th,
-    .data-mini-table td {
-      padding: 0.5rem;
+    .data-mini-table th:first-child {
+      min-width: 100px;
+      max-width: 120px;
+    }
+
+    .data-mini-table td:first-child {
+      min-width: 100px;
+      max-width: 120px;
+      white-space: normal;
+      word-wrap: break-word;
+      line-height: 1.4;
+    }
+
+    .stats-section > div:not(.stats-section-header) {
+      padding: 1rem;
+    }
+
+    .stats-section-header {
+      padding: 0.75rem 1rem;
+    }
+
+    .stats-section-title {
+      font-size: 1rem;
+    }
+
+    .stats-section-icon {
+      font-size: 1.25rem;
     }
 
     /* Fees summary */
@@ -730,24 +1056,83 @@ if (!authenticated) {
       font-size: 1.125rem;
       padding: 0.875rem 1rem;
     }
+
+    /* Team chart containers */
+    .team-chart-container {
+      margin-bottom: 2rem;
+    }
   }
 
   @media (max-width: 480px) {
-    .section-heading {
-      font-size: 1rem;
+    /* Tabs */
+    .tabs-nav {
+      padding: 0 0.25rem;
     }
 
-    .stats-section {
-      padding: 0.875rem;
+    .tab-btn {
+      padding: 0.625rem 0.75rem;
+      font-size: 0.8125rem;
+    }
+
+    .section-heading {
+      font-size: 0.875rem;
+    }
+
+    .stats-section > div:not(.stats-section-header) {
+      padding: 0.75rem;
+    }
+
+    .stats-section-header {
+      padding: 0.625rem 0.75rem;
+    }
+
+    .stats-section-title {
+      font-size: 0.875rem;
+    }
+
+    .stats-section-icon {
+      font-size: 1.125rem;
     }
 
     .data-mini-table {
-      font-size: 0.75rem;
+      font-size: 0.6875rem;
+      min-width: 500px;
+    }
+
+    .data-mini-table th {
+      padding: 0.375rem 0.25rem;
+      white-space: nowrap;
+    }
+
+    .data-mini-table td {
+      padding: 0.375rem 0.25rem;
+    }
+
+    .data-mini-table th:first-child {
+      min-width: 90px;
+      max-width: 110px;
+    }
+
+    .data-mini-table td:first-child {
+      min-width: 90px;
+      max-width: 110px;
+      white-space: normal;
+      word-wrap: break-word;
+      line-height: 1.4;
     }
 
     .rate-badge {
-      font-size: 0.75rem;
-      padding: 0.2rem 0.5rem;
+      font-size: 0.625rem;
+      padding: 0.15rem 0.4rem;
+    }
+
+    /* Make charts smaller on mobile */
+    canvas {
+      max-height: 250px !important;
+    }
+
+    .team-chart-container canvas {
+      max-height: 180px !important;
     }
   }
 </style>
@@ -776,6 +1161,9 @@ if (!authenticated) {
   const recalculateBtn = document.getElementById('recalculate-btn');
   const exportBtn = document.getElementById('export-btn');
 
+  // Initialize tabs
+  initializeTabs();
+
   // Load seasons on page load
   loadSeasons();
 
@@ -786,6 +1174,13 @@ if (!authenticated) {
     careerViewBtn.classList.remove('active');
     seasonFilter.disabled = false;
     teamFilter.disabled = false;
+
+    // Re-enable advanced/financial tabs in season view
+    document.querySelectorAll('[data-tab="advanced"], [data-tab="financial"]').forEach(btn => {
+      btn.style.opacity = '1';
+      btn.style.pointerEvents = 'auto';
+    });
+
     loadStatistics();
   });
 
@@ -795,7 +1190,19 @@ if (!authenticated) {
     seasonViewBtn.classList.remove('active');
     seasonFilter.disabled = true;
     teamFilter.disabled = true;
-    document.getElementById('advanced-stats-container').style.display = 'none';
+
+    // Switch to overview tab for career view
+    const overviewBtn = document.querySelector('[data-tab="overview"]');
+    if (overviewBtn && !overviewBtn.classList.contains('active')) {
+      overviewBtn.click();
+    }
+
+    // Disable advanced/financial tabs in career view
+    document.querySelectorAll('[data-tab="advanced"], [data-tab="financial"]').forEach(btn => {
+      btn.style.opacity = '0.5';
+      btn.style.pointerEvents = 'none';
+    });
+
     loadStatistics();
   });
 
@@ -876,6 +1283,158 @@ if (!authenticated) {
     }
   });
 
+  // Tab switching functionality
+  function initializeTabs() {
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const tabPanels = document.querySelectorAll('.tab-panel');
+
+    tabButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        const targetTab = button.dataset.tab;
+
+        // Remove active class from all buttons and panels
+        tabButtons.forEach(btn => btn.classList.remove('active'));
+        tabPanels.forEach(panel => panel.classList.remove('active'));
+
+        // Add active class to clicked button and corresponding panel
+        button.classList.add('active');
+        document.getElementById(`tab-${targetTab}`).classList.add('active');
+
+        // Save active tab to localStorage
+        localStorage.setItem('statsActiveTab', targetTab);
+      });
+    });
+
+    // Restore last active tab from localStorage
+    const savedTab = localStorage.getItem('statsActiveTab') || 'overview';
+    const savedButton = document.querySelector(`[data-tab="${savedTab}"]`);
+    if (savedButton) {
+      savedButton.click();
+    }
+  }
+
+  // Populate Advanced tab with pre-loaded data
+  function populateAdvancedTab(advancedStats) {
+    const container = document.getElementById('advanced-stats-content');
+
+    try {
+      // Store data globally for rendering functions
+      window.advancedStatsData = {
+        playerOfMatchLeaderboard: advancedStats.playerOfMatchLeaderboard || [],
+        winLossAnalysis: advancedStats.winLossAnalysis || {},
+        venuePerformance: advancedStats.venuePerformance || [],
+        playingTimeReport: advancedStats.playingTimeReport || [],
+        umpireFees: window.consolidatedStats?.financialStats?.umpireFees || { totalPaid: 0, players: [] },
+        dutyAnalysis: window.consolidatedStats?.financialStats?.dutyAnalysis || []
+      };
+
+
+      // Create DOM structure directly in the tab
+      container.innerHTML = `
+        <div class="stats-column">
+          <div class="stats-section">
+            <div class="stats-section-header">
+              <div class="stats-section-icon">🏆</div>
+              <h3 class="stats-section-title">Player of Match Leaderboard</h3>
+            </div>
+            <div id="player-of-match-content">
+              <canvas id="player-of-match-chart" style="max-height: 400px;"></canvas>
+            </div>
+          </div>
+
+          <div class="stats-section">
+            <div class="stats-section-header">
+              <div class="stats-section-icon">📊</div>
+              <h3 class="stats-section-title">Win/Loss Analysis</h3>
+            </div>
+            <div id="win-loss-content"></div>
+          </div>
+
+          <div class="stats-section">
+            <div class="stats-section-header">
+              <div class="stats-section-icon">🏟️</div>
+              <h3 class="stats-section-title">Venue Performance</h3>
+            </div>
+            <div id="venue-performance-content"></div>
+          </div>
+
+          <div class="stats-section">
+            <div class="stats-section-header">
+              <div class="stats-section-icon">⏱️</div>
+              <h3 class="stats-section-title">Playing Time Report</h3>
+            </div>
+            <div id="playing-time-content"></div>
+          </div>
+        </div>
+      `;
+
+      // Now render data into the newly created containers
+      // Use setTimeout to ensure DOM is fully ready for chart rendering
+      setTimeout(() => {
+        renderPlayerOfMatchLeaderboard();
+        renderWinLossAnalysis();
+        renderVenuePerformance();
+        renderPlayingTimeReport();
+      }, 100);
+    } catch (error) {
+      console.error('Error populating advanced tab:', error);
+      container.innerHTML = '<div class="alert alert-error"><p>Error loading advanced statistics</p></div>';
+    }
+  }
+
+  // Populate Financial tab with pre-loaded data
+  function populateFinancialTab(financialStats) {
+    const container = document.getElementById('financial-stats-content');
+
+    try {
+      // Ensure data has correct structure with defaults
+      const safeUmpireFees = {
+        totalPaid: financialStats.umpireFees?.totalPaid || 0,
+        players: financialStats.umpireFees?.players || []
+      };
+      const safeDutyAnalysis = financialStats.dutyAnalysis || [];
+
+      // Update global stats object with safe data
+      if (!window.advancedStatsData) window.advancedStatsData = {};
+      window.advancedStatsData.umpireFees = safeUmpireFees;
+      window.advancedStatsData.dutyAnalysis = safeDutyAnalysis;
+
+      // Create DOM structure directly in the tab
+      container.innerHTML = `
+        <div class="stats-column">
+          <div class="stats-section">
+            <div class="stats-section-header">
+              <div class="stats-section-icon">💰</div>
+              <h3 class="stats-section-title">Umpire Fees Tracking</h3>
+            </div>
+            <div id="umpire-fees-content"></div>
+          </div>
+
+          <div class="stats-section">
+            <div class="stats-section-header">
+              <div class="stats-section-icon">👔</div>
+              <h3 class="stats-section-title">Duty Analysis</h3>
+            </div>
+            <div id="duty-analysis-content">
+              <canvas id="duty-chart" style="max-height: 400px;"></canvas>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Now render data into the newly created containers
+      // Use setTimeout to ensure DOM is fully ready for chart rendering
+      setTimeout(() => {
+        renderUmpireFees();
+        renderDutyAnalysis();
+      }, 100);
+    } catch (error) {
+      console.error('Error populating financial tab:', error);
+      container.innerHTML = '<div class="alert alert-error"><p>Error loading financial statistics</p></div>';
+    }
+  }
+
+
   async function loadSeasons() {
     try {
       const response = await fetch('/.netlify/functions/seasons-list');
@@ -906,39 +1465,6 @@ if (!authenticated) {
     }
   }
 
-  async function updateLastCalculatedTimestamp() {
-    try {
-      // Get the first player from statisticsData
-      if (statisticsData.length === 0) return;
-
-      const firstPlayerId = statisticsData[0].playerId;
-      const response = await fetch(
-        `/.netlify/functions/statistics-player-get?playerId=${firstPlayerId}`
-      );
-
-      if (response.ok) {
-        const playerStats = await response.json();
-        if (playerStats.lastUpdated) {
-          const lastUpdatedDate = new Date(playerStats.lastUpdated);
-          const formattedDate = lastUpdatedDate.toLocaleString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true
-          });
-
-          document.getElementById('last-calculated-time').textContent = formattedDate;
-          document.getElementById('last-calculated').style.display = 'block';
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching last calculated timestamp:', error);
-      // Silently fail - timestamp is not critical
-    }
-  }
-
   async function loadStatistics() {
     try {
       loadingState.style.display = 'flex';
@@ -962,14 +1488,6 @@ if (!authenticated) {
         renderStatistics();
         statsGrid.style.display = 'grid';
         tableContainer.style.display = 'block';
-
-        // Update last calculated timestamp
-        await updateLastCalculatedTimestamp();
-      }
-
-      // Load advanced statistics for season view only
-      if (currentViewMode === 'season') {
-        await loadAdvancedStatistics();
       }
     } catch (error) {
       console.error('Error loading statistics:', error);
@@ -1009,94 +1527,120 @@ if (!authenticated) {
         selectionRate: p.stats.selectionRate,
       }));
     } else {
-      // Load all teams' stats - show consolidated stats per player
-      // Get all active players
-      const playersResponse = await fetch('/.netlify/functions/players-list?status=active');
-      if (!playersResponse.ok) throw new Error('Failed to load players');
+      // CONSOLIDATED LOAD: Get ALL statistics in ONE call
+      const response = await fetch(
+        `/.netlify/functions/statistics-all?seasonId=${currentSeasonId}`
+      );
 
-      const players = await playersResponse.json();
-      const allPlayerStats = [];
-
-      for (const player of players) {
-        try {
-          const response = await fetch(
-            `/.netlify/functions/statistics-player-get?playerId=${player.id}`
-          );
-
-          if (response.ok) {
-            const playerStats = await response.json();
-
-            // Check if player has stats for this season
-            const seasonStat = playerStats.seasonStats[currentSeasonId];
-            if (seasonStat) {
-              // Get all teams player participated in for this season
-              const teams = Object.keys(seasonStat.teamStats);
-
-              // Use club-level stats (consolidated across all teams)
-              allPlayerStats.push({
-                playerId: player.id,
-                playerName: playerStats.playerName,
-                team: teams.join(', '), // Show all teams player participated in
-                totalFixtures: seasonStat.clubStats.totalFixtures,
-                timesAvailable: seasonStat.clubStats.timesAvailable,
-                gamesPlayed: seasonStat.clubStats.gamesPlayed,
-                availabilityRate: seasonStat.clubStats.availabilityRate,
-                selectionRate: seasonStat.clubStats.selectionRate,
-              });
-            }
-          }
-        } catch (error) {
-          console.error(`Failed to load stats for player ${player.id}:`, error);
-        }
+      if (response.status === 404) {
+        statisticsData = [];
+        return;
       }
 
-      statisticsData = allPlayerStats;
+      if (!response.ok) {
+        throw new Error('Failed to load statistics');
+      }
+
+      const allStats = await response.json();
+
+      // Update last calculated timestamp
+      if (allStats.calculatedAt) {
+        displayLastCalculated(allStats.calculatedAt);
+      }
+
+      // Transform basic stats data to table format (Overview tab)
+      statisticsData = allStats.basicStats.playerStats.map((p) => ({
+        playerId: p.playerId,
+        playerName: p.playerName,
+        team: p.teams.join(', '),
+        totalFixtures: p.clubStats.totalFixtures,
+        timesAvailable: p.clubStats.timesAvailable,
+        gamesPlayed: p.clubStats.gamesPlayed,
+        availabilityRate: p.clubStats.availabilityRate,
+        selectionRate: p.clubStats.selectionRate,
+      }));
+
+      // Store consolidated stats globally for tab access
+      window.consolidatedStats = allStats;
+
+      // Populate Advanced and Financial tabs immediately (no lazy loading!)
+      populateAdvancedTab(allStats.advancedStats);
+      populateFinancialTab(allStats.financialStats);
+    }
+  }
+
+  function displayLastCalculated(timestamp) {
+    try {
+      const lastUpdatedDate = new Date(timestamp);
+      const now = new Date();
+      const diffMs = now - lastUpdatedDate;
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      const diffMinutes = Math.floor(diffMs / (1000 * 60));
+
+      let timeAgo = '';
+      if (diffDays > 0) {
+        timeAgo = `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+      } else if (diffHours > 0) {
+        timeAgo = `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+      } else if (diffMinutes > 0) {
+        timeAgo = `${diffMinutes} minute${diffMinutes > 1 ? 's' : ''} ago`;
+      } else {
+        timeAgo = 'Just now';
+      }
+
+      const formattedDate = lastUpdatedDate.toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+
+      document.getElementById('last-calculated-time').textContent = `${formattedDate} (${timeAgo})`;
+      document.getElementById('last-calculated').style.display = 'block';
+
+      // Add visual indicator if data is stale (> 7 days)
+      const lastCalcElement = document.getElementById('last-calculated');
+      if (diffDays > 7) {
+        lastCalcElement.style.color = '#dc2626'; // Red for stale data
+        lastCalcElement.title = 'Statistics are stale. Consider recalculating.';
+      } else {
+        lastCalcElement.style.color = '#6b7280'; // Normal gray
+        lastCalcElement.title = '';
+      }
+    } catch (error) {
+      console.error('Error displaying last calculated time:', error);
     }
   }
 
   async function loadCareerStats() {
-    // Load all players' career stats
-    const playersResponse = await fetch('/.netlify/functions/players-list?status=active');
-    if (!playersResponse.ok) throw new Error('Failed to load players');
+    // PERFORMANCE OPTIMIZATION: Use bulk endpoint instead of 50+ individual calls
+    const response = await fetch(
+      '/.netlify/functions/statistics-career-bulk?includeInactive=false'
+    );
 
-    const players = await playersResponse.json();
-    const careerStats = [];
-
-    for (const player of players) {
-      try {
-        const response = await fetch(
-          `/.netlify/functions/statistics-player-get?playerId=${player.id}`
-        );
-
-        if (response.ok) {
-          const playerStats = await response.json();
-
-          // Get all teams from season stats
-          const teams = new Set();
-          Object.values(playerStats.seasonStats).forEach((seasonStat: any) => {
-            Object.keys(seasonStat.teamStats).forEach((team) => teams.add(team));
-          });
-
-          careerStats.push({
-            playerId: player.id,
-            playerName: playerStats.playerName,
-            team: Array.from(teams).join(', '),
-            totalFixtures: playerStats.careerStats.totalFixtures,
-            timesAvailable: Math.round(
-              (playerStats.careerStats.careerAvailabilityRate / 100) *
-                playerStats.careerStats.totalFixtures
-            ),
-            gamesPlayed: playerStats.careerStats.totalGamesPlayed,
-            availabilityRate: playerStats.careerStats.careerAvailabilityRate,
-            selectionRate: playerStats.careerStats.careerSelectionRate,
-          });
-        }
-      } catch (error) {
-        console.error(`Error loading stats for player ${player.id}:`, error);
-      }
+    if (!response.ok) {
+      throw new Error('Failed to load career statistics');
     }
 
-    statisticsData = careerStats;
+    const careerData = await response.json();
+
+    // Transform to existing data structure
+    statisticsData = careerData.playerStats.map((p) => ({
+      playerId: p.playerId,
+      playerName: p.playerName,
+      team: p.teams.join(', '),
+      totalFixtures: p.careerStats.totalFixtures,
+      timesAvailable: Math.round(
+        (p.careerStats.careerAvailabilityRate / 100) *
+        p.careerStats.totalFixtures
+      ),
+      gamesPlayed: p.careerStats.totalGamesPlayed,
+      availabilityRate: p.careerStats.careerAvailabilityRate,
+      selectionRate: p.careerStats.careerSelectionRate,
+    }));
   }
 
   function updateStatsCards() {
@@ -1208,44 +1752,11 @@ if (!authenticated) {
   }
 
   // Advanced Statistics
-  let advancedStatsData = null;
   let chartInstances = {};
-
-  async function loadAdvancedStatistics() {
-    if (!currentSeasonId) return;
-
-    try {
-      const response = await fetch(
-        `/.netlify/functions/statistics-advanced?seasonId=${currentSeasonId}`
-      );
-
-      if (!response.ok) {
-        console.error('Failed to load advanced statistics');
-        return;
-      }
-
-      advancedStatsData = await response.json();
-      renderAdvancedStatistics();
-      document.getElementById('advanced-stats-container').style.display = 'block';
-    } catch (error) {
-      console.error('Error loading advanced statistics:', error);
-    }
-  }
-
-  function renderAdvancedStatistics() {
-    if (!advancedStatsData) return;
-
-    renderPlayerOfMatchLeaderboard();
-    renderUmpireFees();
-    renderWinLossAnalysis();
-    renderVenuePerformance();
-    renderDutyAnalysis();
-    renderPlayingTimeReport();
-  }
 
   function renderPlayerOfMatchLeaderboard() {
     const container = document.getElementById('player-of-match-content');
-    const data = advancedStatsData.playerOfMatchLeaderboard;
+    const data = window.advancedStatsData?.playerOfMatchLeaderboard;
 
     if (!data || data.length === 0) {
       container.innerHTML = `
@@ -1267,6 +1778,11 @@ if (!authenticated) {
     }
 
     const ctx = document.getElementById('player-of-match-chart');
+    if (!ctx) {
+      console.error('Canvas element player-of-match-chart not found');
+      return;
+    }
+
     chartInstances.playerOfMatch = new Chart(ctx, {
       type: 'bar',
       data: {
@@ -1300,13 +1816,11 @@ if (!authenticated) {
   }
 
   function renderUmpireFees() {
-    const summaryContainer = document.getElementById('umpire-fees-summary');
-    const contentContainer = document.getElementById('umpire-fees-content');
-    const data = advancedStatsData.umpireFees;
+    const container = document.getElementById('umpire-fees-content');
+    const data = window.advancedStatsData?.umpireFees;
 
     if (!data || !data.players || data.players.length === 0) {
-      summaryContainer.style.display = 'none';
-      contentContainer.innerHTML = `
+      container.innerHTML = `
         <div class="insufficient-data">
           <div class="insufficient-data-icon">💰</div>
           <div class="insufficient-data-title">Insufficient Data</div>
@@ -1316,34 +1830,36 @@ if (!authenticated) {
       return;
     }
 
-    summaryContainer.style.display = 'block';
-    summaryContainer.innerHTML = `Total Umpire Fees Paid: $${data.totalPaid.toFixed(2)}`;
-
-    contentContainer.innerHTML = `
-      <table class="data-mini-table">
-        <thead>
-          <tr>
-            <th>Player</th>
-            <th class="text-center">Times Paid</th>
-            <th class="text-right">Total Amount</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${data.players.map(p => `
+    container.innerHTML = `
+      <div class="stats-summary-box">
+        Total Umpire Fees Paid: $${(data.totalPaid || 0).toFixed(2)}
+      </div>
+      <div class="table-responsive">
+        <table class="data-mini-table umpire-fees-table">
+          <thead>
             <tr>
-              <td><strong>${escapeHtml(p.name)}</strong></td>
-              <td class="text-center">${p.count}</td>
-              <td class="text-right">$${p.totalPaid.toFixed(2)}</td>
+              <th>Player</th>
+              <th class="text-center">Times Paid</th>
+              <th class="text-right">Total Amount</th>
             </tr>
-          `).join('')}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            ${data.players.map(p => `
+              <tr>
+                <td><strong>${escapeHtml(p.name || '')}</strong></td>
+                <td class="text-center">${p.timesPaid || p.count || 0}</td>
+                <td class="text-right">$${(p.totalAmount || p.totalPaid || 0).toFixed(2)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
     `;
   }
 
   function renderWinLossAnalysis() {
     const container = document.getElementById('win-loss-content');
-    const data = advancedStatsData.winLossAnalysis;
+    const data = window.advancedStatsData?.winLossAnalysis;
 
     if (!data || Object.keys(data).length === 0) {
       container.innerHTML = `
@@ -1424,7 +1940,7 @@ if (!authenticated) {
 
   function renderVenuePerformance() {
     const container = document.getElementById('venue-performance-content');
-    const data = advancedStatsData.venuePerformance;
+    const data = window.advancedStatsData?.venuePerformance;
 
     if (!data || data.length === 0) {
       container.innerHTML = `
@@ -1438,38 +1954,40 @@ if (!authenticated) {
     }
 
     container.innerHTML = `
-      <table class="data-mini-table">
-        <thead>
-          <tr>
-            <th>Venue</th>
-            <th class="text-center">Played</th>
-            <th class="text-center">Won</th>
-            <th class="text-center">Lost</th>
-            <th class="text-center">Win Rate</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${data.map(v => `
+      <div class="table-responsive">
+        <table class="data-mini-table venue-table">
+          <thead>
             <tr>
-              <td><strong>${escapeHtml(v.venue)}</strong></td>
-              <td class="text-center">${v.played}</td>
-              <td class="text-center">${v.won}</td>
-              <td class="text-center">${v.lost}</td>
-              <td class="text-center">
-                <span class="rate-badge ${v.winRate >= 60 ? 'rate-high' : v.winRate >= 40 ? 'rate-medium' : 'rate-low'}">
-                  ${v.winRate.toFixed(1)}%
-                </span>
-              </td>
+              <th>Venue</th>
+              <th class="text-center">Played</th>
+              <th class="text-center">Won</th>
+              <th class="text-center">Lost</th>
+              <th class="text-center">Win Rate</th>
             </tr>
-          `).join('')}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            ${data.map(v => `
+              <tr>
+                <td><strong>${escapeHtml(v.venue)}</strong></td>
+                <td class="text-center">${v.played}</td>
+                <td class="text-center">${v.won}</td>
+                <td class="text-center">${v.lost}</td>
+                <td class="text-center">
+                  <span class="rate-badge ${v.winRate >= 60 ? 'rate-high' : v.winRate >= 40 ? 'rate-medium' : 'rate-low'}">
+                    ${v.winRate.toFixed(1)}%
+                  </span>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
     `;
   }
 
   function renderDutyAnalysis() {
     const container = document.getElementById('duty-analysis-content');
-    const data = advancedStatsData.dutyAnalysis;
+    const data = window.advancedStatsData?.dutyAnalysis;
 
     if (!data || data.length === 0) {
       container.innerHTML = `
@@ -1536,7 +2054,7 @@ if (!authenticated) {
 
   function renderPlayingTimeReport() {
     const container = document.getElementById('playing-time-content');
-    const data = advancedStatsData.playingTimeReport;
+    const data = window.advancedStatsData?.playingTimeReport;
 
     if (!data || data.length === 0) {
       container.innerHTML = `
@@ -1551,39 +2069,41 @@ if (!authenticated) {
 
     // Show all players, sorted by selection rate (lowest first - needs attention)
     container.innerHTML = `
-      <table class="data-mini-table">
-        <thead>
-          <tr>
-            <th>Player</th>
-            <th class="text-center">Available</th>
-            <th class="text-center">Selected</th>
-            <th style="min-width: 180px;">Selection Rate</th>
-            <th class="text-center">Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${data.map(p => `
+      <div class="table-responsive">
+        <table class="data-mini-table">
+          <thead>
             <tr>
-              <td><strong>${escapeHtml(p.name)}</strong></td>
-              <td class="text-center">${p.available}</td>
-              <td class="text-center">${p.selected}</td>
-              <td>
-                <div class="progress-bar-container">
-                  <div class="progress-bar ${p.selectionRate >= 80 ? 'high' : p.selectionRate >= 50 ? 'medium' : 'low'}"
-                       style="width: ${p.selectionRate}%">
-                    ${p.selectionRate.toFixed(1)}%
-                  </div>
-                </div>
-              </td>
-              <td class="text-center">
-                ${p.meetsTarget
-                  ? '<span class="rate-badge rate-high">✓ Meets Target</span>'
-                  : '<span class="rate-badge rate-low">⚠ Below Target</span>'}
-              </td>
+              <th>Player</th>
+              <th class="text-center">Available</th>
+              <th class="text-center">Selected</th>
+              <th style="min-width: 120px;">Selection Rate</th>
+              <th class="text-center">Status</th>
             </tr>
-          `).join('')}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            ${data.map(p => `
+              <tr>
+                <td><strong>${escapeHtml(p.name)}</strong></td>
+                <td class="text-center">${p.available}</td>
+                <td class="text-center">${p.selected}</td>
+                <td>
+                  <div class="progress-bar-container">
+                    <div class="progress-bar ${p.selectionRate >= 80 ? 'high' : p.selectionRate >= 50 ? 'medium' : 'low'}"
+                         style="width: ${p.selectionRate}%">
+                      ${p.selectionRate.toFixed(1)}%
+                    </div>
+                  </div>
+                </td>
+                <td class="text-center">
+                  ${p.meetsTarget
+                    ? '<span class="rate-badge rate-high">✓ Target</span>'
+                    : '<span class="rate-badge rate-low">⚠ Below</span>'}
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
     `;
   }
 </script>

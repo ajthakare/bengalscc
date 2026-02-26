@@ -44,7 +44,31 @@ export const handler: Handler = async (
       };
     }
 
-    // Get stores
+    // INSTANT LOAD: Try to get pre-calculated advanced stats first
+    const statisticsStore = getStore({
+      name: 'player-statistics',
+      siteID: process.env.SITE_ID || '',
+      token: process.env.NETLIFY_AUTH_TOKEN || '',
+    });
+
+    const preCalculatedStats = await statisticsStore.get(`advanced-stats-${seasonId}`, { type: 'json' });
+
+    if (preCalculatedStats) {
+      // Return pre-calculated stats (instant!)
+      return {
+        statusCode: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'public, max-age=300', // Cache for 5 minutes
+        },
+        body: JSON.stringify(preCalculatedStats),
+      };
+    }
+
+    // FALLBACK: Calculate on-the-fly if pre-calculated stats don't exist
+    // (This will be slow but ensures backward compatibility)
+    console.log('Pre-calculated advanced stats not found, calculating on-the-fly...');
+
     const fixturesStore = getStore({
       name: 'fixtures',
       siteID: process.env.SITE_ID || '',

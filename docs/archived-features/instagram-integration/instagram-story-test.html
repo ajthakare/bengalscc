@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Instagram Story Template Test</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 40px;
+      background: #1a1a1a;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    .container {
+      width: 1080px;
+      height: 1920px;
+      position: relative;
+      background: url('public/insta_story_template.png') center/cover;
+      color: white;
+      padding: 0;
+      margin: 0;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    }
+
+    /* Team Name */
+    .team-name {
+      position: absolute;
+      top: 550px;
+      left: 100px;
+      right: 100px;
+      text-align: left;
+    }
+
+    .team-name h1 {
+      font-family: 'Libre Baskerville', serif;
+      font-size: 68px;
+      font-weight: 700;
+      color: #d4af37;
+      letter-spacing: 2px;
+      margin: 0;
+      padding: 0;
+      line-height: 1.0;
+    }
+
+    /* Opponent */
+    .opponent {
+      position: absolute;
+      top: 630px;
+      left: 100px;
+      right: 100px;
+      text-align: left;
+    }
+
+    .opponent h2 {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 48px;
+      font-weight: 600;
+      color: white;
+      margin: 0;
+      padding: 0;
+      line-height: 1.0;
+    }
+
+    /* Players List */
+    .players-list {
+      position: absolute;
+      top: 900px;
+      left: 150px;
+      right: 120px;
+    }
+
+    .players-list ol {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .players-list li {
+      font-family: 'Libre Baskerville', serif;
+      font-size: 36px;
+      font-weight: 700;
+      color: #d4af37;
+      margin-bottom: 14px;
+      line-height: 1.1;
+    }
+
+    .players-list .number {
+      display: inline-block;
+      width: 70px;
+    }
+
+    .players-list .captain {
+      color: white;
+      font-weight: 700;
+      margin-left: 10px;
+    }
+
+    /* Venue Details */
+    .venue-details {
+      position: absolute;
+      bottom: 160px;
+      left: 120px;
+      right: 120px;
+      text-align: left;
+    }
+
+    .venue-name {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 30px;
+      font-weight: 700;
+      color: white;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+      line-height: 1.1;
+    }
+
+    .venue-address {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 26px;
+      font-weight: 500;
+      color: white;
+      margin-bottom: 20px;
+      line-height: 1.1;
+    }
+
+    .match-date {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 32px;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 4px;
+      line-height: 1.1;
+    }
+
+    .match-time {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 32px;
+      font-weight: 700;
+      color: white;
+      line-height: 1.1;
+    }
+
+    /* Helper overlay */
+    .overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      display: none;
+    }
+
+    .overlay.show {
+      display: block;
+    }
+
+    .overlay .grid {
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(255,0,0,0.1) 0px,
+        rgba(255,0,0,0.1) 1px,
+        transparent 1px,
+        transparent 100px
+      );
+    }
+
+    .controls {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: rgba(0,0,0,0.8);
+      padding: 15px;
+      border-radius: 8px;
+      color: white;
+      font-size: 14px;
+      z-index: 1000;
+    }
+
+    .controls button {
+      background: #E5C878;
+      color: #000;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      margin-right: 8px;
+    }
+
+    .controls button:hover {
+      background: #d4b767;
+    }
+
+    .info {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+  <div class="controls">
+    <button onclick="toggleOverlay()">Toggle Grid</button>
+    <button onclick="downloadHtml()">Download HTML</button>
+    <div class="info">
+      Edit positions in DevTools (F12) → Elements → Styles
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Team Name -->
+    <div class="team-name">
+      <h1>GSCC TIGERS</h1>
+    </div>
+
+    <!-- Opponent -->
+    <div class="opponent">
+      <h2>VS SUNNYVALE CC</h2>
+    </div>
+
+    <!-- Players List -->
+    <div class="players-list">
+      <ol>
+        <li><span class="number">1.</span> <span>LIKITH</span> <span class="captain">(C)</span></li>
+        <li><span class="number">2.</span> <span>AJINKYA</span></li>
+        <li><span class="number">3.</span> <span>ABHIMANYU</span></li>
+        <li><span class="number">4.</span> <span>CHETAN</span></li>
+        <li><span class="number">5.</span> <span>DEVA</span></li>
+        <li><span class="number">6.</span> <span>MANU</span></li>
+        <li><span class="number">7.</span> <span>MAZAR</span></li>
+        <li><span class="number">8.</span> <span>RAHUL</span></li>
+        <li><span class="number">9.</span> <span>SHARAN</span></li>
+        <li><span class="number">10.</span> <span>VINAY</span></li>
+        <li><span class="number">11.</span> <span>SAURABH</span></li>
+      </ol>
+    </div>
+
+    <!-- Venue Details -->
+    <div class="venue-details">
+      <div class="venue-name">NLCG EAST AVENUE MIDDLE SCHOOL</div>
+      <div class="venue-address">3600 PACIFIC AVE, LIVERMORE</div>
+      <div class="match-date">SATURDAY, FEBRUARY 21 2026</div>
+      <div class="match-time">8:45 AM</div>
+    </div>
+
+    <!-- Helper overlay -->
+    <div class="overlay" id="overlay">
+      <div class="grid"></div>
+    </div>
+  </div>
+
+  <script>
+    function toggleOverlay() {
+      document.getElementById('overlay').classList.toggle('show');
+    }
+
+    function downloadHtml() {
+      const htmlContent = document.documentElement.outerHTML;
+      const blob = new Blob([htmlContent], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'instagram-story-fixed.html';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // Log positions on load
+    console.log('Current positions:');
+    console.log('Team name top:', window.getComputedStyle(document.querySelector('.team-name')).top);
+    console.log('Opponent top:', window.getComputedStyle(document.querySelector('.opponent')).top);
+    console.log('Players top:', window.getComputedStyle(document.querySelector('.players-list')).top);
+    console.log('Venue bottom:', window.getComputedStyle(document.querySelector('.venue-details')).bottom);
+  </script>
+</body>
+</html>

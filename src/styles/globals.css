@@ -1,8 +1,11 @@
 @import 'tailwindcss';
 @import './theme-config.css';
+@import './components.css';
+@import './mobile-responsive.css';
 
 /* NOTE: All color variables are defined in theme files (theme-config.css imports the active theme).
-   Only non-color configuration remains here. */
+   Component styles are in components.css. Mobile styles are in mobile-responsive.css.
+   Only base typography and page-specific styles remain here. */
 
 @theme {
     /* Typography - applies to all themes */
@@ -22,33 +25,6 @@
         overflow-y: auto;
         overflow-x: hidden;
         min-height: 100vh;
-    }
-
-    /* Mobile-specific fixes to prevent content cutoff */
-    @media (max-width: 768px) {
-        html,
-        body {
-            overflow-y: auto !important;
-            overflow-x: hidden !important;
-            height: auto !important;
-            max-height: none !important;
-            min-height: 100vh !important;
-        }
-
-        main,
-        footer,
-        header {
-            position: relative !important;
-            height: auto !important;
-        }
-
-        body {
-            padding-bottom: 2rem !important;
-        }
-
-        footer {
-            margin-top: 2rem;
-        }
     }
 
     /* Typography System - Standardized Heading Sizes */
@@ -89,60 +65,6 @@
 }
 
 @layer components {
-    /* Mobile browser safe area utilities */
-    .safe-bottom {
-        padding-bottom: env(safe-area-inset-bottom, 0px);
-    }
-
-    .safe-bottom-lg {
-        /* Extra padding for mobile browser UI + iOS safe area */
-        padding-bottom: max(2.5rem, calc(1rem + env(safe-area-inset-bottom, 0px) + 2rem));
-    }
-
-    /* Loading Skeletons */
-    .skeleton {
-        background: linear-gradient(
-            90deg,
-            #f0f0f0 25%,
-            #e0e0e0 50%,
-            #f0f0f0 75%
-        );
-        background-size: 200% 100%;
-        animation: loading 1.5s ease-in-out infinite;
-        border-radius: 4px;
-    }
-
-    .skeleton-text {
-        height: 1rem;
-        margin-bottom: 0.5rem;
-    }
-
-    .skeleton-title {
-        height: 1.5rem;
-        margin-bottom: 1rem;
-        width: 60%;
-    }
-
-    .skeleton-card {
-        height: 200px;
-        border-radius: 12px;
-    }
-
-    .skeleton-button {
-        height: 48px;
-        width: 120px;
-        border-radius: 8px;
-    }
-
-    @keyframes loading {
-        0% {
-            background-position: 200% 0;
-        }
-        100% {
-            background-position: -200% 0;
-        }
-    }
-
     /* Image lazy loading */
     img[loading="lazy"] {
         opacity: 0;
@@ -171,71 +93,6 @@
         }
     }
 
-    /* Button Styles */
-    .btn {
-        @apply inline-flex items-center justify-center gap-2 text-primary-content cursor-pointer text-center font-semibold no-underline;
-        background: var(--gradient-primary);
-        padding: var(--btn-py, 0.875rem) var(--btn-px, 1.25rem);
-        font-size: var(--btn-font-size, 0.875rem);
-        border-radius: var(--border-radius-button);
-        box-shadow: var(--shadow-button);
-        transition: all var(--transition-hover);
-
-        &:hover {
-            @apply bg-primary/85;
-            box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
-            transform: translateY(-2px);
-        }
-
-        &:active {
-            transform: translateY(0);
-            box-shadow: 0 1px 2px rgba(249, 115, 22, 0.2);
-        }
-
-        &:disabled {
-            @apply text-gray-400 bg-gray-700;
-            box-shadow: none;
-            transform: none;
-        }
-    }
-
-    .btn-secondary {
-        background-color: var(--color-btn-secondary);
-        color: var(--color-btn-secondary-text);
-
-        &:hover {
-            background-color: var(--color-btn-secondary-hover);
-        }
-    }
-
-    .btn-lg {
-        --btn-font-size: 1.125rem;
-        --btn-px: 1.5rem;
-        --btn-py: 1.125rem;
-    }
-
-    /* Card Styles */
-    .card {
-        background-color: var(--color-bg-card);
-        border: 1px solid var(--color-border);
-        padding: 1.5rem;
-        border-radius: var(--border-radius-card);
-        box-shadow: var(--shadow-card);
-        transition: all var(--transition-hover);
-
-        &:hover {
-            background-color: var(--color-bg-card-hover);
-            box-shadow: var(--shadow-card-hover);
-            transform: translateY(-4px);
-            border-color: var(--color-primary);
-        }
-    }
-
-    /* Hero Section Styles */
-    .hero-bg {
-        background: var(--gradient-hero);
-    }
-
     /* Text Styles */
     .text-body {
         color: var(--color-text-body);
@@ -251,99 +108,6 @@
 
     .text-subtle {
         color: var(--color-text-subtle);
-    }
-
-    /* Form Input Styles */
-    .input {
-        background-color: var(--color-bg-input);
-        border: 1px solid var(--color-border-strong);
-        color: var(--color-text-body);
-        @apply px-4 py-3 rounded-lg transition-colors;
-        @apply focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent;
-
-        &::placeholder {
-            color: var(--color-text-placeholder);
-        }
-    }
-
-    /* Tag/Badge Styles */
-    .tag {
-        background-color: var(--color-bg-card-hover);
-        color: var(--color-text-body);
-        @apply px-4 py-2 rounded-full;
-    }
-
-    /* Accent Box Styles */
-    .accent-box {
-        background: var(--gradient-card-header);
-        border: 2px solid var(--color-primary);
-        padding: 2rem;
-        border-radius: var(--border-radius-card);
-        box-shadow: var(--shadow-card);
-    }
-
-    /* Enhanced Section Styles */
-    .section-gradient {
-        background: var(--gradient-section);
-    }
-
-    /* Stats & Feature Boxes */
-    .stat-box {
-        background-color: var(--color-bg-card);
-        border: 1px solid var(--color-border);
-        padding: 1.5rem;
-        border-radius: var(--border-radius-card);
-        box-shadow: var(--shadow-card);
-        transition: all var(--transition-hover);
-
-        &:hover {
-            box-shadow: var(--shadow-card-hover);
-            transform: translateY(-2px);
-        }
-    }
-
-    /* Team Cards Enhancement */
-    .team-card {
-        background: white;
-        border: 1px solid var(--color-border);
-        border-radius: var(--border-radius-card);
-        box-shadow: var(--shadow-card);
-        transition: all var(--transition-hover);
-        overflow: hidden;
-
-        &:hover {
-            box-shadow: var(--shadow-elevated);
-            transform: translateY(-6px);
-            border-color: var(--color-primary);
-        }
-    }
-
-    .team-card-header {
-        background: var(--gradient-card-header);
-        padding: 1.5rem;
-        border-bottom: 1px solid var(--color-border);
-    }
-
-    /* Badge Enhancement */
-    .badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.5rem 1rem;
-        border-radius: 9999px;
-        font-size: 0.875rem;
-        font-weight: 600;
-        background: linear-gradient(135deg, rgba(249, 115, 22, 0.1) 0%, rgba(249, 115, 22, 0.05) 100%);
-        color: var(--color-primary);
-        border: 1px solid rgba(249, 115, 22, 0.2);
-    }
-
-    /* Elevated Card */
-    .card-elevated {
-        background: white;
-        border-radius: var(--border-radius-card);
-        box-shadow: var(--shadow-elevated);
-        padding: 2rem;
     }
 
     /* ========================================
@@ -430,44 +194,5 @@
 
     .heading-margin-lg {
         @apply mb-8;
-    }
-
-    /* ========================================
-       MEMBER/AVATAR CARD UTILITIES
-       ======================================== */
-
-    /* Member card with consistent sizing */
-    .member-card-wrapper {
-        @apply w-full max-w-xs mx-auto;
-        min-height: 200px;
-    }
-
-    /* Centered member card container - uses flexbox for better centering when wrapping */
-    .member-grid {
-        @apply flex flex-wrap gap-6 justify-center items-start;
-    }
-
-    .member-grid-2 {
-        @apply flex flex-wrap gap-6 justify-center items-start;
-    }
-
-    .member-grid-2 > * {
-        @apply w-full sm:w-[calc(50%-0.75rem)] max-w-xs;
-    }
-
-    .member-grid-3 {
-        @apply flex flex-wrap gap-6 justify-center items-start;
-    }
-
-    .member-grid-3 > * {
-        @apply w-full sm:w-[calc(50%-0.75rem)] lg:w-[calc(33.333%-1rem)] max-w-xs;
-    }
-
-    .member-grid-4 {
-        @apply flex flex-wrap gap-6 justify-center items-start;
-    }
-
-    .member-grid-4 > * {
-        @apply w-full sm:w-[calc(50%-0.75rem)] lg:w-[calc(25%-1.125rem)] max-w-xs;
     }
 }

@@ -14,6 +14,10 @@ import { SITE_CONFIG } from '../config';
             <span class="text-xs">EIN: {SITE_CONFIG.nonProfit.ein}</span>
         </div>
 
-        <p>Affiliated with Northern California Cricket Association</p>
+        <div class="text-xs text-gray-500 text-center mt-2">
+            {SITE_CONFIG.nonProfit.name} is a registered 501(c)(3) non-profit organization.
+            EIN: {SITE_CONFIG.nonProfit.ein}.
+            Donations are tax-deductible to the extent allowed by law.
+        </div>
     </div>
 </footer>

@@ -54,7 +54,6 @@ export const SPONSORS = {
         {
             id: 'platinum',
             name: 'Platinum Sponsor',
-            price: '$1,500/Annual',
             color: 'platinum' as const,
             benefits: [
                 '"Brand" logo on both front and back of jersey',
@@ -66,7 +65,6 @@ export const SPONSORS = {
         {
             id: 'gold',
             name: 'Gold Sponsor',
-            price: '$1,000/Annual',
             color: 'gold' as const,
             benefits: [
                 '"Brand" logo on side sleeve of jersey (one sleeve)',

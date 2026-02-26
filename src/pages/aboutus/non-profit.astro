@@ -48,9 +48,40 @@ const programs = [
     }
 ];
 
+const pageTitle = 'Non-Profit Organization | Bengals Inc. - 501(c)(3)';
+const pageDescription = 'Bengals Inc. (EIN: 93-4696065) is a 501(c)(3) tax-exempt non-profit organization. Learn about our mission, impact, and how to support cricket development in Northern California.';
 ---
 
-<Layout title="Non-Profit Foundation - Golden State Cricket Club">
+<Layout title={pageTitle}>
+    <!-- Page-specific meta tags -->
+    <meta slot="head" name="description" content={pageDescription} />
+    <meta slot="head" property="og:title" content={pageTitle} />
+    <meta slot="head" property="og:description" content={pageDescription} />
+
+    <!-- Additional Schema.org Structured Data for Non-Profit Page -->
+    <script type="application/ld+json" slot="head">
+    {
+      "@context": "https://schema.org",
+      "@type": ["NonprofitOrganization", "SportsOrganization"],
+      "name": "Bengals Inc.",
+      "legalName": "Bengals Inc.",
+      "alternateName": "Golden State Cricket Club",
+      "taxID": "93-4696065",
+      "nonprofitStatus": "Nonprofit501c3",
+      "foundingDate": "2018",
+      "mission": "To foster a vibrant, inclusive community through the power of sport. We are dedicated to nurturing talent, promoting physical wellness, and inspiring a lifelong passion for excellence, both on and off the field.",
+      "numberOfEmployees": {
+        "@type": "QuantitativeValue",
+        "value": "0",
+        "description": "All-volunteer organization"
+      },
+      "knowsAbout": ["Cricket", "Youth Development", "Community Building", "Sports Education"],
+      "member": {
+        "@type": "OrganizationRole",
+        "numberOfMembers": "160+"
+      }
+    }
+    </script>
     <h1 class="page-title heading-margin-sm">{SITE_CONFIG.nonProfit.name}</h1>
 
     {/* Centered Badge */}

@@ -23,9 +23,56 @@ const { title } = Astro.props;
         <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
         <meta name="generator" content={Astro.generator} />
         <meta name="description" content={SITE_CONFIG.description} />
+
+        <!-- Non-Profit Organization Meta Tags -->
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content="Bengals Inc. | Golden State Cricket Club" />
+        <meta property="og:description" content="Bengals Inc. is a 501(c)(3) non-profit organization (EIN: 93-4696065) fostering community connection through cricket across Northern California's Bay Area." />
+        <meta name="organization:ein" content="93-4696065" />
+        <meta name="organization:nonprofit-status" content="501(c)(3)" />
+        <meta name="organization:legal-name" content="Bengals Inc." />
+
+        <!-- Schema.org Structured Data for Non-Profit Organization -->
+        <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "NonprofitOrganization",
+          "name": "Bengals Inc.",
+          "legalName": "Bengals Inc.",
+          "alternateName": "Golden State Cricket Club",
+          "url": "https://goldenstatecc.com",
+          "logo": "https://goldenstatecc.com/logo.svg",
+          "description": "Bengals Inc. is a 501(c)(3) non-profit organization fostering community connection and youth development through cricket across Northern California's Bay Area.",
+          "taxID": "93-4696065",
+          "nonprofitStatus": "Nonprofit501c3",
+          "foundingDate": "2018",
+          "address": {
+            "@type": "PostalAddress",
+            "addressRegion": "California",
+            "addressCountry": "US"
+          },
+          "areaServed": {
+            "@type": "Place",
+            "name": "Bay Area, California (San Jose, Sunnyvale, Fremont, Milpitas, Livermore, Morgan Hill, Tracy, Davis)"
+          },
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "email": "gsbengalsinc@gmail.com",
+            "contactType": "General Inquiries"
+          },
+          "sameAs": [
+            "https://www.instagram.com/goldenstate_cc/",
+            "https://www.youtube.com/@BengalsCricketClubBayArea"
+          ]
+        }
+        </script>
+
         <link rel="icon" type="image/svg+xml" href={logo.src} />
         <link rel="apple-touch-icon" href={logo.src} />
         <link rel="preload" as="font" type="font/woff2" href={interWoff2} crossorigin />
+
+        <!-- Allow pages to inject additional head content -->
+        <slot name="head" />
     </head>
     <body class="antialiased text-body" style="background-color: var(--color-bg-body);">
         <div class="flex flex-col min-h-screen px-6 bg-noise sm:px-12" style="overflow: visible;">

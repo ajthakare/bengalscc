@@ -248,54 +248,6 @@ export const handler: Handler = async (
       .filter(p => p.available > 0) // Only show players who were available at least once
       .sort((a, b) => a.selectionRate - b.selectionRate); // Show lowest first (needs attention)
 
-    // 6. Availability Alerts (declining commitment)
-    const availabilityAlertsMap: { [playerId: string]: { name: string; recentAvailability: number; overallAvailability: number; decline: number } } = {};
-
-    // Split fixtures into recent (last 5) and overall
-    const totalFixturesCount = fixtures.length;
-    const recentCount = Math.min(5, totalFixturesCount);
-    const recentFixtureIds = fixtures.slice(-recentCount).map(f => f.id);
-
-    availabilityRecords.forEach(record => {
-      const isRecent = recentFixtureIds.includes(record.fixtureId);
-
-      record.playerAvailability.forEach(pa => {
-        if (!availabilityAlertsMap[pa.playerId]) {
-          availabilityAlertsMap[pa.playerId] = {
-            name: pa.playerName,
-            recentAvailability: 0,
-            overallAvailability: 0,
-            decline: 0
-          };
-        }
-
-        // Track overall
-        availabilityAlertsMap[pa.playerId].overallAvailability += pa.wasAvailable ? 1 : 0;
-
-        // Track recent
-        if (isRecent) {
-          availabilityAlertsMap[pa.playerId].recentAvailability += pa.wasAvailable ? 1 : 0;
-        }
-      });
-    });
-
-    const availabilityAlerts = Object.entries(availabilityAlertsMap)
-      .map(([playerId, data]) => {
-        const overallRate = availabilityRecords.length > 0 ? (data.overallAvailability / availabilityRecords.length) * 100 : 0;
-        const recentRate = recentCount > 0 ? (data.recentAvailability / recentCount) * 100 : 0;
-        const decline = overallRate - recentRate;
-
-        return {
-          playerId,
-          name: data.name,
-          overallRate: parseFloat(overallRate.toFixed(1)),
-          recentRate: parseFloat(recentRate.toFixed(1)),
-          decline: parseFloat(decline.toFixed(1))
-        };
-      })
-      .filter(p => p.decline > 20) // Only show significant declines (>20%)
-      .sort((a, b) => b.decline - a.decline);
-
     return {
       statusCode: 200,
       headers: {
@@ -310,8 +262,7 @@ export const handler: Handler = async (
         winLossAnalysis,
         venuePerformance: venueStats,
         dutyAnalysis: dutyStats,
-        playingTimeReport,
-        availabilityAlerts
+        playingTimeReport
       }),
     };
   } catch (error) {

@@ -25,7 +25,6 @@ export const handler: Handler = async (
 
     // Get player ID from session
     const playerId = session.userId;
-    console.log('[Practice List] Player ID:', playerId);
 
     // Calculate date range: today to +30 days
     const today = new Date();
@@ -35,7 +34,6 @@ export const handler: Handler = async (
 
     const todayStr = today.toISOString().split('T')[0];
     const thirtyDaysStr = thirtyDaysFromNow.toISOString().split('T')[0];
-    console.log('[Practice List] Date range:', todayStr, 'to', thirtyDaysStr);
 
     // Get active season
     const seasonsStore = getStore({
@@ -44,10 +42,8 @@ export const handler: Handler = async (
       token: process.env.NETLIFY_AUTH_TOKEN || '',
     });
     const activeSeason = await seasonsStore.get('active-season', { type: 'json' }) as any;
-    console.log('[Practice List] Active season:', activeSeason);
 
     if (!activeSeason || !activeSeason.id) {
-      console.log('[Practice List] No active season - returning empty array');
       return {
         statusCode: 200,
         headers: { 'Content-Type': 'application/json' },
@@ -66,10 +62,8 @@ export const handler: Handler = async (
 
     // Get practice index for season
     const practiceIndex = await practicesStore.get(`practice-index-${seasonId}`, { type: 'json' }) as string[] | null;
-    console.log('[Practice List] Practice index length:', practiceIndex?.length || 0);
 
     if (!practiceIndex || practiceIndex.length === 0) {
-      console.log('[Practice List] No practices in season - returning empty array');
       return {
         statusCode: 200,
         headers: { 'Content-Type': 'application/json' },
@@ -85,7 +79,6 @@ export const handler: Handler = async (
         allPractices.push(practice);
       }
     }
-    console.log('[Practice List] Total practices in season:', allPractices.length);
 
     // Filter practices:
     // 1. Status is 'active'
@@ -98,7 +91,6 @@ export const handler: Handler = async (
         practice.date <= thirtyDaysStr
       );
     });
-    console.log('[Practice List] Upcoming practices (next 30 days):', upcomingPractices.length);
 
     // Sort by date (earliest first)
     upcomingPractices.sort((a, b) => a.date.localeCompare(b.date));

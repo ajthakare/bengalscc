@@ -196,14 +196,6 @@ export default async (req: Request, context: Context) => {
     // Save to Blobs
     await playersStore.setJSON('players-all', players);
 
-    console.log('Member registered successfully:', {
-      id: newPlayer.id,
-      email: newPlayer.email,
-      hasPasswordHash: !!newPlayer.passwordHash,
-      registrationStatus: newPlayer.registrationStatus,
-      role_auth: newPlayer.role_auth
-    });
-
     // Create audit log entry
     const auditLogsStore = getStore({
       name: 'audit-logs',

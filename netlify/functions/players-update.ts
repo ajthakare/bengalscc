@@ -264,8 +264,6 @@ export const handler: Handler = async (
       (cleanUpdates.lastName && cleanUpdates.lastName !== existingPlayer.lastName);
 
     if (nameChanged) {
-      console.log(`[Auto-sync] Player name changed for ${updatedPlayer.id}, syncing availability records...`);
-
       // Spawn sync script in background (detached, non-blocking)
       const syncProcess = spawn('node', ['sync-player-names.js', updatedPlayer.id], {
         detached: true,
@@ -275,8 +273,6 @@ export const handler: Handler = async (
 
       // Detach so it continues running after this function completes
       syncProcess.unref();
-
-      console.log(`[Auto-sync] Background sync started for player ${updatedPlayer.id}`);
     }
 
     return {

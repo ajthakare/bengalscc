@@ -241,15 +241,6 @@ if (!authenticated) {
               <!-- Table will be inserted here -->
             </div>
           </div>
-
-          <!-- Availability Alerts -->
-          <div class="stats-section alert-section">
-            <h2 class="section-heading">⚠️ Availability Decline Alerts</h2>
-            <p class="section-description">Players with >20% availability decline</p>
-            <div id="availability-alerts-content" class="section-content">
-              <!-- Alerts will be inserted here -->
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -476,10 +467,6 @@ if (!authenticated) {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   }
 
-  .alert-section {
-    border-left: 4px solid #ef4444;
-  }
-
   .section-heading {
     font-size: 1.25rem;
     font-weight: 700;
@@ -634,42 +621,6 @@ if (!authenticated) {
     background: #ef4444;
   }
 
-  .alert-card {
-    background: #fef2f2;
-    border: 1px solid #fecaca;
-    border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 0.75rem;
-  }
-
-  .alert-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.5rem;
-  }
-
-  .alert-player-name {
-    font-weight: 600;
-    color: #991b1b;
-  }
-
-  .alert-decline {
-    background: #dc2626;
-    color: white;
-    padding: 0.25rem 0.75rem;
-    border-radius: 6px;
-    font-size: 0.875rem;
-    font-weight: 600;
-  }
-
-  .alert-details {
-    display: flex;
-    gap: 1rem;
-    font-size: 0.875rem;
-    color: #6b7280;
-  }
-
   .insufficient-data {
     background: #fef3c7;
     border: 1px solid #fde68a;
@@ -772,22 +723,6 @@ if (!authenticated) {
     .data-mini-table th,
     .data-mini-table td {
       padding: 0.5rem;
-    }
-
-    /* Alert cards */
-    .alert-card {
-      padding: 0.875rem;
-    }
-
-    .alert-card-header {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0.5rem;
-    }
-
-    .alert-details {
-      flex-direction: column;
-      gap: 0.25rem;
     }
 
     /* Fees summary */
@@ -1306,7 +1241,6 @@ if (!authenticated) {
     renderVenuePerformance();
     renderDutyAnalysis();
     renderPlayingTimeReport();
-    renderAvailabilityAlerts();
   }
 
   function renderPlayerOfMatchLeaderboard() {
@@ -1651,34 +1585,5 @@ if (!authenticated) {
         </tbody>
       </table>
     `;
-  }
-
-  function renderAvailabilityAlerts() {
-    const container = document.getElementById('availability-alerts-content');
-    const data = advancedStatsData.availabilityAlerts;
-
-    if (!data || data.length === 0) {
-      container.innerHTML = `
-        <div class="insufficient-data">
-          <div class="insufficient-data-icon">✅</div>
-          <div class="insufficient-data-title">No Alerts</div>
-          <p>No significant availability declines detected. All players are maintaining good availability!</p>
-        </div>
-      `;
-      return;
-    }
-
-    container.innerHTML = data.map(p => `
-      <div class="alert-card">
-        <div class="alert-card-header">
-          <span class="alert-player-name">${escapeHtml(p.name)}</span>
-          <span class="alert-decline">↓ ${p.decline.toFixed(1)}%</span>
-        </div>
-        <div class="alert-details">
-          <span>Overall: ${p.overallRate.toFixed(1)}%</span>
-          <span>Recent: ${p.recentRate.toFixed(1)}%</span>
-        </div>
-      </div>
-    `).join('');
   }
 </script>

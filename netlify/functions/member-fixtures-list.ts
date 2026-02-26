@@ -26,14 +26,12 @@ export const handler: Handler = async (
 
     // Get player ID from session
     const playerId = session.userId;
-    console.log('[Fixtures List] Player ID:', playerId);
 
     // Calculate date range: today to +7 days
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const sevenDaysFromNow = new Date(today);
     sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
-    console.log('[Fixtures List] Date range:', today.toISOString(), 'to', sevenDaysFromNow.toISOString());
 
     // Get active season
     const seasonsStore = getStore({
@@ -42,10 +40,8 @@ export const handler: Handler = async (
       token: process.env.NETLIFY_AUTH_TOKEN || '',
     });
     const activeSeason = await seasonsStore.get('active-season', { type: 'json' }) as any;
-    console.log('[Fixtures List] Active season:', activeSeason);
 
     if (!activeSeason || !activeSeason.id) {
-      console.log('[Fixtures List] No active season - returning empty array');
       return {
         statusCode: 200,
         headers: { 'Content-Type': 'application/json' },
@@ -63,17 +59,14 @@ export const handler: Handler = async (
     });
     const coreRosterKey = `core-roster-${seasonId}`;
     const coreRoster = (await coreRosterStore.get(coreRosterKey, { type: 'json' })) as CoreRosterAssignment[] | null;
-    console.log('[Fixtures List] Core roster entries:', coreRoster?.length || 0);
 
     // Find player's team assignments (any roster member - core or reserve)
     const playerTeams = coreRoster
       ? coreRoster.filter(r => r.playerId === playerId).map(r => r.teamName)
       : [];
-    console.log('[Fixtures List] Player teams:', playerTeams);
 
     if (playerTeams.length === 0) {
       // Player not assigned to any team
-      console.log('[Fixtures List] Player not assigned to any team - returning empty array');
       return {
         statusCode: 200,
         headers: { 'Content-Type': 'application/json' },
@@ -88,10 +81,8 @@ export const handler: Handler = async (
       token: process.env.NETLIFY_AUTH_TOKEN || '',
     });
     const allFixtures = (await fixturesStore.get(`fixtures-${seasonId}`, { type: 'json' })) as Fixture[] | null;
-    console.log('[Fixtures List] Total fixtures in season:', allFixtures?.length || 0);
 
     if (!allFixtures || allFixtures.length === 0) {
-      console.log('[Fixtures List] No fixtures in season - returning empty array');
       return {
         statusCode: 200,
         headers: { 'Content-Type': 'application/json' },
@@ -112,7 +103,6 @@ export const handler: Handler = async (
         fixtureDate <= sevenDaysFromNow
       );
     });
-    console.log('[Fixtures List] Upcoming fixtures (next 7 days):', upcomingFixtures.length);
 
     // Sort by date
     upcomingFixtures.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());

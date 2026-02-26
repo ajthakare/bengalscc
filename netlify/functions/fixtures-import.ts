@@ -158,18 +158,14 @@ export const handler: Handler = async (
       const homeTeamNormalized = homeTeam.trim().toLowerCase();
       const visitorTeamNormalized = visitorTeam.trim().toLowerCase();
 
-      console.log(`Row ${rowNum}: Checking home="${homeTeamNormalized}" vs valid teams:`, validTeamNames);
-
       if (validTeamNames.includes(homeTeamNormalized)) {
         team = homeTeam;
         opponent = visitorTeam;
         isHomeTeam = true;  // We are the home team
-        console.log(`  → Home game: ${team} vs ${opponent}`);
       } else if (validTeamNames.includes(visitorTeamNormalized)) {
         team = visitorTeam;
         opponent = homeTeam;
         isHomeTeam = false;  // We are the away team
-        console.log(`  → Away game: ${team} @ ${opponent}`);
       } else {
         importResult.errors.push({
           row: rowNum,

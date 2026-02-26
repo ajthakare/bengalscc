@@ -17,10 +17,14 @@
         "npm:@fontsource/libre-baskerville@^5.2.10",
         "npm:@netlify/blobs@^10.5.0",
         "npm:@netlify/functions@^5.1.2",
+        "npm:@playwright/test@^1.58.2",
         "npm:@tailwindcss/vite@^4.1.16",
+        "npm:@testing-library/jest-dom@^6.9.1",
+        "npm:@testing-library/react@^16.3.2",
         "npm:@types/bcryptjs@3",
         "npm:@types/blobshape@^1.0.3",
         "npm:@types/cookie@1",
+        "npm:@types/jest@30",
         "npm:@types/jsonwebtoken@^9.0.10",
         "npm:@types/node@^20.12.7",
         "npm:@types/papaparse@^5.5.2",
@@ -32,6 +36,7 @@
         "npm:cookie@^1.1.1",
         "npm:html2canvas@^1.4.1",
         "npm:husky@^9.1.7",
+        "npm:jest@^30.2.0",
         "npm:jsonwebtoken@^9.0.3",
         "npm:marked-shiki@^1.2.1",
         "npm:marked@17",
@@ -39,7 +44,9 @@
         "npm:react-dom@^19.2.0",
         "npm:react@^19.2.0",
         "npm:tailwindcss@^4.1.16",
-        "npm:unique-names-generator@^4.7.1"
+        "npm:ts-jest@^29.4.6",
+        "npm:unique-names-generator@^4.7.1",
+        "npm:vitest@^4.0.18"
       ]
     }
   }

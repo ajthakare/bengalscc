@@ -130,7 +130,7 @@ export const SITE_CONFIG = {
   nonProfit: {
     name: 'Bengals Inc.',
     status: '501(c)(3) non-profit organization',
-    ein: '93-4696065',
+    ein: '30-13XXXXX',
     founded: '2018',
     mission: '...',
     impactStats: [...]

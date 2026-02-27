@@ -5,7 +5,7 @@ export const SITE_CONFIG = {
     name: 'Golden State Cricket Club',
     location: 'Bay Area, California',
     email: 'gsbengalsinc@gmail.com',
-    description: 'Golden State Cricket Club - Bay Area, California. NCCA T20 Division 1 Champions. Community-driven cricket organization.',
+    description: 'Golden State Cricket Club is a part of Bengals Inc. - a 501(c)(3) non-profit organization fostering community connection through cricket across Northern California\'s Bay Area.',
 
     // Non-Profit Information
     nonProfit: {

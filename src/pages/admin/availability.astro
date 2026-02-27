@@ -8,6 +8,7 @@ const cookieHeader = Astro.request.headers.get('cookie');
 let authenticated = false;
 let username = '';
 let userRole = 'admin';
+let isAdminUser = false;
 
 if (cookieHeader) {
   try {
@@ -23,6 +24,7 @@ if (cookieHeader) {
     authenticated = data.authenticated;
     username = data.user?.firstName || data.user?.username || '';
     userRole = data.user?.role_auth || data.user?.role || 'admin';
+    isAdminUser = userRole === 'admin' || userRole === 'super_admin';
   } catch (error) {
     authenticated = false;
   }
@@ -31,6 +33,11 @@ if (cookieHeader) {
 // Redirect to login if not authenticated
 if (!authenticated) {
   return Astro.redirect('/admin/login');
+}
+
+// Redirect to homepage if authenticated but not admin/super_admin
+if (!isAdminUser) {
+  return Astro.redirect('/');
 }
 ---
 

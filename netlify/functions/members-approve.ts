@@ -7,7 +7,9 @@ import type { Player } from '../../src/types/player';
 /**
  * Approve member registration (super admin only)
  * POST /.netlify/functions/members-approve
- * Body: { registrationId, targetPlayerId, playerRole }
+ * Body: { registrationId, targetPlayerId, playerRole, createNew }
+ * - If createNew: true, creates a new player from registration
+ * - If createNew: false/undefined, updates existing player (requires targetPlayerId)
  */
 export const handler: Handler = async (
   event: HandlerEvent,
@@ -31,12 +33,20 @@ export const handler: Handler = async (
     }
 
     // Parse request
-    const { registrationId, targetPlayerId, playerRole } = JSON.parse(event.body || '{}');
+    const { registrationId, targetPlayerId, playerRole, createNew } = JSON.parse(event.body || '{}');
 
-    if (!registrationId || !targetPlayerId || !playerRole) {
+    if (!registrationId || !playerRole) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: 'Missing required fields: registrationId, targetPlayerId, playerRole' }),
+        body: JSON.stringify({ error: 'Missing required fields: registrationId, playerRole' }),
+      };
+    }
+
+    // Validate targetPlayerId is provided when not creating new player
+    if (!createNew && !targetPlayerId) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'targetPlayerId is required when not creating new player' }),
       };
     }
 
@@ -68,45 +78,96 @@ export const handler: Handler = async (
       };
     }
 
-    // Find target player
-    const targetPlayerIndex = players.findIndex(p => p.id === targetPlayerId);
-    if (targetPlayerIndex === -1) {
-      return {
-        statusCode: 404,
-        body: JSON.stringify({ error: 'Target player not found' }),
-      };
-    }
-
-    const targetPlayer = players[targetPlayerIndex];
-
-    // Check if target player already has a password (is already a member)
-    if (targetPlayer.passwordHash) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: 'Target player is already a member' }),
-      };
-    }
-
     const now = new Date().toISOString();
+    let approvedPlayer: Player;
+    let actionDetails: string;
 
-    // Update target player with ALL registration info
-    targetPlayer.firstName = registration.firstName;
-    targetPlayer.lastName = registration.lastName;
-    targetPlayer.email = registration.email;
-    targetPlayer.phone = registration.phone;
-    targetPlayer.role = playerRole; // Position
-    targetPlayer.passwordHash = registration.passwordHash;
-    targetPlayer.registrationStatus = 'approved';
-    targetPlayer.role_auth = 'member';
-    targetPlayer.approvedAt = now;
-    targetPlayer.approvedBy = session.username;
-    targetPlayer.registeredAt = registration.registeredAt;
-    targetPlayer.isActive = true;
-    targetPlayer.updatedAt = now;
-    targetPlayer.updatedBy = session.username || 'super_admin';
+    if (createNew) {
+      // Create new player from registration
+      const newPlayerId = uuidv4();
+      approvedPlayer = {
+        id: newPlayerId,
+        firstName: registration.firstName,
+        lastName: registration.lastName,
+        email: registration.email,
+        phone: registration.phone,
+        role: playerRole, // Position
+        passwordHash: registration.passwordHash,
+        registrationStatus: 'approved',
+        role_auth: 'member',
+        approvedAt: now,
+        approvedBy: session.username,
+        registeredAt: registration.registeredAt,
+        isActive: true,
+        seasonAssignments: [],
+        dateJoined: now,
+        createdAt: now,
+        createdBy: session.username || 'super_admin',
+        updatedAt: now,
+        updatedBy: session.username || 'super_admin',
+        // Emergency contact fields (mandatory)
+        emergencyContactName: registration.emergencyContactName,
+        emergencyContactNumber: registration.emergencyContactNumber,
+        // Job fields (optional)
+        jobCompany: registration.jobCompany,
+        jobTitle: registration.jobTitle,
+      };
 
-    // Remove the pending registration record
-    players.splice(registrationIndex, 1);
+      // Remove the pending registration record
+      players.splice(registrationIndex, 1);
+
+      // Add the new approved player
+      players.push(approvedPlayer);
+
+      actionDetails = `Created new player from registration: ${registration.firstName} ${registration.lastName} (${registration.email}) → Player ID ${newPlayerId}`;
+    } else {
+      // Update existing player (original behavior)
+      const targetPlayerIndex = players.findIndex(p => p.id === targetPlayerId);
+      if (targetPlayerIndex === -1) {
+        return {
+          statusCode: 404,
+          body: JSON.stringify({ error: 'Target player not found' }),
+        };
+      }
+
+      const targetPlayer = players[targetPlayerIndex];
+
+      // Check if target player already has a password (is already a member)
+      if (targetPlayer.passwordHash) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({ error: 'Target player is already a member' }),
+        };
+      }
+
+      // Update target player with ALL registration info
+      targetPlayer.firstName = registration.firstName;
+      targetPlayer.lastName = registration.lastName;
+      targetPlayer.email = registration.email;
+      targetPlayer.phone = registration.phone;
+      targetPlayer.role = playerRole; // Position
+      targetPlayer.passwordHash = registration.passwordHash;
+      targetPlayer.registrationStatus = 'approved';
+      targetPlayer.role_auth = 'member';
+      targetPlayer.approvedAt = now;
+      targetPlayer.approvedBy = session.username;
+      targetPlayer.registeredAt = registration.registeredAt;
+      targetPlayer.isActive = true;
+      targetPlayer.updatedAt = now;
+      targetPlayer.updatedBy = session.username || 'super_admin';
+      // Emergency contact fields (mandatory)
+      targetPlayer.emergencyContactName = registration.emergencyContactName;
+      targetPlayer.emergencyContactNumber = registration.emergencyContactNumber;
+      // Job fields (optional)
+      targetPlayer.jobCompany = registration.jobCompany;
+      targetPlayer.jobTitle = registration.jobTitle;
+
+      // Remove the pending registration record
+      players.splice(registrationIndex, 1);
+
+      approvedPlayer = targetPlayer;
+      actionDetails = `Approved member registration: ${registration.firstName} ${registration.lastName} (${registration.email}) → Player ID ${targetPlayerId}`;
+    }
 
     // Save updated players array
     await playersStore.setJSON('players-all', players);
@@ -122,11 +183,11 @@ export const handler: Handler = async (
     auditLogs.push({
       id: uuidv4(),
       timestamp: now,
-      action: 'MEMBER_APPROVED',
+      action: createNew ? 'MEMBER_CREATED_FROM_REGISTRATION' : 'MEMBER_APPROVED',
       username: session.email,
-      details: `Approved member registration: ${registration.firstName} ${registration.lastName} (${registration.email}) → Player ID ${targetPlayerId}`,
+      details: actionDetails,
       entityType: 'player',
-      entityId: targetPlayerId,
+      entityId: approvedPlayer.id,
     });
 
     await auditLogsStore.setJSON('logs', auditLogs);
@@ -139,10 +200,10 @@ export const handler: Handler = async (
       body: JSON.stringify({
         success: true,
         player: {
-          id: targetPlayer.id,
-          email: targetPlayer.email,
-          firstName: targetPlayer.firstName,
-          lastName: targetPlayer.lastName,
+          id: approvedPlayer.id,
+          email: approvedPlayer.email,
+          firstName: approvedPlayer.firstName,
+          lastName: approvedPlayer.lastName,
           registrationStatus: 'approved',
         },
       }),

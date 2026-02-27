@@ -293,14 +293,6 @@ if (!isSuperAdmin) {
 
               <form id="approval-form">
                 <div class="form-group">
-                  <label class="form-label">Select Existing Player to Update:</label>
-                  <select id="target-player" class="form-input" required>
-                    <option value="">-- Search and select player --</option>
-                  </select>
-                  <p class="form-hint">This will update the selected player's information with the registration details</p>
-                </div>
-
-                <div class="form-group">
                   <label class="form-label">Player Position/Role:</label>
                   <select id="player-role" class="form-input" required>
                     <option value="">-- Select role --</option>
@@ -311,17 +303,24 @@ if (!isSuperAdmin) {
                   </select>
                 </div>
 
-                <div class="alert alert-warning">
-                  <p><strong>⚠️ Warning:</strong> This will overwrite the selected player's:</p>
-                  <ul>
-                    <li>Name, Email, Phone, Role</li>
-                    <li>And enable login access for this player</li>
-                  </ul>
+                <hr style="margin: 1.5rem 0; border: none; border-top: 1px solid #e5e7eb;" />
+
+                <div class="form-group">
+                  <label class="form-label">Link to Existing Player (Optional):</label>
+                  <select id="target-player" class="form-input">
+                    <option value="">-- Leave blank to create new player --</option>
+                  </select>
+                  <p class="form-hint">⚠️ If selected, this will UPDATE the existing player's Name, Email, Phone, and Role</p>
                 </div>
 
-                <div class="modal-actions">
+                <div class="modal-actions" style="display: flex; gap: 0.75rem; justify-content: flex-end;">
                   <button type="button" class="btn-secondary" onclick="closeApprovalModal()">Cancel</button>
-                  <button type="submit" class="btn-primary">Approve & Update Player</button>
+                  <button type="button" class="btn-primary" style="background: #10b981;" onclick="approveAsNewPlayer()">
+                    ✓ Create New Player & Approve
+                  </button>
+                  <button type="submit" class="btn-primary" id="update-existing-btn" style="display: none;">
+                    Approve & Update Existing
+                  </button>
                 </div>
               </form>
             </div>
@@ -737,6 +736,11 @@ if (!isSuperAdmin) {
           <div><strong>Email:</strong> ${member.email}</div>
           <div><strong>Phone:</strong> ${member.phone || 'N/A'}</div>
           <div><strong>Registered:</strong> ${new Date(member.registeredAt).toLocaleDateString()}</div>
+          <div><strong>Emergency Contact:</strong> ${member.emergencyContactName || 'N/A'}</div>
+          <div><strong>Emergency Phone:</strong> ${member.emergencyContactNumber || 'N/A'}</div>
+          ${member.jobCompany || member.jobTitle ? `
+            <div><strong>Job:</strong> ${member.jobTitle || ''} ${member.jobTitle && member.jobCompany ? 'at' : ''} ${member.jobCompany || ''}</div>
+          ` : ''}
         </div>
       `;
 
@@ -761,6 +765,62 @@ if (!isSuperAdmin) {
       currentMemberId = null;
     };
 
+    // Toggle button visibility based on player selection
+    document.getElementById('target-player').addEventListener('change', function() {
+      const createNewBtn = document.querySelector('[onclick="approveAsNewPlayer()"]');
+      const updateExistingBtn = document.getElementById('update-existing-btn');
+
+      if (this.value) {
+        // Existing player selected - show update button
+        createNewBtn.style.display = 'none';
+        updateExistingBtn.style.display = 'inline-block';
+      } else {
+        // No player selected - show create new button
+        createNewBtn.style.display = 'inline-block';
+        updateExistingBtn.style.display = 'none';
+      }
+    });
+
+    // Create new player and approve
+    window.approveAsNewPlayer = async function() {
+      const playerRole = document.getElementById('player-role').value;
+
+      if (!playerRole) {
+        alert('Please select a player role');
+        return;
+      }
+
+      if (!confirm('This will create a NEW player and enable login access. Continue?')) {
+        return;
+      }
+
+      try {
+        const response = await fetch('/.netlify/functions/members-approve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({
+            registrationId: currentMemberId,
+            createNew: true,
+            playerRole
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to approve member');
+        }
+
+        alert('New player created and approved successfully!');
+        closeApprovalModal();
+        await loadMembers();
+      } catch (error) {
+        alert('Failed to approve member: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      }
+    };
+
+    // Update existing player and approve
     document.getElementById('approval-form').addEventListener('submit', async (e) => {
       e.preventDefault();
 
@@ -769,6 +829,10 @@ if (!isSuperAdmin) {
 
       if (!targetPlayerId || !playerRole) {
         alert('Please select a player and role');
+        return;
+      }
+
+      if (!confirm('This will UPDATE the existing player information. Continue?')) {
         return;
       }
 
@@ -790,7 +854,7 @@ if (!isSuperAdmin) {
           throw new Error(data.error || 'Failed to approve member');
         }
 
-        alert('Member approved successfully!');
+        alert('Existing player updated and approved successfully!');
         closeApprovalModal();
         await loadMembers();
       } catch (error) {

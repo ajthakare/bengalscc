@@ -198,7 +198,7 @@ export const SITE_CONFIG = {
 **Authentication:**
 - JWT-based sessions stored in Netlify Blobs
 - Two roles: `super_admin` and `admin`
-- Session expiry: 7 days
+- Session expiry: 15 days
 
 **Admin Features:**
 
@@ -509,7 +509,7 @@ touch local-debug/scripts/check-data-integrity.js
 ### Authentication
 - JWT tokens stored in Netlify Blobs
 - Cookie-based session management
-- 7-day session expiry
+- 15-day session expiry
 - Secure password hashing with salt
 
 ### Data Integrity

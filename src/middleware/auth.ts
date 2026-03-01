@@ -4,7 +4,7 @@ import { serialize, parse } from 'cookie';
 
 const SESSION_SECRET = process.env.SESSION_SECRET || '';
 const SESSION_COOKIE_NAME = 'bengals_admin_session';
-const SESSION_EXPIRY = '24h';
+const SESSION_EXPIRY = '15d';
 
 export type AdminRole = 'super_admin' | 'admin';
 export type AuthRole = 'super_admin' | 'admin' | 'member';
@@ -102,7 +102,7 @@ export function createSessionCookie(
     httpOnly: true,
     secure: isProduction,
     sameSite: 'strict',
-    maxAge: 60 * 60 * 24, // 24 hours
+    maxAge: 60 * 60 * 24 * 15, // 15 days
     path: '/',
   });
 }

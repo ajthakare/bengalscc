@@ -102,6 +102,12 @@ export const handler: Handler = async (
         pa => pa.playerId === playerId
       );
 
+      // Calculate total extras across all players
+      const totalExtras = practice.playerAvailability.reduce(
+        (sum, pa) => sum + (pa.extraPlayers || 0),
+        0
+      );
+
       // Calculate availability counts based on practice type
       let availabilityCounts: any = {};
 
@@ -118,6 +124,8 @@ export const handler: Handler = async (
           notAvailable: notAvailableCount,
           noResponse: noResponseCount,
           total: practice.playerAvailability.length,
+          totalExtras,
+          totalExpected: yesCount + bowlingOnlyCount + totalExtras,
         };
       } else {
         // Field practices have 2 response types (no bowling-only)
@@ -130,6 +138,8 @@ export const handler: Handler = async (
           notAvailable: notAvailableCount,
           noResponse: noResponseCount,
           total: practice.playerAvailability.length,
+          totalExtras,
+          totalExpected: yesCount + totalExtras,
         };
       }
 
@@ -144,6 +154,7 @@ export const handler: Handler = async (
         description: practice.description,
         locked: practice.locked || false,
         myResponse: myAvailability?.response || null,
+        myExtraPlayers: myAvailability?.extraPlayers || 0,
         submittedAt: myAvailability?.submittedAt || null,
         lastUpdated: myAvailability?.lastUpdated || null,
         availabilityCounts,

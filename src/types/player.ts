@@ -256,6 +256,7 @@ export interface PracticeAvailabilityRecord {
   playerId: string;
   playerName: string;
   response: 'yes' | 'bowling-only' | 'not-available' | null;
+  extraPlayers?: number;                    // Number of extra/guest players bringing (default: 0)
   submittedAt?: string;                     // When member submitted
   lastUpdated: string;
 }

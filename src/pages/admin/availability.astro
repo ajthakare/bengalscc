@@ -168,13 +168,10 @@ if (!isAdminUser) {
         </div>
       </div>
 
-      <!-- Quick Actions -->
-      <div class="quick-actions">
-        <button id="mark-all-available-btn" class="btn-secondary">Mark All Available</button>
-        <button id="mark-all-unavailable-btn" class="btn-secondary">Mark All Unavailable</button>
-      </div>
 
-      <!-- Lock Message for Regular Admins -->
+      <!-- Scrollable Content Area -->
+      <div class="modal-scrollable-content">
+        <!-- Lock Message for Regular Admins -->
       <div id="past-fixture-lock-message" style="display: none; background: #fef3c7; border: 1px solid #fbbf24; color: #78350f; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 14px;">
         🔒 <strong>Past fixture is locked.</strong> Only Mr. President can edit the past fixtures now, contact him for any help!
       </div>
@@ -191,8 +188,8 @@ if (!isAdminUser) {
             <thead>
               <tr>
                 <th>Player</th>
-                <th style="text-align: center; width: 150px;">Available?</th>
-                <th style="text-align: center; width: 150px;">Selected?</th>
+                <th style="text-align: center; width: 90px;">Available?</th>
+                <th style="text-align: center; width: 90px;">Selected?</th>
                 <th style="width: 250px;">Match Duties</th>
               </tr>
             </thead>
@@ -307,6 +304,7 @@ if (!isAdminUser) {
           </small>
         </div>
       </div>
+      </div><!-- End modal-scrollable-content -->
 
       <div class="modal-footer">
         <button type="button" class="btn-secondary" onclick="closeAvailabilityModal()">Cancel</button>
@@ -715,13 +713,17 @@ if (!isAdminUser) {
 
   .duties-dropdown {
     position: fixed;
-    z-index: 1001;
-    background: white;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-    padding: 0.75rem;
-    min-width: 220px;
+    z-index: 999999 !important;
+    background: white !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: 12px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+    padding: 1rem;
+    min-width: 240px;
+    max-width: 320px;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
 
   .duties-dropdown-header {
@@ -790,10 +792,49 @@ if (!isAdminUser) {
     width: 90%;
     max-width: 900px;
     max-height: 90vh;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
     margin: 20px auto;
     position: relative;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Modal content needs flex layout for proper scrolling */
+  .modal-content.modal-lg {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Modal header - fixed at top */
+  .modal-header {
+    flex-shrink: 0;
+  }
+
+  /* Stats and actions - fixed, not scrollable */
+  .stats-grid,
+  .quick-actions {
+    flex-shrink: 0;
+  }
+
+  /* Scrollable content area within modal */
+  .modal-scrollable-content {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 1.5rem 1.5rem;
+    min-height: 0; /* Important for flex overflow */
+  }
+
+  /* Modal footer - stays at bottom */
+  .modal-footer {
+    flex-shrink: 0;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    background: white;
   }
 
   /* Mobile Responsive Styles */
@@ -826,17 +867,35 @@ if (!isAdminUser) {
 
     /* Duties dropdown - full width on mobile */
     .duties-dropdown {
-      top: auto !important;
-      bottom: 0 !important;
-      left: 0 !important;
-      right: 0 !important;
-      width: 100%;
-      max-height: 70vh;
-      border-radius: 12px 12px 0 0;
-      z-index: 1001;
+      top: 10% !important;
+      left: 5% !important;
+      right: 5% !important;
+      bottom: auto !important;
+      transform: none !important;
+      width: auto !important;
+      max-width: none !important;
+      min-width: auto !important;
+      max-height: 80vh !important;
+      border-radius: 12px !important;
+      z-index: 9999999 !important;
+      position: fixed !important;
+      overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch;
+      display: block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      background: #ff0000 !important; /* Bright red for testing */
+      border: 10px solid #ffff00 !important; /* HUGE yellow border */
+      color: white !important;
+      min-height: 200px !important;
     }
 
-    /* Add overlay for mobile dropdown */
+    /* Make all text in dropdown visible */
+    .duties-dropdown * {
+      color: white !important;
+    }
+
+    /* Add overlay for mobile dropdown - as separate element */
     .duties-dropdown::before {
       content: '';
       position: fixed;
@@ -845,25 +904,119 @@ if (!isAdminUser) {
       z-index: -1;
     }
 
+    /* Ensure dropdown content is visible and interactive */
+    .duties-dropdown > *,
+    .duty-option,
+    .duty-option input,
+    .duty-option label {
+      position: relative;
+      z-index: auto;
+      pointer-events: auto;
+    }
+
     /* Modal - full width and scrollable on mobile */
     .modal {
       align-items: flex-start;
       padding: 0;
+      overflow-y: visible !important;
+      overflow-x: visible !important;
     }
 
     .modal-content {
       width: 100%;
       max-width: 100%;
+      height: 100vh;
       max-height: 100vh;
       margin: 0;
       border-radius: 0;
-      overflow-y: auto;
+      overflow: visible !important; /* Allow dropdown to overflow */
+    }
+
+    .modal-scrollable-content {
+      padding: 0 1rem 1rem;
+    }
+
+    /* Modal header spacing on mobile */
+    .modal-header {
+      padding: 1rem;
+      flex-shrink: 0;
+    }
+
+    /* Stats grid - single row on mobile to save space */
+    .stats-grid {
+      display: flex;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      gap: 0.75rem;
+      padding: 0 1rem;
+      margin-bottom: 1rem;
+      flex-shrink: 0;
+      scrollbar-width: none; /* Firefox */
+    }
+
+    .stats-grid::-webkit-scrollbar {
+      display: none; /* Chrome, Safari */
+    }
+
+    .stats-grid .stat-card {
+      flex: 0 0 auto;
+      min-width: 120px;
+      padding: 0.75rem 1rem;
+    }
+
+    .stats-grid .stat-label {
+      font-size: 0.75rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .stats-grid .stat-value {
+      font-size: 1.5rem;
+    }
+
+    /* Quick actions - reduce spacing on mobile */
+    .quick-actions {
+      padding: 0 1rem;
+      margin-bottom: 1rem;
+      flex-shrink: 0;
     }
 
     /* Table wrapper - horizontal scroll if needed */
     .table-container {
       overflow-x: auto;
+      overflow-y: visible; /* Allow dropdown to overflow vertically */
       -webkit-overflow-scrolling: touch;
+    }
+
+    /* Sticky first column on mobile */
+    .data-table thead tr th:first-child,
+    .data-table tbody tr td:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 5;
+      background: white;
+      box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+      max-width: 180px;
+      min-width: 140px;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      white-space: normal;
+      line-height: 1.3;
+    }
+
+    .data-table thead tr th:first-child {
+      z-index: 6; /* Header should be above data cells */
+    }
+
+    /* Ensure duties dropdown is above sticky column */
+    .duties-dropdown {
+      z-index: 1000 !important;
+      pointer-events: auto !important;
+    }
+
+    /* Ensure table cells are clickable */
+    .duties-cell.clickable {
+      cursor: pointer;
+      pointer-events: auto;
     }
 
     /* Player availability grid - stack on mobile */
@@ -1336,33 +1489,19 @@ if (!isAdminUser) {
       const fixtureDate = new Date(currentFixture.date.split('T')[0]);
       isPastFixture = fixtureDate < today; // Set global variable
 
-      // Disable bulk action buttons and save button for past fixtures if not super admin
-      const markAllAvailableBtn = document.getElementById('mark-all-available-btn');
-      const markAllUnavailableBtn = document.getElementById('mark-all-unavailable-btn');
+      // Disable save button for past fixtures if not super admin
       const saveAvailabilityBtn = document.getElementById('save-availability-btn');
       const lockMessage = document.getElementById('past-fixture-lock-message');
       const isLocked = isPastFixture && !isSuperAdmin;
 
       if (isLocked) {
-        markAllAvailableBtn.disabled = true;
-        markAllUnavailableBtn.disabled = true;
         saveAvailabilityBtn.disabled = true;
-        markAllAvailableBtn.style.opacity = '0.5';
-        markAllUnavailableBtn.style.opacity = '0.5';
         saveAvailabilityBtn.style.opacity = '0.5';
-        markAllAvailableBtn.style.cursor = 'not-allowed';
-        markAllUnavailableBtn.style.cursor = 'not-allowed';
         saveAvailabilityBtn.style.cursor = 'not-allowed';
         lockMessage.style.display = 'block';
       } else {
-        markAllAvailableBtn.disabled = false;
-        markAllUnavailableBtn.disabled = false;
         saveAvailabilityBtn.disabled = false;
-        markAllAvailableBtn.style.opacity = '1';
-        markAllUnavailableBtn.style.opacity = '1';
         saveAvailabilityBtn.style.opacity = '1';
-        markAllAvailableBtn.style.cursor = 'pointer';
-        markAllUnavailableBtn.style.cursor = 'pointer';
         saveAvailabilityBtn.style.cursor = 'pointer';
         lockMessage.style.display = 'none';
       }
@@ -1726,26 +1865,6 @@ if (!isAdminUser) {
     document.getElementById('stat-availability-rate').textContent = availabilityRate + '%';
   }
 
-  // Quick actions
-  document.getElementById('mark-all-available-btn').addEventListener('click', () => {
-    if (!currentAvailability) return;
-    currentAvailability.playerAvailability.forEach((p) => {
-      p.wasAvailable = true;
-    });
-    renderPlayers();
-    updateStats();
-  });
-
-  document.getElementById('mark-all-unavailable-btn').addEventListener('click', () => {
-    if (!currentAvailability) return;
-    currentAvailability.playerAvailability.forEach((p) => {
-      p.wasAvailable = false;
-      p.wasSelected = false;
-      p.duties = []; // Clear all duties when marking all unavailable
-    });
-    renderPlayers();
-    updateStats();
-  });
 
   // Save changes
   document.getElementById('save-availability-btn').addEventListener('click', async () => {

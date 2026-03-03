@@ -7,8 +7,9 @@ import { addAuditLog } from '../../src/utils/auditLog';
 /**
  * Update member availability for a practice session
  * POST /.netlify/functions/practice-availability-update
- * Body: { practiceId, response }
+ * Body: { practiceId, response, extraPlayers? }
  * Response: 'yes' | 'bowling-only' | 'not-available' | null
+ * extraPlayers: integer 0-10 (number of extra/guest players bringing)
  * Requires: Member session
  */
 export const handler: Handler = async (
@@ -36,7 +37,7 @@ export const handler: Handler = async (
     const playerId = session.userId;
 
     // Parse request body
-    const { practiceId, response } = JSON.parse(event.body || '{}');
+    const { practiceId, response, extraPlayers } = JSON.parse(event.body || '{}');
 
     // Validate required fields
     if (!practiceId) {
@@ -54,6 +55,18 @@ export const handler: Handler = async (
           error: 'Invalid response value. Must be "yes", "bowling-only", "not-available", or null.',
         }),
       };
+    }
+
+    // Validate extraPlayers if provided
+    if (extraPlayers !== undefined) {
+      if (typeof extraPlayers !== 'number' || extraPlayers < 0 || extraPlayers > 10 || !Number.isInteger(extraPlayers)) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({
+            error: 'Invalid extraPlayers value. Must be an integer between 0 and 10.',
+          }),
+        };
+      }
     }
 
     // Get practice from Blobs
@@ -141,12 +154,19 @@ export const handler: Handler = async (
       playerAvailRecord.response = response;
       playerAvailRecord.submittedAt = response !== null ? now : playerAvailRecord.submittedAt;
       playerAvailRecord.lastUpdated = now;
+      // Update extraPlayers if provided, otherwise keep existing or default to 0
+      if (extraPlayers !== undefined) {
+        playerAvailRecord.extraPlayers = extraPlayers;
+      } else if (playerAvailRecord.extraPlayers === undefined) {
+        playerAvailRecord.extraPlayers = 0;
+      }
     } else {
       // Create new player availability record
       playerAvailRecord = {
         playerId,
         playerName,
         response,
+        extraPlayers: extraPlayers !== undefined ? extraPlayers : 0,
         submittedAt: response !== null ? now : undefined,
         lastUpdated: now,
       };
@@ -184,6 +204,7 @@ export const handler: Handler = async (
       body: JSON.stringify({
         success: true,
         response,
+        extraPlayers: playerAvailRecord.extraPlayers || 0,
         submittedAt: playerAvailRecord.submittedAt || null,
         lastUpdated: now,
       }),

@@ -5,9 +5,9 @@ import type { PracticeSession, Player } from '../../src/types/player';
 import { addAuditLog } from '../../src/utils/auditLog';
 
 /**
- * Manually add or remove players from practice session
+ * Manually add or remove players from practice session, or update extra players
  * POST /.netlify/functions/practice-player-manage
- * Body: { practiceId, playerId, playerName, action: 'add' | 'remove' }
+ * Body: { practiceId, playerId, playerName, action: 'add' | 'remove' | 'update-extras', extraPlayers? }
  * Requires: Admin session
  */
 export const handler: Handler = async (
@@ -32,7 +32,7 @@ export const handler: Handler = async (
       };
     }
 
-    const { practiceId, playerId, playerName, action, initialResponse } = JSON.parse(event.body || '{}');
+    const { practiceId, playerId, playerName, action, initialResponse, extraPlayers } = JSON.parse(event.body || '{}');
 
     // Validate inputs
     if (!practiceId || !playerId || !action) {
@@ -42,10 +42,10 @@ export const handler: Handler = async (
       };
     }
 
-    if (action !== 'add' && action !== 'remove') {
+    if (action !== 'add' && action !== 'remove' && action !== 'update-extras') {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: 'Action must be "add" or "remove"' }),
+        body: JSON.stringify({ error: 'Action must be "add", "remove", or "update-extras"' }),
       };
     }
 
@@ -54,6 +54,15 @@ export const handler: Handler = async (
         statusCode: 400,
         body: JSON.stringify({ error: 'playerName is required when adding a player' }),
       };
+    }
+
+    if (action === 'update-extras') {
+      if (extraPlayers === undefined || typeof extraPlayers !== 'number' || extraPlayers < 0 || extraPlayers > 10) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({ error: 'extraPlayers must be a number between 0 and 10' }),
+        };
+      }
     }
 
     const practicesStore = getStore({
@@ -131,7 +140,7 @@ export const handler: Handler = async (
       auditDetails.initialResponse = validatedResponse;
 
       message = `Player "${playerName}" added to practice session`;
-    } else {
+    } else if (action === 'remove') {
       // Remove player
       const playerIndex = practice.playerAvailability.findIndex(pa => pa.playerId === playerId);
 
@@ -146,6 +155,24 @@ export const handler: Handler = async (
       practice.playerAvailability.splice(playerIndex, 1);
 
       message = `Player "${removedPlayerName}" removed from practice session`;
+    } else if (action === 'update-extras') {
+      // Update extra players count
+      const playerRecord = practice.playerAvailability.find(pa => pa.playerId === playerId);
+
+      if (!playerRecord) {
+        return {
+          statusCode: 404,
+          body: JSON.stringify({ error: 'Player not found in practice session' }),
+        };
+      }
+
+      playerRecord.extraPlayers = extraPlayers;
+      playerRecord.lastUpdated = new Date().toISOString();
+
+      auditDetails.extraPlayers = extraPlayers;
+      auditDetails.playerName = playerRecord.playerName;
+
+      message = `Updated extra players for "${playerRecord.playerName}" to ${extraPlayers}`;
     }
 
     // Update practice
@@ -157,8 +184,13 @@ export const handler: Handler = async (
 
     // Create audit log
     try {
+      const auditAction =
+        action === 'add' ? 'practice_player_added' :
+        action === 'remove' ? 'practice_player_removed' :
+        'practice_extras_updated';
+
       await addAuditLog(
-        action === 'add' ? 'practice_player_added' : 'practice_player_removed',
+        auditAction,
         session.username,
         session.role,
         auditDetails

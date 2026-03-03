@@ -910,15 +910,22 @@ if (!isAdminUser) {
       display: block !important;
       visibility: visible !important;
       opacity: 1 !important;
-      background: #ff0000 !important; /* Bright red for testing */
-      border: 10px solid #ffff00 !important; /* HUGE yellow border */
-      color: white !important;
-      min-height: 200px !important;
+      background: white !important;
+      border: 1px solid #d1d5db !important;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2) !important;
+      padding: 1.5rem !important;
     }
 
-    /* Make all text in dropdown visible */
+    /* Ensure text is readable */
     .duties-dropdown * {
-      color: white !important;
+      color: #111827 !important;
+    }
+
+    .duties-dropdown-header {
+      font-size: 1.125rem !important;
+      font-weight: 700 !important;
+      margin-bottom: 1rem !important;
+      color: #111827 !important;
     }
 
     /* Add overlay for mobile dropdown - as separate element */
@@ -938,6 +945,23 @@ if (!isAdminUser) {
       position: relative;
       z-index: auto;
       pointer-events: auto;
+    }
+
+    /* Mobile-friendly duty options */
+    .duty-option {
+      padding: 0.875rem !important;
+      border-radius: 8px !important;
+      margin-bottom: 0.5rem !important;
+    }
+
+    .duty-option input[type="checkbox"] {
+      width: 24px !important;
+      height: 24px !important;
+    }
+
+    .duty-option label {
+      font-size: 1rem !important;
+      font-weight: 500 !important;
     }
 
     /* Modal - full width and scrollable on mobile */
@@ -1872,8 +1896,11 @@ if (!isAdminUser) {
   document.addEventListener('click', (event) => {
     const existingDropdown = document.querySelector('.duties-dropdown');
     if (existingDropdown && openDropdownPlayerId) {
-      existingDropdown.remove();
-      openDropdownPlayerId = null;
+      // Check if click is outside the dropdown
+      if (!existingDropdown.contains(event.target) && !event.target.closest('.duties-cell')) {
+        existingDropdown.remove();
+        openDropdownPlayerId = null;
+      }
     }
   });
 

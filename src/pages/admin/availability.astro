@@ -711,6 +711,15 @@ if (!isAdminUser) {
     font-style: italic;
   }
 
+  /* Overlay for dropdown */
+  .duties-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 999998 !important;
+    cursor: pointer;
+  }
+
   .duties-dropdown {
     position: fixed;
     z-index: 999999 !important;
@@ -928,13 +937,13 @@ if (!isAdminUser) {
       color: #111827 !important;
     }
 
-    /* Add overlay for mobile dropdown - as separate element */
-    .duties-dropdown::before {
-      content: '';
+    /* Overlay for mobile dropdown */
+    .duties-overlay {
       position: fixed;
       inset: 0;
       background: rgba(0, 0, 0, 0.5);
-      z-index: -1;
+      z-index: 9999998 !important;
+      cursor: pointer;
     }
 
     /* Ensure dropdown content is visible and interactive */
@@ -1755,10 +1764,14 @@ if (!isAdminUser) {
       return; // Only allow duty assignment for selected players
     }
 
-    // Close any existing dropdown
+    // Close any existing dropdown and overlay
     const existingDropdown = document.querySelector('.duties-dropdown');
+    const existingOverlay = document.querySelector('.duties-overlay');
     if (existingDropdown) {
       existingDropdown.remove();
+    }
+    if (existingOverlay) {
+      existingOverlay.remove();
     }
 
     // If clicking the same player, just close (toggle off)
@@ -1769,8 +1782,18 @@ if (!isAdminUser) {
 
     openDropdownPlayerId = playerId;
 
-    // Create and show dropdown
+    // Create and show dropdown with overlay
     const cell = event.currentTarget;
+
+    // Create overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'duties-overlay';
+    overlay.onclick = () => {
+      overlay.remove();
+      document.querySelector('.duties-dropdown')?.remove();
+      openDropdownPlayerId = null;
+    };
+
     const dropdown = document.createElement('div');
     dropdown.className = 'duties-dropdown';
     dropdown.onclick = (e) => e.stopPropagation(); // Prevent closing when clicking inside
@@ -1788,8 +1811,13 @@ if (!isAdminUser) {
       }
     });
 
-    // Build dropdown content
-    let dropdownHtml = '<div class="duties-dropdown-header">Assign Match Duties</div>';
+    // Build dropdown content with close button
+    let dropdownHtml = `
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <div class="duties-dropdown-header" style="margin-bottom: 0;">Assign Match Duties</div>
+        <button onclick="document.querySelector('.duties-overlay')?.remove(); document.querySelector('.duties-dropdown')?.remove();" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6b7280; padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">&times;</button>
+      </div>
+    `;
 
     MATCH_DUTIES.forEach(duty => {
       const isChecked = playerDuties.includes(duty);
@@ -1813,7 +1841,8 @@ if (!isAdminUser) {
     });
 
     dropdown.innerHTML = dropdownHtml;
-    document.body.appendChild(dropdown); // Append to body for fixed positioning
+    document.body.appendChild(overlay); // Append overlay first
+    document.body.appendChild(dropdown); // Append dropdown on top
 
     // Position dropdown using fixed coordinates relative to viewport
     requestAnimationFrame(() => {
@@ -1892,13 +1921,16 @@ if (!isAdminUser) {
     }
   };
 
-  // Close dropdown when clicking outside
+  // Close dropdown when clicking outside (handled by overlay click now)
+  // Cleanup handler still needed for edge cases
   document.addEventListener('click', (event) => {
     const existingDropdown = document.querySelector('.duties-dropdown');
+    const existingOverlay = document.querySelector('.duties-overlay');
     if (existingDropdown && openDropdownPlayerId) {
       // Check if click is outside the dropdown
       if (!existingDropdown.contains(event.target) && !event.target.closest('.duties-cell')) {
         existingDropdown.remove();
+        existingOverlay?.remove();
         openDropdownPlayerId = null;
       }
     }

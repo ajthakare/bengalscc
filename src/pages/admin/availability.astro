@@ -812,7 +812,14 @@ if (!isAdminUser) {
   }
 
   /* Stats and actions - fixed, not scrollable */
-  .stats-grid,
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-shrink: 0;
+  }
+
   .quick-actions {
     flex-shrink: 0;
   }

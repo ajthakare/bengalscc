@@ -1,7 +1,7 @@
 import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
 import { validateAdminSession } from '../../src/middleware/auth';
-import type { PracticeSession } from '../../src/types/player';
+import type { PracticeSession, Player } from '../../src/types/player';
 
 /**
  * Get a single practice session with all player responses
@@ -60,12 +60,35 @@ export const handler: Handler = async (
       };
     }
 
+    // Get all players to fetch current names
+    const playersStore = getStore({
+      name: 'players',
+      siteID: process.env.SITE_ID || '',
+      token: process.env.NETLIFY_AUTH_TOKEN || '',
+    });
+
+    const allPlayers = (await playersStore.get('players-all', { type: 'json' })) as Player[] | null;
+
+    // Create a map of playerId to current player name
+    const playerNameMap = new Map<string, string>();
+    if (allPlayers) {
+      allPlayers.forEach(player => {
+        playerNameMap.set(player.id, `${player.firstName} ${player.lastName}`);
+      });
+    }
+
+    // Update player names to current names from Player table
+    const updatedPlayerAvailability = practice.playerAvailability.map(pa => ({
+      ...pa,
+      playerName: playerNameMap.get(pa.playerId) || pa.playerName, // Use current name or fallback to cached
+    }));
+
     // Calculate stats
-    const totalPlayers = practice.playerAvailability.length;
-    const yesCount = practice.playerAvailability.filter(p => p.response === 'yes').length;
-    const bowlingOnlyCount = practice.playerAvailability.filter(p => p.response === 'bowling-only').length;
-    const notAvailableCount = practice.playerAvailability.filter(p => p.response === 'not-available').length;
-    const noResponseCount = practice.playerAvailability.filter(p => p.response === null).length;
+    const totalPlayers = updatedPlayerAvailability.length;
+    const yesCount = updatedPlayerAvailability.filter(p => p.response === 'yes').length;
+    const bowlingOnlyCount = updatedPlayerAvailability.filter(p => p.response === 'bowling-only').length;
+    const notAvailableCount = updatedPlayerAvailability.filter(p => p.response === 'not-available').length;
+    const noResponseCount = updatedPlayerAvailability.filter(p => p.response === null).length;
     const respondedCount = totalPlayers - noResponseCount;
     const responseRate = totalPlayers > 0 ? Math.round((respondedCount / totalPlayers) * 100) : 0;
 
@@ -78,6 +101,7 @@ export const handler: Handler = async (
         success: true,
         data: {
           ...practice,
+          playerAvailability: updatedPlayerAvailability, // Use updated names
           stats: {
             totalPlayers,
             respondedCount,

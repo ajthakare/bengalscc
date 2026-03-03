@@ -96,7 +96,6 @@ if (!session || !isMember(session)) {
     // Calculate deadline for weekend fixtures (Wednesday 6 PM before the weekend)
     function getFixtureDeadline(fixtureDate: Date) {
       const dayOfWeek = fixtureDate.getDay(); // 0 = Sunday, 6 = Saturday
-      console.log('Fixture date:', fixtureDate, 'Day of week:', dayOfWeek, '(0=Sun, 1=Mon, ..., 6=Sat)');
 
       // Include Friday (5), Saturday (6), and Sunday (0) as weekend
       if (dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0) {
@@ -108,11 +107,9 @@ if (!session || !isMember(session)) {
         const wednesday = new Date(fixtureDate);
         wednesday.setDate(wednesday.getDate() - daysBack);
         wednesday.setHours(18, 0, 0, 0); // 6 PM
-        console.log('Deadline calculated:', wednesday);
         return wednesday;
       }
 
-      console.log('Not a weekend fixture, no deadline');
       return null; // No deadline for weekday fixtures (Mon-Thu)
     }
 
@@ -145,12 +142,9 @@ if (!session || !isMember(session)) {
         noFixtures!.style.display = 'none';
         fixturesGrid!.style.display = 'none';
 
-        console.log('Fetching fixtures from API...');
         const response = await fetch('/.netlify/functions/member-fixtures-list', {
           credentials: 'same-origin',
         });
-
-        console.log('Response status:', response.status);
 
         if (!response.ok) {
           const data = await response.json();
@@ -159,15 +153,12 @@ if (!session || !isMember(session)) {
         }
 
         fixtures = await response.json();
-        console.log('Loaded fixtures:', fixtures);
 
         loading!.style.display = 'none';
 
         if (fixtures.length === 0) {
-          console.log('No fixtures found');
           noFixtures!.style.display = 'flex';
         } else {
-          console.log(`Displaying ${fixtures.length} fixtures`);
           fixturesGrid!.style.display = 'grid';
           renderFixtures();
         }
@@ -338,6 +329,21 @@ if (!session || !isMember(session)) {
               <span class="text-green-700 font-medium">✓ ${fixture.availabilityCounts.available} Available</span>
             </div>
           </div>
+
+          <!-- Available Players Section -->
+          <div class="border-t border-gray-200 pt-3 mt-3">
+            <button
+              class="available-players-toggle"
+              onclick="toggleAvailablePlayers('${fixture.id}')"
+              id="toggle-${fixture.id}"
+            >
+              <span class="toggle-text">View Available Players</span>
+              <span class="toggle-icon">▼</span>
+            </button>
+            <div class="available-players-list" id="players-${fixture.id}" style="display: none;">
+              <div class="players-loading">Loading...</div>
+            </div>
+          </div>
         `;
 
         fixturesGrid.appendChild(card);
@@ -435,8 +441,81 @@ if (!session || !isMember(session)) {
       }, 2000);
     }
 
-    // Make updateAvailability globally available
+    // Track which fixtures have loaded players
+    const loadedPlayers = new Set<string>();
+
+    async function toggleAvailablePlayers(fixtureId: string) {
+      const toggleBtn = document.getElementById(`toggle-${fixtureId}`);
+      const playersList = document.getElementById(`players-${fixtureId}`);
+
+      if (!toggleBtn || !playersList) return;
+
+      // Toggle display
+      const isExpanded = playersList.style.display !== 'none';
+
+      if (isExpanded) {
+        // Collapse
+        playersList.style.display = 'none';
+        toggleBtn.classList.remove('expanded');
+      } else {
+        // Expand
+        playersList.style.display = 'block';
+        toggleBtn.classList.add('expanded');
+
+        // Fetch players if not already loaded
+        if (!loadedPlayers.has(fixtureId)) {
+          await fetchAvailablePlayers(fixtureId);
+          loadedPlayers.add(fixtureId);
+        }
+      }
+    }
+
+    async function fetchAvailablePlayers(fixtureId: string) {
+      const playersList = document.getElementById(`players-${fixtureId}`);
+      if (!playersList) return;
+
+      try {
+        playersList.innerHTML = '<div class="players-loading">Loading players...</div>';
+
+        const response = await fetch(`/.netlify/functions/fixture-available-players-get?fixtureId=${fixtureId}`, {
+          credentials: 'same-origin',
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to load available players');
+        }
+
+        const data = await response.json();
+
+        // Build HTML for players list
+        let html = '';
+
+        if (data.totalAvailable === 0) {
+          html = '<div class="no-players-message">No players have marked their availability yet</div>';
+        } else {
+          // Show all available players
+          html = `
+            <div class="players-section">
+              <div class="players-section-title available">✓ Available Players (${data.totalAvailable})</div>
+              <div class="player-names-list">
+                ${data.availablePlayers.map(p => `
+                  <span class="player-name-badge available">${p.name}</span>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }
+
+        playersList.innerHTML = html;
+      } catch (error) {
+        console.error('Error fetching available players:', error);
+        playersList.innerHTML = '<div class="no-players-message">Failed to load players. Please try again.</div>';
+      }
+    }
+
+    // Make functions globally available
     (window as any).updateAvailability = updateAvailability;
+    (window as any).toggleAvailablePlayers = toggleAvailablePlayers;
 
     // Load fixtures on page load
     loadFixtures();
@@ -715,6 +794,114 @@ if (!session || !isMember(session)) {
     .toast.show {
       opacity: 1;
       transform: translateY(0);
+    }
+
+    /* Available Players Section */
+    .available-players-toggle {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1rem;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #374151;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .available-players-toggle:hover {
+      background: #f3f4f6;
+      border-color: #d1d5db;
+    }
+
+    .toggle-icon {
+      transition: transform 0.2s;
+      color: #6b7280;
+    }
+
+    .available-players-toggle.expanded .toggle-icon {
+      transform: rotate(180deg);
+    }
+
+    .available-players-list {
+      margin-top: 0.75rem;
+      padding: 1rem;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+    }
+
+    .players-loading {
+      text-align: center;
+      color: #6b7280;
+      font-size: 0.875rem;
+      padding: 1rem;
+    }
+
+    .players-section {
+      margin-bottom: 1rem;
+    }
+
+    .players-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .players-section-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: #6b7280;
+      margin-bottom: 0.5rem;
+      letter-spacing: 0.05em;
+    }
+
+    .players-section-title.selected {
+      color: #059669;
+    }
+
+    .players-section-title.available {
+      color: #2563eb;
+    }
+
+    .player-names-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .player-name-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.375rem 0.75rem;
+      background: white;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      color: #111827;
+    }
+
+    .player-name-badge.selected {
+      background: #d1fae5;
+      border-color: #10b981;
+      color: #065f46;
+    }
+
+    .player-name-badge.available {
+      background: #dbeafe;
+      border-color: #3b82f6;
+      color: #1e40af;
+    }
+
+    .no-players-message {
+      text-align: center;
+      color: #9ca3af;
+      font-size: 0.875rem;
+      font-style: italic;
+      padding: 1rem;
     }
   </style>
 </Layout>

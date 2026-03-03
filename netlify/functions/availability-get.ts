@@ -85,6 +85,14 @@ export const handler: Handler = async (
 
     const allPlayers = (await playersStore.get('players-all', { type: 'json' })) as Player[] | null;
 
+    // Create a map of playerId to current player name
+    const playerNameMap = new Map<string, string>();
+    if (allPlayers) {
+      allPlayers.forEach(player => {
+        playerNameMap.set(player.id, `${player.firstName} ${player.lastName}`);
+      });
+    }
+
     // Get all current roster players for this team (only active players)
     const currentRosterPlayers =
       coreRoster?.filter((assignment) => {
@@ -101,17 +109,20 @@ export const handler: Handler = async (
     // Merge: keep existing records, add new active roster players
     const syncedPlayerAvailability = currentRosterPlayers.map((rosterPlayer) => {
       const existing = existingPlayerMap.get(rosterPlayer.playerId);
+      const currentName = playerNameMap.get(rosterPlayer.playerId) || rosterPlayer.playerName;
+
       if (existing) {
-        // Keep existing availability data, ensure duties array exists (backwards compatibility)
+        // Keep existing availability data, but update name to current, ensure duties array exists
         return {
           ...existing,
+          playerName: currentName, // Update to current name from Player table
           duties: existing.duties || [],
         };
       } else {
         // Add new active roster player with default values
         return {
           playerId: rosterPlayer.playerId,
-          playerName: rosterPlayer.playerName,
+          playerName: currentName, // Use current name from Player table
           wasAvailable: false,
           wasSelected: false,
           duties: [],

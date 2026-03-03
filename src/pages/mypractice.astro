@@ -97,6 +97,175 @@ if (!session || !isMember(session)) {
       color: #6b7280;
     }
 
+    /* Extra Players Section Styling */
+    .extra-players-section {
+      margin-top: 1rem;
+      margin-bottom: 1rem;
+      padding: 1rem;
+      background-color: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+    }
+
+    .extra-players-label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #374151;
+      margin-bottom: 0.5rem;
+    }
+
+    .extra-players-select {
+      width: 100%;
+      max-width: 300px;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.875rem;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      background-color: white;
+      color: #111827;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .extra-players-select:hover:not(:disabled) {
+      border-color: #f67280;
+    }
+
+    .extra-players-select:focus {
+      outline: none;
+      border-color: #f67280;
+      box-shadow: 0 0 0 3px rgba(246, 114, 128, 0.1);
+    }
+
+    .extra-players-select:disabled {
+      background-color: #f3f4f6;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    .extra-players-hint {
+      display: block;
+      font-size: 0.75rem;
+      color: #6b7280;
+      margin-top: 0.5rem;
+      font-style: italic;
+    }
+
+    /* Available Players Section */
+    .available-players-section {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .available-players-toggle {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1rem;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #374151;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .available-players-toggle:hover {
+      background: #f3f4f6;
+      border-color: #d1d5db;
+    }
+
+    .toggle-icon {
+      transition: transform 0.2s;
+      color: #6b7280;
+    }
+
+    .available-players-toggle.expanded .toggle-icon {
+      transform: rotate(180deg);
+    }
+
+    .available-players-list {
+      margin-top: 0.75rem;
+      padding: 1rem;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+    }
+
+    .players-loading {
+      text-align: center;
+      color: #6b7280;
+      font-size: 0.875rem;
+      padding: 1rem;
+    }
+
+    .players-section {
+      margin-bottom: 1rem;
+    }
+
+    .players-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .players-section-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: #6b7280;
+      margin-bottom: 0.5rem;
+      letter-spacing: 0.05em;
+    }
+
+    .players-section-title.available {
+      color: #2563eb;
+    }
+
+    .players-section-title.bowling-only {
+      color: #7c3aed;
+    }
+
+    .player-names-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .player-name-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.375rem 0.75rem;
+      background: white;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      color: #111827;
+    }
+
+    .player-name-badge.available {
+      background: #dbeafe;
+      border-color: #3b82f6;
+      color: #1e40af;
+    }
+
+    .player-name-badge.bowling-only {
+      background: #ede9fe;
+      border-color: #8b5cf6;
+      color: #5b21b6;
+    }
+
+    .no-players-message {
+      text-align: center;
+      color: #9ca3af;
+      font-size: 0.875rem;
+      font-style: italic;
+      padding: 1rem;
+    }
+
     /* Mobile-specific fixes to ensure all content is visible */
     @media (max-width: 768px) {
       html,
@@ -193,12 +362,9 @@ if (!session || !isMember(session)) {
         noPractices!.style.display = 'none';
         practicesGrid!.style.display = 'none';
 
-        console.log('Fetching practices from API...');
         const response = await fetch('/.netlify/functions/practice-list', {
           credentials: 'same-origin',
         });
-
-        console.log('Response status:', response.status);
 
         if (!response.ok) {
           const data = await response.json();
@@ -207,15 +373,12 @@ if (!session || !isMember(session)) {
         }
 
         practices = await response.json();
-        console.log('Loaded practices:', practices);
 
         loading!.style.display = 'none';
 
         if (practices.length === 0) {
-          console.log('No practices found');
           noPractices!.style.display = 'flex';
         } else {
-          console.log(`Displaying ${practices.length} practices`);
           practicesGrid!.style.display = 'grid';
           renderPractices();
         }
@@ -294,7 +457,7 @@ if (!session || !isMember(session)) {
         if (practice.type === 'net') {
           teamStatusHTML = `
             <span class="status-count">
-              <span class="status-count-value">${practice.availabilityCounts.yes}</span> yes
+              <span class="status-count-value">${practice.availabilityCounts.totalExpected}</span> yes
             </span>
             <span class="status-count">
               <span class="status-count-value">${practice.availabilityCounts.bowlingOnly}</span> bowling only
@@ -306,7 +469,7 @@ if (!session || !isMember(session)) {
         } else {
           teamStatusHTML = `
             <span class="status-count">
-              <span class="status-count-value">${practice.availabilityCounts.yes}</span> yes
+              <span class="status-count-value">${practice.availabilityCounts.totalExpected}</span> yes
             </span>
             <span class="status-count">
               <span class="status-count-value">${practice.availabilityCounts.notAvailable}</span> not available
@@ -344,6 +507,26 @@ if (!session || !isMember(session)) {
             </div>
           </div>
 
+          <div class="extra-players-section" id="extra-${practice.id}">
+            <label class="extra-players-label" for="extra-players-${practice.id}">
+              Bringing friends/guests?
+            </label>
+            <select
+              id="extra-players-${practice.id}"
+              class="extra-players-select"
+              onchange="updateExtraPlayers('${practice.id}')"
+              ${disabledAttr}
+            >
+              <option value="0">No extras</option>
+              <option value="1">+1 person</option>
+              <option value="2">+2 people</option>
+              <option value="3">+3 people</option>
+              <option value="4">+4 people</option>
+              <option value="5">+5 or more</option>
+            </select>
+            <small class="extra-players-hint">Unregistered players joining practice</small>
+          </div>
+
           ${lockMessageHTML}
 
           <div class="team-status">
@@ -352,16 +535,37 @@ if (!session || !isMember(session)) {
               ${teamStatusHTML}
             </div>
           </div>
+
+          <!-- View Available Players Section -->
+          <div class="available-players-section">
+            <button
+              class="available-players-toggle"
+              onclick="toggleAvailablePlayers('${practice.id}')"
+              id="toggle-${practice.id}"
+            >
+              <span class="toggle-text">View Available Players</span>
+              <span class="toggle-icon">▼</span>
+            </button>
+            <div class="available-players-list" id="players-${practice.id}" style="display: none;">
+              <div class="players-loading">Loading...</div>
+            </div>
+          </div>
         `;
 
         practicesGrid.appendChild(card);
+
+        // Set the selected value for extraPlayers dropdown
+        const extraPlayersSelect = document.getElementById(`extra-players-${practice.id}`) as HTMLSelectElement;
+        if (extraPlayersSelect && practice.myExtraPlayers !== undefined) {
+          const value = Math.min(practice.myExtraPlayers, 5).toString(); // Cap at 5 for dropdown
+          extraPlayersSelect.value = value;
+        }
       });
     }
 
     async function updateAvailability(practiceId: string, response: string) {
       // Prevent multiple simultaneous updates
       if (updatingPracticeId) {
-        console.log('Update already in progress');
         return;
       }
 
@@ -396,7 +600,9 @@ if (!session || !isMember(session)) {
       });
 
       try {
-        console.log('Updating availability:', practiceId, newResponse);
+        // Get current extraPlayers value from dropdown
+        const extraPlayersSelect = document.getElementById(`extra-players-${practiceId}`) as HTMLSelectElement;
+        const extraPlayers = extraPlayersSelect ? parseInt(extraPlayersSelect.value) : 0;
 
         const apiResponse = await fetch('/.netlify/functions/practice-availability-update', {
           method: 'POST',
@@ -407,6 +613,7 @@ if (!session || !isMember(session)) {
           body: JSON.stringify({
             practiceId,
             response: newResponse,
+            extraPlayers,
           }),
         });
 
@@ -416,7 +623,6 @@ if (!session || !isMember(session)) {
         }
 
         const result = await apiResponse.json();
-        console.log('Update successful:', result);
 
         // Reload practices to get updated counts
         await loadPractices();
@@ -435,12 +641,159 @@ if (!session || !isMember(session)) {
       }
     }
 
+    async function updateExtraPlayers(practiceId: string) {
+      // Prevent multiple simultaneous updates
+      if (updatingPracticeId) {
+        return;
+      }
+
+      updatingPracticeId = practiceId;
+
+      try {
+        // Get the practice and current values
+        const practice = practices.find(p => p.id === practiceId);
+        if (!practice) return;
+
+        const extraPlayersSelect = document.getElementById(`extra-players-${practiceId}`) as HTMLSelectElement;
+        if (!extraPlayersSelect) return;
+
+        const extraPlayers = parseInt(extraPlayersSelect.value);
+
+        const apiResponse = await fetch('/.netlify/functions/practice-availability-update', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'same-origin',
+          body: JSON.stringify({
+            practiceId,
+            response: practice.myResponse || null,
+            extraPlayers,
+          }),
+        });
+
+        if (!apiResponse.ok) {
+          const errorData = await apiResponse.json();
+          throw new Error(errorData.error || 'Failed to update extra players');
+        }
+
+        const result = await apiResponse.json();
+
+        // Update local data
+        practice.myExtraPlayers = extraPlayers;
+
+        // Reload practices to get updated counts
+        await loadPractices();
+
+      } catch (error) {
+        console.error('Error updating extra players:', error);
+        alert(error instanceof Error ? error.message : 'Failed to update extra players');
+        renderPractices();
+      } finally {
+        updatingPracticeId = null;
+      }
+    }
+
+    // Track which practices have loaded players
+    const loadedPlayers = new Set<string>();
+
+    async function toggleAvailablePlayers(practiceId: string) {
+      const toggleBtn = document.getElementById(`toggle-${practiceId}`);
+      const playersList = document.getElementById(`players-${practiceId}`);
+
+      if (!toggleBtn || !playersList) return;
+
+      // Toggle display
+      const isExpanded = playersList.style.display !== 'none';
+
+      if (isExpanded) {
+        // Collapse
+        playersList.style.display = 'none';
+        toggleBtn.classList.remove('expanded');
+      } else {
+        // Expand
+        playersList.style.display = 'block';
+        toggleBtn.classList.add('expanded');
+
+        // Fetch players if not already loaded
+        if (!loadedPlayers.has(practiceId)) {
+          await fetchAvailablePlayers(practiceId);
+          loadedPlayers.add(practiceId);
+        }
+      }
+    }
+
+    async function fetchAvailablePlayers(practiceId: string) {
+      const playersList = document.getElementById(`players-${practiceId}`);
+      if (!playersList) return;
+
+      try {
+        playersList.innerHTML = '<div class="players-loading">Loading players...</div>';
+
+        const response = await fetch(`/.netlify/functions/practice-available-players-get?practiceId=${practiceId}`, {
+          credentials: 'same-origin',
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to load available players');
+        }
+
+        const data = await response.json();
+
+        // Build HTML for players list
+        let html = '';
+
+        if (data.totalYes === 0 && data.totalBowlingOnly === 0) {
+          html = '<div class="no-players-message">No players have marked their availability yet</div>';
+        } else {
+          // Show "Yes" players
+          if (data.totalYes > 0) {
+            html += `
+              <div class="players-section">
+                <div class="players-section-title available">✓ Available Players (${data.totalYes})</div>
+                <div class="player-names-list">
+                  ${data.yesPlayers.map(p => `
+                    <span class="player-name-badge available">
+                      ${p.name}${p.extraPlayers > 0 ? ` +${p.extraPlayers}` : ''}
+                    </span>
+                  `).join('')}
+                </div>
+              </div>
+            `;
+          }
+
+          // Show "Bowling Only" players (only for net practices)
+          if (data.practiceType === 'net' && data.totalBowlingOnly > 0) {
+            html += `
+              <div class="players-section">
+                <div class="players-section-title bowling-only">🎾 Bowling Only (${data.totalBowlingOnly})</div>
+                <div class="player-names-list">
+                  ${data.bowlingOnlyPlayers.map(p => `
+                    <span class="player-name-badge bowling-only">
+                      ${p.name}${p.extraPlayers > 0 ? ` +${p.extraPlayers}` : ''}
+                    </span>
+                  `).join('')}
+                </div>
+              </div>
+            `;
+          }
+        }
+
+        playersList.innerHTML = html;
+      } catch (error) {
+        console.error('Error fetching available players:', error);
+        playersList.innerHTML = '<div class="no-players-message">Failed to load players. Please try again.</div>';
+      }
+    }
+
     // Load practices on page load
     document.addEventListener('DOMContentLoaded', () => {
       loadPractices();
     });
 
-    // Expose function globally
+    // Expose functions globally
     (window as any).updateAvailability = updateAvailability;
+    (window as any).updateExtraPlayers = updateExtraPlayers;
+    (window as any).toggleAvailablePlayers = toggleAvailablePlayers;
   </script>
 </Layout>

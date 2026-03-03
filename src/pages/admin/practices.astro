@@ -261,6 +261,46 @@ if (!isAdminUser) {
         margin-bottom: 3rem !important;
         padding-bottom: 2rem !important;
       }
+
+      /* Modal fixes for mobile */
+      #poll-modal.modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 9999;
+        overflow-y: visible;
+      }
+
+      #poll-modal.modal[style*="display: flex"] {
+        display: flex !important;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 0;
+      }
+
+      #poll-modal .modal-content.modal-lg {
+        width: 100%;
+        max-width: 100%;
+        height: 100vh;
+        max-height: 100vh;
+        margin: 0;
+        border-radius: 0;
+      }
+
+      #poll-modal .modal-body {
+        padding: 1rem;
+      }
+
+      #poll-modal .modal-header {
+        padding: 1rem;
+        flex-shrink: 0;
+      }
+
+      #poll-modal .modal-footer {
+        padding: 1rem;
+        flex-shrink: 0;
+      }
     }
 
     /* Form Grid Layout */
@@ -277,6 +317,23 @@ if (!isAdminUser) {
       background-color: rgba(0, 0, 0, 0.5);
     }
 
+    /* Modal base */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 9999;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .modal[style*="display: flex"] {
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+    }
+
     /* Large Modal Variant */
     .modal-content.modal-lg {
       position: relative;
@@ -290,10 +347,50 @@ if (!isAdminUser) {
       flex-direction: column;
     }
 
+    .modal-header {
+      flex-shrink: 0;
+      padding: 1.5rem;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
     .modal-body {
       padding: 1.5rem;
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
       flex: 1;
+    }
+
+    .modal-footer {
+      flex-shrink: 0;
+      padding: 1rem 1.5rem;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      gap: 1rem;
+      justify-content: flex-end;
+      background: white;
+    }
+
+    /* Extra Players Dropdown Styling */
+    .extras-dropdown {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.875rem;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      background-color: white;
+      color: #111827;
+      cursor: pointer;
+      transition: all 0.2s;
+      min-width: 60px;
+    }
+
+    .extras-dropdown:hover {
+      border-color: #f67280;
+    }
+
+    .extras-dropdown:focus {
+      outline: none;
+      border-color: #f67280;
+      box-shadow: 0 0 0 3px rgba(246, 114, 128, 0.1);
     }
 
     /* Announcement Modal Specific Styles */
@@ -735,6 +832,10 @@ if (!isAdminUser) {
         </p>
       `;
 
+      // Calculate total extras
+      const totalExtras = practice.playerAvailability.reduce((sum, player) => sum + (player.extraPlayers || 0), 0);
+      const totalExpected = practice.stats.yesCount + practice.stats.bowlingOnlyCount + totalExtras;
+
       // Stats
       let statsHTML = `
         <div class="stat-item">
@@ -771,6 +872,18 @@ if (!isAdminUser) {
         `;
       }
 
+      // Add total extras and total expected
+      statsHTML += `
+        <div class="stat-item">
+          <span class="stat-label">👥 Extras</span>
+          <span class="stat-value">${totalExtras}</span>
+        </div>
+        <div class="stat-item" style="background: #f0fdf4; border: 1px solid #86efac;">
+          <span class="stat-label"><strong>Total Expected</strong></span>
+          <span class="stat-value" style="color: #166534; font-weight: 700;">${totalExpected}</span>
+        </div>
+      `;
+
       document.getElementById('modal-stats').innerHTML = statsHTML;
 
       // Players table
@@ -780,6 +893,7 @@ if (!isAdminUser) {
             <tr>
               <th>Player</th>
               <th>Status</th>
+              <th style="width: 100px; text-align: center;">Extras</th>
               <th>Submitted</th>
               <th style="width: 120px; text-align: center;">Actions</th>
             </tr>
@@ -798,11 +912,31 @@ if (!isAdminUser) {
               }
 
               const submitted = player.submittedAt ? new Date(player.submittedAt).toLocaleString() : '-';
+              const extraPlayers = player.extraPlayers || 0;
 
               return `
                 <tr>
                   <td>${player.playerName}</td>
                   <td>${badge}</td>
+                  <td style="text-align: center;">
+                    <select
+                      class="extras-dropdown"
+                      data-player-id="${player.playerId}"
+                      onchange="updatePlayerExtras('${player.playerId}', this.value)"
+                    >
+                      <option value="0" ${extraPlayers === 0 ? 'selected' : ''}>0</option>
+                      <option value="1" ${extraPlayers === 1 ? 'selected' : ''}>1</option>
+                      <option value="2" ${extraPlayers === 2 ? 'selected' : ''}>2</option>
+                      <option value="3" ${extraPlayers === 3 ? 'selected' : ''}>3</option>
+                      <option value="4" ${extraPlayers === 4 ? 'selected' : ''}>4</option>
+                      <option value="5" ${extraPlayers === 5 ? 'selected' : ''}>5</option>
+                      <option value="6" ${extraPlayers === 6 ? 'selected' : ''}>6</option>
+                      <option value="7" ${extraPlayers === 7 ? 'selected' : ''}>7</option>
+                      <option value="8" ${extraPlayers === 8 ? 'selected' : ''}>8</option>
+                      <option value="9" ${extraPlayers === 9 ? 'selected' : ''}>9</option>
+                      <option value="10" ${extraPlayers === 10 ? 'selected' : ''}>10</option>
+                    </select>
+                  </td>
                   <td>${submitted}</td>
                   <td style="text-align: center;">
                     <button class="btn-remove" onclick="removePlayerFromPractice('${player.playerId}', '${player.playerName}')">Remove</button>
@@ -1243,6 +1377,42 @@ if (!isAdminUser) {
       }
     }
 
+    async function updatePlayerExtras(playerId, extraPlayers) {
+      if (!currentPractice) return;
+
+      try {
+        // Update via practice-player-manage endpoint
+        const response = await fetch('/.netlify/functions/practice-player-manage', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({
+            practiceId: currentPractice.id,
+            playerId,
+            action: 'update-extras',
+            extraPlayers: parseInt(extraPlayers),
+          }),
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          showToast('Extra players updated', 'success');
+          // Reload the poll modal to refresh counts
+          viewPoll(currentPractice.id);
+        } else {
+          showToast(result.error || 'Failed to update extra players', 'error');
+          // Reload to reset dropdown
+          viewPoll(currentPractice.id);
+        }
+      } catch (error) {
+        console.error('Error updating extra players:', error);
+        showToast('Failed to update extra players', 'error');
+        // Reload to reset dropdown
+        viewPoll(currentPractice.id);
+      }
+    }
+
     // Expose functions globally
     window.viewPoll = viewPoll;
     window.editPractice = editPractice;
@@ -1253,6 +1423,7 @@ if (!isAdminUser) {
     window.copyAnnouncement = copyAnnouncement;
     window.addPlayerToPractice = addPlayerToPractice;
     window.removePlayerFromPractice = removePlayerFromPractice;
+    window.updatePlayerExtras = updatePlayerExtras;
     window.filterPlayers = filterPlayers;
     window.selectPlayer = selectPlayer;
     window.hideDropdownDelayed = hideDropdownDelayed;

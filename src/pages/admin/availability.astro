@@ -820,6 +820,25 @@ if (!isAdminUser) {
     flex-shrink: 0;
   }
 
+  .stat-card {
+    background: #f9fafb;
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+  }
+
+  .stat-label {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 0.5rem;
+  }
+
+  .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #111827;
+  }
+
   .quick-actions {
     flex-shrink: 0;
   }
@@ -951,7 +970,8 @@ if (!isAdminUser) {
 
     /* Stats grid - single row on mobile to save space */
     .stats-grid {
-      display: flex;
+      display: flex !important;
+      grid-template-columns: unset !important;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
       gap: 0.75rem;

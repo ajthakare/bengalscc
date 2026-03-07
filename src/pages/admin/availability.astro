@@ -2717,28 +2717,28 @@ Please let the captain know if you need an extra colored jersey.`;
     return `
       <div style="width: 1080px; height: 1920px; position: relative; background: url('/insta_story_template.png') center/cover; font-family: 'Inter Variable', sans-serif; color: white; padding: 0; margin: 0;">
 
-        <!-- Team Name (below logo, left aligned) -->
-        <div style="position: absolute; top: 550px; left: 100px; right: 100px; text-align: left;">
-          <h1 style="font-family: 'Libre Baskerville', serif; font-size: 68px; font-weight: 700; color: #d4af37; letter-spacing: 2px; margin: 0; padding: 0; line-height: 1.0;">
+        <!-- Team Name (centered) -->
+        <div style="position: absolute; top: 520px; left: 0; width: 1080px; text-align: center;">
+          <h1 style="display: block; width: 100%; font-family: 'Libre Baskerville', serif; font-size: 74px; font-weight: 700; color: #d4af37; letter-spacing: 2px; margin: 0; padding: 0; line-height: 1.0; text-align: center;">
             ${teamName}
           </h1>
         </div>
 
-        <!-- Opponent (below team name, left aligned) -->
-        <div style="position: absolute; top: 630px; left: 100px; right: 100px; text-align: left;">
+        <!-- Opponent (centered) -->
+        <div style="position: absolute; top: 630px; left: 0; width: 1080px; text-align: center;">
           <h2 style="font-family: 'Montserrat', sans-serif; font-size: 48px; font-weight: 600; color: white; margin: 0; padding: 0; line-height: 1.0;">
             VS ${opponent}
           </h2>
         </div>
 
-        <!-- Players list (below STARTING XI heading, moved right) -->
-        <div style="position: absolute; top: 900px; left: 150px; right: 120px;">
-          <ol style="list-style: none; padding: 0; margin: 0;">
+        <!-- Players list (centered) -->
+        <div style="position: absolute; top: 870px; left: 0; width: 1080px; text-align: center;">
+          <ol style="list-style: none; padding: 0; margin: 0; display: inline-block; text-align: left;">
             ${players.map((player, index) => {
               const firstName = player.name.split(' ')[0];
               return `
-              <li style="font-family: 'Libre Baskerville', serif; font-size: 36px; font-weight: 700; color: #d4af37; margin-bottom: 14px; line-height: 1.1;">
-                <span style="display: inline-block; width: 70px;">${index + 1}.</span>
+              <li style="font-family: 'Libre Baskerville', serif; font-size: 42px; font-weight: 700; color: #d4af37; margin-bottom: 14px; line-height: 1.1;">
+                <span style="display: inline-block; width: 80px;">${index + 1}.</span>
                 <span>${firstName.toUpperCase()}</span>
                 ${player.isCaptain ? '<span style="color: white; font-weight: 700; margin-left: 10px;">(C)</span>' : ''}
               </li>
@@ -2747,8 +2747,8 @@ Please let the captain know if you need an extra colored jersey.`;
           </ol>
         </div>
 
-        <!-- Venue details (bottom, left aligned) -->
-        <div style="position: absolute; bottom: 160px; left: 120px; right: 120px; text-align: left;">
+        <!-- Venue details (centered) -->
+        <div style="position: absolute; bottom: 160px; left: 0; width: 1080px; text-align: center;">
           <div style="font-family: 'Montserrat', sans-serif; font-size: 30px; font-weight: 700; color: white; text-transform: uppercase; margin-bottom: 4px; line-height: 1.1;">
             ${venue}
           </div>

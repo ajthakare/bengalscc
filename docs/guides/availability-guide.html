@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Availability Portal - Admin Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 20mm;
+            background: white;
+        }
+
+        h1 {
+            color: #f67280;
+            font-size: 32px;
+            margin-bottom: 10px;
+            border-bottom: 3px solid #f67280;
+            padding-bottom: 10px;
+        }
+
+        h2 {
+            color: #355c7d;
+            font-size: 24px;
+            margin-top: 40px;
+            margin-bottom: 15px;
+            padding-left: 10px;
+            border-left: 4px solid #f67280;
+        }
+
+        h3 {
+            color: #555;
+            font-size: 18px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        p {
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 30px;
+        }
+
+        img {
+            max-width: 50%;
+            height: auto;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin: 20px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        ul, ol {
+            margin-left: 25px;
+            margin-bottom: 15px;
+        }
+
+        li {
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .warning strong {
+            color: #856404;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+
+        .badge-vice {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .badge-core {
+            background: #51cf66;
+            color: white;
+        }
+
+        .workflow {
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .workflow h2 {
+            margin-top: 0;
+            font-size: 20px;
+        }
+
+        .workflow-step {
+            font-size: 15px;
+            margin: 10px 0;
+            padding: 10px;
+            background: white;
+            border-radius: 4px;
+        }
+
+        .section {
+            page-break-inside: avoid;
+            margin-bottom: 30px;
+        }
+
+        hr {
+            border: none;
+            border-top: 2px solid #e9ecef;
+            margin: 30px 0;
+        }
+
+        footer {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 2px solid #e9ecef;
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+        }
+
+        @media print {
+            body {
+                padding: 10mm;
+            }
+
+            h2 {
+                page-break-after: avoid;
+            }
+
+            img {
+                page-break-inside: avoid;
+            }
+
+            .section {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Availability Portal - Quick Admin Guide</h1>
+    <p class="subtitle">A visual guide for managing team selection and match announcements</p>
+
+    <hr>
+
+    <!-- Section 1 -->
+    <div class="section">
+        <h2>1. Access Fixtures & Availability</h2>
+        <p>Open the admin menu and click <strong>"Fixtures & Availability"</strong></p>
+        <img src="../../public/screenshots/admin-menu.png" alt="Admin Menu">
+    </div>
+
+    <!-- Section 2 -->
+    <div class="section">
+        <h2>2. Select Players (11 Required)</h2>
+        <p>Click on a fixture to open the availability modal.</p>
+        <img src="../../public/screenshots/player-selection.png" alt="Player Selection">
+
+        <h3>Steps:</h3>
+        <ol>
+            <li>Review who marked themselves <strong>Available</strong> (blue checkmark)</li>
+            <li>Check the <strong>"Selected?"</strong> box for 11 players</li>
+            <li>Click <strong>"Save Changes"</strong> (bottom of modal)</li>
+        </ol>
+
+        <h3>Player Badges:</h3>
+        <ul>
+            <li><span class="badge badge-vice">VICE CAPTAIN</span> - Team vice-captain</li>
+            <li><span class="badge badge-core">CORE</span> - Core team member</li>
+        </ul>
+    </div>
+
+    <!-- Section 3 -->
+    <div class="section">
+        <h2>3. Assign Match Duties (Optional)</h2>
+        <p>Click <strong>"Match Duties"</strong> column for any selected player to assign:</p>
+        <ul>
+            <li>Warm Up, Water Assignment, Scoring, Team Kit</li>
+            <li>Ice, Ground Set-up, Ground Cleaning, Video Broadcast</li>
+        </ul>
+        <p><strong>Note:</strong> Each duty can only be assigned to one player.</p>
+        <p>Click <strong>"Save Changes"</strong> when done.</p>
+    </div>
+
+    <!-- Section 4 -->
+    <div class="section">
+        <h2>4. Add Match Links (Optional)</h2>
+        <p>Scroll down in the modal to add:</p>
+        <img src="../../public/screenshots/match-links.png" alt="Match Links">
+
+        <ul>
+            <li><strong>YouTube URL</strong> - Live stream or match recording</li>
+            <li><strong>CricHeroes URL</strong> - Live scoring link</li>
+        </ul>
+        <p>Click <strong>"Save Changes"</strong> after adding links.</p>
+    </div>
+
+    <!-- Section 5 -->
+    <div class="section">
+        <h2>5. Generate Team Announcement</h2>
+        <p>Once 11 players are selected:</p>
+        <img src="../../public/screenshots/fixture-card-ready.png" alt="Fixture Card">
+
+        <ol>
+            <li>Click <strong>"📱 Generate Announcement"</strong> button</li>
+            <li>Review the announcement with all match details</li>
+        </ol>
+
+        <img src="../../public/screenshots/team-announcement.png" alt="Team Announcement">
+
+        <ol start="3">
+            <li>Click <strong>"📋 Copy to Clipboard"</strong></li>
+            <li>Paste in WhatsApp team group</li>
+            <li><strong>IMPORTANT:</strong> Replace <code>@PlayerName</code> with actual WhatsApp contacts so players get notified</li>
+        </ol>
+    </div>
+
+    <!-- Section 6 -->
+    <div class="section">
+        <h2>6. Record Match Results (After Match)</h2>
+        <p>Open the fixture modal and scroll to <strong>"Match Result"</strong> section:</p>
+        <img src="../../public/screenshots/match-result.png" alt="Match Result">
+
+        <h3>Required:</h3>
+        <ul>
+            <li><strong>Result</strong> - Win/Loss/Tie/No Result</li>
+            <li><strong>Player of the Match</strong> - Select from dropdown</li>
+        </ul>
+
+        <h3>Optional (if applicable):</h3>
+        <ul>
+            <li><strong>Paid Umpire Fee?</strong> - Yes/No</li>
+            <li><strong>Paid By</strong> - Which player paid</li>
+            <li><strong>Amount Paid ($)</strong> - Enter amount</li>
+        </ul>
+
+        <p>Click <strong>"Save Changes"</strong> to record.</p>
+    </div>
+
+    <!-- Section 7 -->
+    <div class="section">
+        <h2>7. Social Media Sharing</h2>
+        <p><strong>Instagram Post & Story buttons:</strong></p>
+        <ul>
+            <li>📷 <strong>Post</strong> - Create Instagram post</li>
+            <li>📷 <strong>Story</strong> - Create Instagram story</li>
+        </ul>
+
+        <div class="warning">
+            <strong>⚠️ Currently not working</strong> - Use manual posting for now.
+        </div>
+    </div>
+
+    <hr>
+
+    <!-- Important Reminders -->
+    <div class="section">
+        <h2>⚠️ Important Reminders</h2>
+        <ol>
+            <li><strong>ALWAYS click "Save Changes"</strong> before closing any modal</li>
+            <li><strong>Replace @ mentions</strong> with actual WhatsApp contacts when posting announcements</li>
+            <li><strong>Select exactly 11 players</strong> for each match</li>
+            <li><strong>Record match results</strong> after every game for accurate statistics</li>
+        </ol>
+    </div>
+
+    <hr>
+
+    <!-- Quick Workflow -->
+    <div class="workflow">
+        <h2>Quick Workflow</h2>
+
+        <div class="workflow-step">
+            <strong>Before Match:</strong><br>
+            → Select 11 players → Assign duties → Add links → Save → Generate announcement → Post to WhatsApp
+        </div>
+
+        <div class="workflow-step">
+            <strong>After Match:</strong><br>
+            → Open fixture → Select result → Choose Player of Match → Enter umpire fees (if paid) → Save
+        </div>
+    </div>
+
+    <footer>
+        <p><strong>Questions?</strong> Contact the tech admin via WhatsApp</p>
+        <p>Last Updated: March 2026 | Golden State Cricket Club</p>
+    </footer>
+</body>
+</html>

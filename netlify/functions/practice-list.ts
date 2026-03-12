@@ -2,6 +2,7 @@ import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
 import { validateAdminSession, isMember } from '../../src/middleware/auth';
 import type { PracticeSession } from '../../src/types/player';
+import { getPacificToday } from './_utils';
 
 /**
  * List upcoming practice sessions for authenticated member (next 30 days)
@@ -26,9 +27,8 @@ export const handler: Handler = async (
     // Get player ID from session
     const playerId = session.userId;
 
-    // Calculate date range: today to +30 days
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Calculate date range: today to +30 days (in Pacific Time)
+    const today = getPacificToday();
     const thirtyDaysFromNow = new Date(today);
     thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
 

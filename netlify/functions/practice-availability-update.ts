@@ -3,6 +3,7 @@ import { getStore } from '@netlify/blobs';
 import { validateAdminSession, isMember } from '../../src/middleware/auth';
 import type { PracticeSession, CoreRosterAssignment, Player } from '../../src/types/player';
 import { addAuditLog } from '../../src/utils/auditLog';
+import { getPacificToday } from './_utils';
 
 /**
  * Update member availability for a practice session
@@ -111,10 +112,9 @@ export const handler: Handler = async (
       };
     }
 
-    // Verify practice date is in the future
+    // Verify practice date is in the future (using Pacific Time)
     const practiceDate = new Date(practice.date + 'T00:00:00');
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = getPacificToday();
 
     if (practiceDate < today) {
       return {

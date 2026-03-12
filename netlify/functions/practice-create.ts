@@ -4,6 +4,7 @@ import { validateAdminSession } from '../../src/middleware/auth';
 import type { PracticeSession, Season } from '../../src/types/player';
 import { randomUUID } from 'crypto';
 import { addAuditLog } from '../../src/utils/auditLog';
+import { getPacificToday } from './_utils';
 
 /**
  * Create a practice session
@@ -86,9 +87,8 @@ export const handler: Handler = async (
       };
     }
 
-    // Validate date is in the future
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Validate date is in the future (using Pacific Time)
+    const today = getPacificToday();
     if (practiceDate < today) {
       return {
         statusCode: 400,

@@ -2,7 +2,7 @@ import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
 import { validateAdminSession, isMember } from '../../src/middleware/auth';
 import type { Fixture, FixtureAvailability, CoreRosterAssignment, Player } from '../../src/types/player';
-import { parseLocalDate } from './_utils';
+import { parseLocalDate, getPacificToday } from './_utils';
 
 /**
  * List upcoming fixtures for authenticated member (next 7 days only)
@@ -27,9 +27,8 @@ export const handler: Handler = async (
     // Get player ID from session
     const playerId = session.userId;
 
-    // Calculate date range: today to +7 days
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Calculate date range: today to +7 days (in Pacific Time)
+    const today = getPacificToday();
     const sevenDaysFromNow = new Date(today);
     sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
 

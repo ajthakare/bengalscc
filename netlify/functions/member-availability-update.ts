@@ -3,7 +3,7 @@ import { getStore } from '@netlify/blobs';
 import { v4 as uuidv4 } from 'uuid';
 import { validateAdminSession, isMember } from '../../src/middleware/auth';
 import type { Fixture, FixtureAvailability, CoreRosterAssignment, Player, PlayerAvailabilityRecord } from '../../src/types/player';
-import { parseLocalDate } from './_utils';
+import { parseLocalDate, getPacificToday } from './_utils';
 
 /**
  * Update member availability for a fixture (binary: true/false only, next 7 days only)
@@ -46,9 +46,8 @@ export const handler: Handler = async (
       };
     }
 
-    // Calculate date range: today to +7 days
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Calculate date range: today to +7 days (in Pacific Time)
+    const today = getPacificToday();
     const sevenDaysFromNow = new Date(today);
     sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
 
@@ -108,7 +107,7 @@ export const handler: Handler = async (
     const dayOfWeek = fixtureDateForDeadline.getDay(); // 0 = Sunday, 6 = Saturday, 5 = Friday
 
     if (dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0) { // Weekend fixture (Fri/Sat/Sun)
-      // Calculate preceding Wednesday at 6 PM
+      // Calculate preceding Wednesday at 6 PM Pacific Time
       let daysBack;
       if (dayOfWeek === 5) daysBack = 2; // Friday: 2 days back (Wednesday)
       else if (dayOfWeek === 6) daysBack = 3; // Saturday: 3 days back
@@ -116,11 +115,28 @@ export const handler: Handler = async (
 
       const wednesday = new Date(fixtureDateForDeadline);
       wednesday.setDate(wednesday.getDate() - daysBack);
-      wednesday.setHours(18, 0, 0, 0); // 6 PM
+
+      // Create deadline at 6 PM Pacific Time by using ISO 8601 format with timezone offset
+      // We need to determine if it's PST (UTC-8) or PDT (UTC-7) based on DST rules
+      const year = wednesday.getFullYear();
+      const month = wednesday.getMonth();
+
+      // Simple DST check: PDT is from March to November (roughly)
+      // DST in US: Second Sunday in March at 2 AM to First Sunday in November at 2 AM
+      const isDST = month >= 2 && month < 10; // March (2) through October (9)
+      const pacificOffset = isDST ? '-07:00' : '-08:00'; // PDT or PST
+
+      // Format as ISO 8601 with Pacific timezone
+      const year_str = wednesday.getFullYear();
+      const month_str = String(wednesday.getMonth() + 1).padStart(2, '0');
+      const day_str = String(wednesday.getDate()).padStart(2, '0');
+      const deadlineDateString = `${year_str}-${month_str}-${day_str}T18:00:00${pacificOffset}`;
+
+      const deadline = new Date(deadlineDateString);
 
       // Check if current time is past deadline
       const now = new Date();
-      if (now > wednesday) {
+      if (now > deadline) {
         return {
           statusCode: 403,
           body: JSON.stringify({ error: 'Poll is locked. Please contact your team captain to mark availability.' }),

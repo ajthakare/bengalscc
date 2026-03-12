@@ -66,3 +66,51 @@ export function formatDateDisplay(dateString: string): string {
         year: 'numeric'
     });
 }
+
+/**
+ * Get current date/time in Pacific Time (America/Los_Angeles)
+ * This ensures date comparisons use the club's local timezone, not server UTC time
+ * @returns Date object representing current time in Pacific timezone
+ */
+export function getPacificNow(): Date {
+    // Convert current UTC time to Pacific Time by parsing ISO string with Pacific offset
+    const now = new Date();
+
+    // Get Pacific Time string using Intl API
+    const pacificTimeString = now.toLocaleString('en-US', {
+        timeZone: 'America/Los_Angeles',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    });
+
+    // Parse back to Date (this will be in server's local time, but represents Pacific time)
+    // Format: "MM/DD/YYYY, HH:mm:ss"
+    const [datePart, timePart] = pacificTimeString.split(', ');
+    const [month, day, year] = datePart.split('/');
+    const [hour, minute, second] = timePart.split(':');
+
+    return new Date(
+        parseInt(year),
+        parseInt(month) - 1,
+        parseInt(day),
+        parseInt(hour),
+        parseInt(minute),
+        parseInt(second)
+    );
+}
+
+/**
+ * Get today's date at midnight in Pacific Time
+ * Useful for date-only comparisons (filtering by day)
+ * @returns Date object representing today at 00:00:00 in Pacific timezone
+ */
+export function getPacificToday(): Date {
+    const pacificNow = getPacificNow();
+    pacificNow.setHours(0, 0, 0, 0);
+    return pacificNow;
+}

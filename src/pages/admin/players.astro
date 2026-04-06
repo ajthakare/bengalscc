@@ -45,12 +45,12 @@ if (!isAdminUser) {
   <div class="players-page">
     <!-- Page Header -->
     <div class="page-header">
-      <h1 class="page-title">Player Management</h1>
+      <h1 class="page-title pwa-title-player-mgmt">Player Management</h1>
       <p class="page-description">Manage the global player pool</p>
     </div>
 
     <!-- Stats Cards -->
-    <div class="stats-grid" id="stats-grid" style="display: none;">
+    <div class="stats-grid pwa-hidden" id="stats-grid" style="display: none;">
       <div class="stat-card">
         <div class="stat-label">Total Players</div>
         <div class="stat-value" id="stat-total">0</div>
@@ -652,10 +652,36 @@ if (!isAdminUser) {
     box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
   }
 
-  /* PWA standalone: hide non-essential columns and toolbar actions */
+  /* PWA standalone: hide non-essential columns/toolbar, fix layout */
   @media (display-mode: standalone) {
     .pwa-hidden {
       display: none !important;
+    }
+
+    /* Make the 3-column table fit the screen without horizontal scroll */
+    .players-page .table-container {
+      overflow-x: visible !important;
+    }
+    .players-page .data-table {
+      width: 100% !important;
+      table-layout: fixed !important;
+    }
+    .players-page .data-table th:nth-child(1),
+    .players-page .data-table td:nth-child(1) {
+      width: 30% !important;
+      word-break: break-word;
+    }
+    .players-page .data-table th:nth-child(2),
+    .players-page .data-table td:nth-child(2) {
+      width: 30% !important;
+      word-break: break-word;
+      font-size: 0.8rem;
+    }
+    .players-page .data-table th:nth-child(3),
+    .players-page .data-table td:nth-child(3) {
+      width: 40% !important;
+      word-break: break-word;
+      font-size: 0.8rem;
     }
   }
 
@@ -914,6 +940,11 @@ if (!isAdminUser) {
 
   const isPWA = window.matchMedia('(display-mode: standalone)').matches
     || (navigator).standalone === true;
+
+  if (isPWA) {
+    const titleEl = document.querySelector('.pwa-title-player-mgmt');
+    if (titleEl) titleEl.textContent = 'Player Details';
+  }
 
   function renderPlayers() {
     if (filteredPlayers.length === 0) {

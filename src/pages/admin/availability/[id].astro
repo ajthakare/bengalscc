@@ -460,12 +460,18 @@ const { id: fixtureId } = Astro.params;
 
   async function loadEditor() {
     try {
-      // Load fixture info
-      const fixturesResp = await fetch('/.netlify/functions/fixtures-list');
-      if (!fixturesResp.ok) throw new Error('Failed to load fixtures');
-      const allFixtures = await fixturesResp.json();
-      currentFixture = allFixtures.find(f => f.id === fixtureId);
-      if (!currentFixture) throw new Error('Fixture not found');
+      // Try sessionStorage first (set by availability page when navigating)
+      const cached = sessionStorage.getItem(`fixture-${fixtureId}`);
+      if (cached) {
+        currentFixture = JSON.parse(cached);
+      } else {
+        // Fallback: fetch fixtures list (active season)
+        const fixturesResp = await fetch('/.netlify/functions/fixtures-list');
+        if (!fixturesResp.ok) throw new Error('Failed to load fixtures');
+        const allFixtures = await fixturesResp.json();
+        currentFixture = allFixtures.find(f => f.id === fixtureId);
+        if (!currentFixture) throw new Error('Fixture not found');
+      }
 
       // Update header
       document.getElementById('editor-game-number').textContent = currentFixture.gameNumber;

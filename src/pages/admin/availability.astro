@@ -1491,6 +1491,9 @@ if (!isAdminUser) {
     const isPWA = window.matchMedia('(display-mode: standalone)').matches
       || (navigator).standalone === true;
     if (isPWA) {
+      // Store fixture data so the detail page can use it without re-fetching
+      const fixture = fixtures.find((f) => f.id === fixtureId);
+      if (fixture) sessionStorage.setItem(`fixture-${fixtureId}`, JSON.stringify(fixture));
       window.location.href = `/admin/availability/${fixtureId}`;
       return;
     }

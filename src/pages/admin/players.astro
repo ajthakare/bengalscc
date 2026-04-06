@@ -170,6 +170,7 @@ if (!isAdminUser) {
             <th>Name</th>
             <th>Contact Number</th>
             <th>Emergency Contact</th>
+            <th>Full Member</th>
             <th>Status</th>
             <th style="width: 120px;">Actions</th>
           </tr>
@@ -351,10 +352,14 @@ if (!isAdminUser) {
           </div>
         </div>
 
-        <div class="form-group">
+        <div class="form-group" style="display: flex; gap: 2rem; flex-wrap: wrap;">
           <label class="checkbox-label">
             <input type="checkbox" id="is-active" name="isActive" checked />
             <span>Active Player</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="is-full-time-member" name="isFullTimeMember" />
+            <span>Full Time Member</span>
           </label>
         </div>
 
@@ -931,6 +936,15 @@ if (!isAdminUser) {
             </div>
           ` : '<span style="color: #9ca3af;">-</span>'}
         </td>
+        <td style="text-align: center;">
+          <input
+            type="checkbox"
+            ${player.isFullTimeMember ? 'checked' : ''}
+            onchange="toggleFullTimeMember('${player.id}', this.checked)"
+            title="${player.isFullTimeMember ? 'Full time member' : 'Not a full time member'}"
+            style="width: 18px; height: 18px; cursor: pointer; accent-color: #10b981;"
+          />
+        </td>
         <td>
           <span class="status-badge ${player.isActive ? 'status-active' : 'status-inactive'}">
             ${player.isActive ? 'Active' : 'Inactive'}
@@ -1054,6 +1068,7 @@ if (!isAdminUser) {
     document.getElementById('usac-id').value = player.usacId || '';
     document.getElementById('role').value = player.role || '';
     document.getElementById('is-active').checked = player.isActive;
+    document.getElementById('is-full-time-member').checked = player.isFullTimeMember ?? false;
 
     formError.style.display = 'none';
     playerModal.style.display = 'flex';
@@ -1115,6 +1130,7 @@ if (!isAdminUser) {
       usacId: formData.get('usacId'),
       role: formData.get('role'),
       isActive: document.getElementById('is-active').checked,
+      isFullTimeMember: document.getElementById('is-full-time-member').checked,
     };
 
     try {
@@ -1152,6 +1168,24 @@ if (!isAdminUser) {
     playerModal.style.display = 'none';
     playerForm.reset();
     editingPlayerId = null;
+  };
+
+  window.toggleFullTimeMember = async (playerId, value) => {
+    const player = players.find((p) => p.id === playerId);
+    if (!player) return;
+    try {
+      const response = await fetch('/.netlify/functions/players-update', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: playerId, isFullTimeMember: value }),
+      });
+      if (!response.ok) throw new Error('Failed to update');
+      player.isFullTimeMember = value;
+    } catch (error) {
+      window.toast?.error('Failed to update full time member status');
+      // Revert checkbox
+      renderPlayers();
+    }
   };
 
   // View player (read-only for regular admins)

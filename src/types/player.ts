@@ -64,6 +64,7 @@ export interface Player {
   usacId?: string;               // USAC ID - Optional
   role?: string;                 // Batsman, Bowler, All-rounder, Wicket-keeper - Optional
   isActive: boolean;             // Currently active in club
+  isFullTimeMember?: boolean;    // Full time (paid) member
   createdAt: string;
   updatedAt: string;
   createdBy: string;

@@ -42,7 +42,7 @@ if (!isAdminUser) {
 ---
 
 <AdminLayout title="Fixtures & Availability - GSCC Admin" username={username} userRole={userRole} activePage="availability">
-  <div class="availability-page">
+  <div class="availability-page" data-role={userRole}>
     <!-- Page Header -->
     <div class="page-header">
       <h1 class="page-title">Fixtures & Availability</h1>
@@ -56,9 +56,6 @@ if (!isAdminUser) {
       </select>
       <select id="team-filter" class="filter-select">
         <option value="">All Teams</option>
-        <option value="Bengal Tigers">Bengal Tigers</option>
-        <option value="Bengal Bulls">Bengal Bulls</option>
-        <option value="Bengal Thunder Cats">Bengal Thunder Cats</option>
       </select>
       <input type="date" id="date-from-filter" class="filter-input" placeholder="From Date" />
       <input type="date" id="date-to-filter" class="filter-input" placeholder="To Date" />
@@ -1119,7 +1116,8 @@ if (!isAdminUser) {
   }
 </style>
 
-<script define:vars={{ userRole }}>
+<script>
+  import { escapeHtml, populateTeamFilter as _populateTeamFilter } from '../../utils/admin-ui';
   let seasons = [];
   let fixtures = [];
   let availabilityRecords = [];
@@ -1127,7 +1125,7 @@ if (!isAdminUser) {
   let currentAvailability = null;
   let coreRosterMap = new Map(); // Map of playerId -> { isCore, isCaptain, isViceCaptain }
   let openDropdownPlayerId = null; // Track which dropdown is open
-  const isSuperAdmin = userRole === 'super_admin';
+  const isSuperAdmin = document.querySelector('.availability-page')?.dataset.role === 'super_admin';
   let isPastFixture = false; // Track if current fixture is in the past
 
   // Available match duties
@@ -1162,10 +1160,17 @@ if (!isAdminUser) {
   loadSeasons();
 
   // Add event listeners for filters
-  seasonFilter.addEventListener('change', loadFixtures);
+  seasonFilter.addEventListener('change', () => {
+    populateTeamFilter();
+    loadFixtures();
+  });
   teamFilter.addEventListener('change', applyFilters);
   dateFromFilter.addEventListener('change', applyFilters);
   dateToFilter.addEventListener('change', applyFilters);
+
+  function populateTeamFilter() {
+    _populateTeamFilter(seasons, seasonFilter, teamFilter);
+  }
 
   async function loadSeasons() {
     try {
@@ -1181,6 +1186,9 @@ if (!isAdminUser) {
             `<option value="${s.id}" ${s.isActive ? 'selected' : ''}>${escapeHtml(s.name)}${s.isActive ? ' (Active)' : ''}</option>`
         )
         .join('');
+
+      // Populate team filter for initial season
+      populateTeamFilter();
 
       // Load fixtures for active season
       if (seasons.length > 0) {
@@ -2276,13 +2284,6 @@ if (!isAdminUser) {
     } catch {
       return false;
     }
-  }
-
-  // Helper functions
-  function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
   }
 
   // Toast notification helper

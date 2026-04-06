@@ -15,7 +15,14 @@ if (session) {
 ---
 
 <Layout title="Register - Golden State Cricket Club">
-  <div class="max-w-4xl mx-auto px-4 py-12">
+  <div class="auth-page-wrapper">
+  <div class="max-w-4xl mx-auto px-4 py-12 w-full">
+
+    <!-- PWA: Logo shown only in standalone mode -->
+    <div class="pwa-auth-logo">
+      <img src="/icons/icon-192.png" alt="GSCC" width="64" height="64" />
+    </div>
+
     <div class="card">
       <h1 class="page-title text-center mb-6">Member Registration</h1>
 
@@ -431,4 +438,34 @@ if (session) {
       }
     });
   </script>
+
+  </div><!-- /max-w-4xl -->
+  </div><!-- /auth-page-wrapper -->
+
+  <style>
+    .pwa-auth-logo {
+      display: none;
+    }
+
+    @media (display-mode: standalone) {
+      .auth-page-wrapper {
+        min-height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 1.5rem 0;
+      }
+
+      .pwa-auth-logo {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 1rem;
+      }
+
+      .pwa-auth-logo img {
+        border-radius: 16px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+      }
+    }
+  </style>
 </Layout>

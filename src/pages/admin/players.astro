@@ -79,12 +79,12 @@ if (!isAdminUser) {
           class="search-input"
         />
       </div>
-      <select id="status-filter" class="filter-select">
+      <select id="status-filter" class="filter-select pwa-hidden">
         <option value="">All Status</option>
         <option value="active" selected>Active</option>
         <option value="inactive">Inactive</option>
       </select>
-      <select id="role-filter" class="filter-select">
+      <select id="role-filter" class="filter-select pwa-hidden">
         <option value="">All Roles</option>
         <option value="Batsman">Batsman</option>
         <option value="Bowler">Bowler</option>
@@ -93,14 +93,14 @@ if (!isAdminUser) {
       </select>
       {userRole === 'super_admin' && (
         <>
-          <button id="add-player-btn" class="btn-primary">
+          <button id="add-player-btn" class="btn-primary pwa-hidden">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="10" y1="5" x2="10" y2="15"/>
               <line x1="5" y1="10" x2="15" y2="10"/>
             </svg>
             Add Player
           </button>
-          <a href="/admin/players/import" class="btn-secondary">
+          <a href="/admin/players/import" class="btn-secondary pwa-hidden">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M3 17v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2M7 9l5 5m0 0l5-5m-5 5V3"/>
             </svg>
@@ -109,7 +109,7 @@ if (!isAdminUser) {
         </>
       )}
       {userRole === 'super_admin' && (
-        <div id="bulk-actions" class="bulk-actions" style="display: none;">
+        <div id="bulk-actions" class="bulk-actions pwa-hidden" style="display: none;">
         <span id="selected-count" class="selected-count">0 selected</span>
         <button id="change-status-btn" class="btn-secondary">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
@@ -163,16 +163,16 @@ if (!isAdminUser) {
         <thead>
           <tr>
             {userRole === 'super_admin' && (
-              <th style="width: 40px;">
+              <th class="pwa-hidden" style="width: 40px;">
                 <input type="checkbox" id="select-all" />
               </th>
             )}
             <th>Name</th>
             <th>Contact Number</th>
             <th>Emergency Contact</th>
-            <th>Full Member</th>
-            <th>Status</th>
-            <th style="width: 120px;">Actions</th>
+            <th class="pwa-hidden">Full Member</th>
+            <th class="pwa-hidden">Status</th>
+            <th class="pwa-hidden" style="width: 120px;">Actions</th>
           </tr>
         </thead>
         <tbody id="players-tbody">
@@ -652,6 +652,13 @@ if (!isAdminUser) {
     box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
   }
 
+  /* PWA standalone: hide non-essential columns and toolbar actions */
+  @media (display-mode: standalone) {
+    .pwa-hidden {
+      display: none !important;
+    }
+  }
+
   /* Modal scrolling fixes for mobile */
   .modal {
     overflow-y: auto;
@@ -905,10 +912,36 @@ if (!isAdminUser) {
     document.getElementById('stat-inactive').textContent = inactive;
   }
 
+  const isPWA = window.matchMedia('(display-mode: standalone)').matches
+    || (navigator).standalone === true;
+
   function renderPlayers() {
-    const colspan = userRole === 'super_admin' ? '6' : '5';
     if (filteredPlayers.length === 0) {
+      const colspan = isPWA ? '3' : (userRole === 'super_admin' ? '7' : '6');
       playersTbody.innerHTML = `<tr><td colspan="${colspan}" style="text-align: center; padding: 2rem; color: #6b7280;">No players found</td></tr>`;
+      return;
+    }
+
+    if (isPWA) {
+      // PWA: read-only, 3 columns only
+      playersTbody.innerHTML = filteredPlayers
+        .map(
+          (player) => `
+        <tr>
+          <td><strong>${escapeHtml(player.firstName)} ${escapeHtml(player.lastName)}</strong></td>
+          <td>${player.phone ? escapeHtml(player.phone) : '<span style="color: #9ca3af;">-</span>'}</td>
+          <td>
+            ${player.emergencyContactName || player.emergencyContactNumber ? `
+              <div style="font-size: 0.875rem;">
+                <div style="font-weight: 500;">${player.emergencyContactName ? escapeHtml(player.emergencyContactName) : '-'}</div>
+                <div style="color: #6b7280; margin-top: 2px;">${player.emergencyContactNumber ? escapeHtml(player.emergencyContactNumber) : '-'}</div>
+              </div>
+            ` : '<span style="color: #9ca3af;">-</span>'}
+          </td>
+        </tr>
+      `
+        )
+        .join('');
       return;
     }
 

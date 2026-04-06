@@ -57,8 +57,8 @@ if (!isAdminUser) {
       <select id="team-filter" class="filter-select">
         <option value="">All Teams</option>
       </select>
-      <input type="date" id="date-from-filter" class="filter-input" placeholder="From Date" />
-      <input type="date" id="date-to-filter" class="filter-input" placeholder="To Date" />
+      <input type="date" id="date-from-filter" class="filter-input pwa-hidden" placeholder="From Date" />
+      <input type="date" id="date-to-filter" class="filter-input pwa-hidden" placeholder="To Date" />
     </div>
 
     <!-- Loading State -->
@@ -106,7 +106,7 @@ if (!isAdminUser) {
           </div>
           <span class="section-count" id="upcoming-count">0</span>
         </div>
-        <div id="upcoming-grid" class="fixtures-grid" style="display: none;">
+        <div id="upcoming-grid" class="fixtures-grid">
           <!-- Upcoming fixtures will be rendered here -->
         </div>
       </div>
@@ -366,6 +366,12 @@ if (!isAdminUser) {
 
   #announcement-modal.modal[style*="display: flex"] {
     display: flex !important;
+  }
+
+  @media (display-mode: standalone) {
+    .pwa-hidden {
+      display: none !important;
+    }
   }
 
   .toolbar {
@@ -1445,6 +1451,7 @@ if (!isAdminUser) {
     if (upcomingFixtures.length > 0) {
       upcomingSection.style.display = 'block';
       upcomingGrid.innerHTML = upcomingFixtures.map(f => renderFixtureCard(f, false)).join('');
+      upcomingGrid.style.display = 'grid'; // Upcoming section starts open
       upcomingCount.textContent = upcomingFixtures.length;
     } else {
       upcomingSection.style.display = 'none';
@@ -1480,6 +1487,14 @@ if (!isAdminUser) {
   };
 
   window.openAvailabilityEditor = async (fixtureId) => {
+    // In PWA standalone mode, navigate to the dedicated page instead of opening a modal
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches
+      || (navigator).standalone === true;
+    if (isPWA) {
+      window.location.href = `/admin/availability/${fixtureId}`;
+      return;
+    }
+
     try {
       currentFixture = fixtures.find((f) => f.id === fixtureId);
       if (!currentFixture) return;

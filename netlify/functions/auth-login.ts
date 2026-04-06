@@ -132,8 +132,8 @@ export const handler: Handler = async (
     });
     const auditLogs = (await auditLogsStore.get('logs', { type: 'json' })) || [];
 
-    // Redirect to schedule page after login
-    const redirectTo = '/fixtures';
+    // Redirect to home page after login (PWA overrides this client-side to /fixtures)
+    const redirectTo = '/';
 
     auditLogs.push({
       id: uuidv4(),

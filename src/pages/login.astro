@@ -214,7 +214,9 @@ if (cookieHeader) {
 
       if (response.ok) {
         // Login successful, redirect based on response
-        window.location.href = data.redirectTo || '/';
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+          || (navigator as any).standalone === true;
+        window.location.href = isStandalone ? '/fixtures' : (data.redirectTo || '/');
       } else {
         // Handle specific error messages
         let errorMsg = data.error || 'Login failed. Please try again.';

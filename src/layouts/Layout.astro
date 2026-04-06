@@ -112,15 +112,16 @@ const showPWANav = !!(session && isMember(session));
             });
           }
 
-          // PWA layout: measure actual rendered bar heights and apply to site-main
-          // This is more reliable than CSS env() calculations across iOS/Android
+          // PWA layout: measure actual rendered bar heights and apply to site-wrapper.
+          // We target site-wrapper (not site-main) because site-wrapper has no inline style,
+          // so JS assignments win cleanly without fighting CSS specificity.
           function applyPWALayout() {
             const isStandalone = window.matchMedia('(display-mode: standalone)').matches
               || (navigator as any).standalone === true;
             if (!isStandalone) return;
 
-            const siteMain = document.querySelector('.site-main') as HTMLElement;
-            if (!siteMain) return;
+            const siteWrapper = document.querySelector('.site-wrapper') as HTMLElement;
+            if (!siteWrapper) return;
 
             const topBar = document.getElementById('pwa-topbar');
             const bottomNav = document.getElementById('pwa-bottom-nav');
@@ -128,22 +129,19 @@ const showPWANav = !!(session && isMember(session));
             const topOffset = topBar ? topBar.getBoundingClientRect().height : 0;
             const bottomOffset = bottomNav ? bottomNav.getBoundingClientRect().height : 0;
 
-            siteMain.style.position = 'fixed';
-            siteMain.style.top = topOffset + 'px';
-            siteMain.style.bottom = bottomOffset + 'px';
-            siteMain.style.left = '0';
-            siteMain.style.right = '0';
-            siteMain.style.overflowY = 'auto';
-            siteMain.style.overflowX = 'hidden';
-            siteMain.style.webkitOverflowScrolling = 'touch';
+            siteWrapper.style.position = 'fixed';
+            siteWrapper.style.top = topOffset + 'px';
+            siteWrapper.style.bottom = bottomOffset + 'px';
+            siteWrapper.style.left = '0';
+            siteWrapper.style.right = '0';
+            siteWrapper.style.overflowY = 'auto';
+            siteWrapper.style.overflowX = 'hidden';
+            siteWrapper.style.paddingLeft = '0';
+            siteWrapper.style.paddingRight = '0';
           }
 
-          // Run after paint so bar heights are fully rendered
-          if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', applyPWALayout);
-          } else {
-            applyPWALayout();
-          }
+          // requestAnimationFrame ensures CSS + layout are fully computed before measuring
+          requestAnimationFrame(applyPWALayout);
         </script>
     </body>
 </html>
@@ -158,18 +156,40 @@ const showPWANav = !!(session && isMember(session));
   }
 
   @media (display-mode: standalone) {
-    /* Full height using dynamic viewport — fixes iOS Safari toolbar clipping */
     html, body {
       height: 100dvh;
       overflow: hidden;
     }
 
-    /* Hide the outer site wrapper scroll/padding; it becomes a positioning context only */
-    .site-wrapper {
+    /* site-wrapper becomes the scroll container — it has no inline style so CSS wins cleanly */
+    body[data-pwa-nav="true"] .site-wrapper {
+      position: fixed !important;
+      top: calc(var(--pwa-topbar-height) + env(safe-area-inset-top));
+      bottom: calc(var(--pwa-bottomnav-height) + env(safe-area-inset-bottom));
+      left: 0;
+      right: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: contain;
       padding-left: 0 !important;
       padding-right: 0 !important;
-      overflow: hidden !important;
-      min-height: 100dvh;
+      min-height: unset !important;
+      background-color: var(--color-bg-body, #f9fafb);
+    }
+
+    body[data-pwa-nav="false"] .site-wrapper {
+      position: fixed !important;
+      top: env(safe-area-inset-top);
+      bottom: env(safe-area-inset-bottom);
+      left: 0;
+      right: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+      min-height: unset !important;
     }
 
     /* Hide header and footer in standalone mode */
@@ -178,33 +198,27 @@ const showPWANav = !!(session && isMember(session));
       display: none !important;
     }
 
-    /* Member pages: content sits between top bar and bottom nav */
-    body[data-pwa-nav="true"] .site-main {
-      position: fixed;
-      /* top matches PWATopBar total height: content + safe area */
-      top: calc(var(--pwa-topbar-height) + env(safe-area-inset-top)) !important;
-      bottom: calc(var(--pwa-bottomnav-height) + env(safe-area-inset-bottom)) !important;
-      left: env(safe-area-inset-left) !important;
-      right: env(safe-area-inset-right) !important;
-      /* !important overrides the inline style="overflow: visible;" on <main> */
-      overflow-y: auto !important;
-      overflow-x: hidden !important;
-      -webkit-overflow-scrolling: touch;
-      overscroll-behavior-y: contain;
-      background-color: var(--color-bg-body, #f9fafb);
+    /* site-main: let site-wrapper handle all scrolling */
+    .site-main {
+      overflow: visible !important;
+      height: auto !important;
     }
 
-    /* Auth pages: full height, no chrome offset */
-    body[data-pwa-nav="false"] .site-main {
-      position: fixed;
-      top: env(safe-area-inset-top) !important;
-      bottom: env(safe-area-inset-bottom) !important;
-      left: env(safe-area-inset-left) !important;
-      right: env(safe-area-inset-right) !important;
-      overflow-y: auto !important;
-      overflow-x: hidden !important;
-      -webkit-overflow-scrolling: touch;
-      background-color: var(--color-bg-body, #f9fafb);
+    /* Remove top padding from first content element — no gap below top bar */
+    .site-main > *:first-child,
+    .site-main > section.section-spacing:first-child {
+      padding-top: 0 !important;
+      margin-top: 0 !important;
+    }
+
+    /* Keep section-spacing horizontal padding but kill vertical on first section */
+    .site-main > section.section-spacing:first-child {
+      padding-top: 0 !important;
+    }
+
+    /* Ensure last content has breathing room above bottom nav */
+    .site-main > *:last-child {
+      padding-bottom: 1.5rem !important;
     }
 
     /* Adjust toast position to clear bottom nav */

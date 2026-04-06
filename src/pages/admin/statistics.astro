@@ -82,9 +82,6 @@ if (!isAdminUser) {
             </select>
             <select id="team-filter" class="filter-select">
               <option value="">All Teams</option>
-              <option value="Bengal Tigers">Bengal Tigers</option>
-              <option value="Bengal Bulls">Bengal Bulls</option>
-              <option value="Bengal Thunder Cats">Bengal Thunder Cats</option>
             </select>
             <div class="view-mode-toggle">
               <button id="season-view-btn" class="toggle-btn active">Season View</button>
@@ -1216,6 +1213,7 @@ if (!isAdminUser) {
   // Filters
   seasonFilter.addEventListener('change', () => {
     currentSeasonId = seasonFilter.value;
+    populateTeamFilter();
     loadStatistics();
   });
 
@@ -1442,6 +1440,21 @@ if (!isAdminUser) {
   }
 
 
+  function populateTeamFilter() {
+    const seasonId = seasonFilter.value || currentSeasonId;
+    const season = seasons.find((s) => s.id === seasonId);
+    const teams = season?.teams || [];
+    const currentValue = teamFilter.value;
+    teamFilter.innerHTML = '<option value="">All Teams</option>' +
+      teams.map((t) => `<option value="${escapeHtml(t.teamName)}">${escapeHtml(t.teamName)}</option>`).join('');
+    // Restore selection if still valid
+    if (teams.some((t) => t.teamName === currentValue)) {
+      teamFilter.value = currentValue;
+    } else {
+      currentTeamName = '';
+    }
+  }
+
   async function loadSeasons() {
     try {
       const response = await fetch('/.netlify/functions/seasons-list');
@@ -1460,6 +1473,9 @@ if (!isAdminUser) {
       // Set current season
       const activeSeason = seasons.find((s) => s.isActive);
       currentSeasonId = activeSeason ? activeSeason.id : seasons[0]?.id || '';
+
+      // Populate team filter for initial season
+      populateTeamFilter();
 
       // Load statistics
       if (currentSeasonId) {

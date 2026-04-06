@@ -49,15 +49,17 @@
   @media (display-mode: standalone) {
     .pwa-topbar {
       display: flex;
-      align-items: center;
+      align-items: flex-end;
       justify-content: space-between;
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
       z-index: 100;
-      height: var(--pwa-topbar-height, 52px);
+      /* Total height = content area + status bar safe area */
+      height: calc(var(--pwa-topbar-height, 52px) + env(safe-area-inset-top));
       padding-top: env(safe-area-inset-top);
+      padding-bottom: 6px;
       padding-left: max(16px, env(safe-area-inset-left));
       padding-right: max(16px, env(safe-area-inset-right));
       background: linear-gradient(135deg, #8c1d18 0%, #5a1410 40%, #1a0a09 100%);

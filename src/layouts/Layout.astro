@@ -148,12 +148,14 @@ const showPWANav = !!(session && isMember(session));
     /* Member pages: content sits between top bar and bottom nav */
     body[data-pwa-nav="true"] .site-main {
       position: fixed;
-      top: calc(var(--pwa-topbar-height) + env(safe-area-inset-top));
-      bottom: calc(var(--pwa-bottomnav-height) + env(safe-area-inset-bottom));
-      left: env(safe-area-inset-left);
-      right: env(safe-area-inset-right);
-      overflow-y: auto;
-      overflow-x: hidden;
+      /* top matches PWATopBar total height: content + safe area */
+      top: calc(var(--pwa-topbar-height) + env(safe-area-inset-top)) !important;
+      bottom: calc(var(--pwa-bottomnav-height) + env(safe-area-inset-bottom)) !important;
+      left: env(safe-area-inset-left) !important;
+      right: env(safe-area-inset-right) !important;
+      /* !important overrides the inline style="overflow: visible;" on <main> */
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
       -webkit-overflow-scrolling: touch;
       overscroll-behavior-y: contain;
       background-color: var(--color-bg-body, #f9fafb);
@@ -162,12 +164,12 @@ const showPWANav = !!(session && isMember(session));
     /* Auth pages: full height, no chrome offset */
     body[data-pwa-nav="false"] .site-main {
       position: fixed;
-      top: env(safe-area-inset-top);
-      bottom: env(safe-area-inset-bottom);
-      left: env(safe-area-inset-left);
-      right: env(safe-area-inset-right);
-      overflow-y: auto;
-      overflow-x: hidden;
+      top: env(safe-area-inset-top) !important;
+      bottom: env(safe-area-inset-bottom) !important;
+      left: env(safe-area-inset-left) !important;
+      right: env(safe-area-inset-right) !important;
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
       -webkit-overflow-scrolling: touch;
       background-color: var(--color-bg-body, #f9fafb);
     }

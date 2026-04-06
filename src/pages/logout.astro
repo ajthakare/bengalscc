@@ -6,6 +6,7 @@ Astro.cookies.delete('bengals_admin_session', {
   path: '/'
 });
 
-// Redirect to home page
-return Astro.redirect('/');
+// Redirect to login if ?from=pwa, otherwise home page
+const from = Astro.url.searchParams.get('from');
+return Astro.redirect(from === 'pwa' ? '/login' : '/');
 ---

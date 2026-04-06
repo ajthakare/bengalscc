@@ -111,6 +111,39 @@ const showPWANav = !!(session && isMember(session));
               navigator.serviceWorker.register('/sw.js').catch(() => {/* silently ignore */});
             });
           }
+
+          // PWA layout: measure actual rendered bar heights and apply to site-main
+          // This is more reliable than CSS env() calculations across iOS/Android
+          function applyPWALayout() {
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+              || (navigator as any).standalone === true;
+            if (!isStandalone) return;
+
+            const siteMain = document.querySelector('.site-main') as HTMLElement;
+            if (!siteMain) return;
+
+            const topBar = document.getElementById('pwa-topbar');
+            const bottomNav = document.getElementById('pwa-bottom-nav');
+
+            const topOffset = topBar ? topBar.getBoundingClientRect().height : 0;
+            const bottomOffset = bottomNav ? bottomNav.getBoundingClientRect().height : 0;
+
+            siteMain.style.position = 'fixed';
+            siteMain.style.top = topOffset + 'px';
+            siteMain.style.bottom = bottomOffset + 'px';
+            siteMain.style.left = '0';
+            siteMain.style.right = '0';
+            siteMain.style.overflowY = 'auto';
+            siteMain.style.overflowX = 'hidden';
+            siteMain.style.webkitOverflowScrolling = 'touch';
+          }
+
+          // Run after paint so bar heights are fully rendered
+          if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', applyPWALayout);
+          } else {
+            applyPWALayout();
+          }
         </script>
     </body>
 </html>

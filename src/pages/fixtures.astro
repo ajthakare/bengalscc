@@ -71,10 +71,20 @@ const fixtures: Fixture[] = fixturesData
         const homeTeam = isHome ? ourTeam : opponent;
         const visitorTeam = isHome ? opponent : ourTeam;
 
-        // Parse date for sorting and grouping - avoid timezone issues
+        // Parse date+time for sorting - avoid timezone issues
         const datePart = fixture.date.split('T')[0]; // Extract YYYY-MM-DD
         const [year, month, day] = datePart.split('-').map(Number);
-        const sortDate = new Date(year, month - 1, day); // Parse as local date
+        // Parse time string e.g. "9:00 AM", "1:00 PM", "10:30 AM"
+        let hours = 0, minutes = 0;
+        const timeMatch = (fixture.time || '').match(/(\d+):(\d+)\s*(AM|PM)/i);
+        if (timeMatch) {
+            hours = parseInt(timeMatch[1]);
+            minutes = parseInt(timeMatch[2]);
+            const meridiem = timeMatch[3].toUpperCase();
+            if (meridiem === 'PM' && hours !== 12) hours += 12;
+            if (meridiem === 'AM' && hours === 12) hours = 0;
+        }
+        const sortDate = new Date(year, month - 1, day, hours, minutes); // Parse as local date+time
 
         const monthYear = sortDate.toLocaleString('default', {
             month: 'long',

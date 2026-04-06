@@ -6,13 +6,21 @@ import logo from '../assets/GSCC.svg';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import StickySocial from '../components/StickySocial.astro';
+import PWATopBar from '../components/PWATopBar.astro';
+import PWABottomNav from '../components/PWABottomNav.astro';
 import { SITE_CONFIG } from '../config';
+import { validateAdminSession, isMember } from '../middleware/auth';
 
 interface Props {
     title: string;
 }
 
 const { title } = Astro.props;
+
+// Used to conditionally render PWA nav (only for authenticated members)
+const cookieHeader = Astro.request.headers.get('cookie');
+const session = cookieHeader ? validateAdminSession(cookieHeader) : null;
+const showPWANav = !!(session && isMember(session));
 ---
 
 <!doctype html>
@@ -67,20 +75,161 @@ const { title } = Astro.props;
         </script>
 
         <link rel="icon" type="image/svg+xml" href={logo.src} />
-        <link rel="apple-touch-icon" href={logo.src} />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="GSCC" />
+        <meta name="theme-color" content="#8c1d18" />
         <link rel="preload" as="font" type="font/woff2" href={interWoff2} crossorigin />
 
         <!-- Allow pages to inject additional head content -->
         <slot name="head" />
     </head>
-    <body class="antialiased text-body" style="background-color: var(--color-bg-body);">
-        <div class="flex flex-col min-h-screen px-6 bg-noise sm:px-12" style="overflow: visible;">
+    <body class="antialiased text-body" data-pwa-nav={showPWANav ? 'true' : 'false'} style="background-color: var(--color-bg-body);">
+
+        <!-- PWA chrome: top bar + bottom nav (visible only in standalone mode via CSS) -->
+        { showPWANav && <PWATopBar /> }
+        { showPWANav && <PWABottomNav /> }
+
+        <!-- Single layout — CSS adapts it for both browser and PWA standalone mode -->
+        <div class="site-wrapper flex flex-col min-h-screen px-6 bg-noise sm:px-12" style="overflow: visible;">
             <div class="flex flex-col w-full max-w-5xl mx-auto grow" style="overflow: visible;">
-                <Header />
-                <main class="grow" style="overflow: visible;"><slot /></main>
-                <Footer />
+                <div class="site-header-wrapper"><Header /></div>
+                <main class="site-main grow" style="overflow: visible;"><slot /></main>
+                <div class="site-footer-wrapper"><Footer /></div>
             </div>
         </div>
+
         <StickySocial />
+
+        <script>
+          // Register service worker
+          if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+              navigator.serviceWorker.register('/sw.js').catch(() => {/* silently ignore */});
+            });
+          }
+
+          // PWA layout: measure actual rendered bar heights and apply to site-wrapper.
+          // We target site-wrapper (not site-main) because site-wrapper has no inline style,
+          // so JS assignments win cleanly without fighting CSS specificity.
+          function applyPWALayout() {
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+              || (navigator as any).standalone === true;
+            if (!isStandalone) return;
+
+            const siteWrapper = document.querySelector('.site-wrapper') as HTMLElement;
+            if (!siteWrapper) return;
+
+            const topBar = document.getElementById('pwa-topbar');
+            const bottomNav = document.getElementById('pwa-bottom-nav');
+
+            const topOffset = topBar ? topBar.getBoundingClientRect().height : 0;
+            const bottomOffset = bottomNav ? bottomNav.getBoundingClientRect().height : 0;
+
+            siteWrapper.style.position = 'fixed';
+            siteWrapper.style.top = topOffset + 'px';
+            siteWrapper.style.bottom = bottomOffset + 'px';
+            siteWrapper.style.left = '0';
+            siteWrapper.style.right = '0';
+            siteWrapper.style.overflowY = 'auto';
+            siteWrapper.style.overflowX = 'hidden';
+            siteWrapper.style.paddingLeft = '0';
+            siteWrapper.style.paddingRight = '0';
+          }
+
+          // requestAnimationFrame ensures CSS + layout are fully computed before measuring
+          requestAnimationFrame(applyPWALayout);
+        </script>
     </body>
 </html>
+
+<style is:global>
+  /* ─── PWA Standalone Layout ──────────────────────────────── */
+
+  /* CSS custom properties for PWA chrome heights */
+  :root {
+    --pwa-topbar-height: 52px;
+    --pwa-bottomnav-height: 56px;
+  }
+
+  @media (display-mode: standalone) {
+    html, body {
+      height: 100dvh;
+      overflow: hidden;
+    }
+
+    /* site-wrapper becomes the scroll container — it has no inline style so CSS wins cleanly */
+    body[data-pwa-nav="true"] .site-wrapper {
+      position: fixed !important;
+      top: calc(var(--pwa-topbar-height) + env(safe-area-inset-top));
+      bottom: calc(var(--pwa-bottomnav-height) + env(safe-area-inset-bottom));
+      left: 0;
+      right: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: contain;
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+      min-height: unset !important;
+      background-color: var(--color-bg-body, #f9fafb);
+    }
+
+    body[data-pwa-nav="false"] .site-wrapper {
+      position: fixed !important;
+      top: env(safe-area-inset-top);
+      bottom: env(safe-area-inset-bottom);
+      left: 0;
+      right: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+      min-height: unset !important;
+    }
+
+    /* Hide header and footer in standalone mode */
+    .site-header-wrapper,
+    .site-footer-wrapper {
+      display: none !important;
+    }
+
+    /* site-main: let site-wrapper handle all scrolling */
+    .site-main {
+      overflow: visible !important;
+      height: auto !important;
+    }
+
+    /* Remove top padding from first content element — no gap below top bar */
+    .site-main > *:first-child,
+    .site-main > section.section-spacing:first-child {
+      padding-top: 0 !important;
+      margin-top: 0 !important;
+    }
+
+    /* Keep section-spacing horizontal padding but kill vertical on first section */
+    .site-main > section.section-spacing:first-child {
+      padding-top: 0 !important;
+    }
+
+    /* Ensure last content has breathing room above bottom nav */
+    .site-main > *:last-child {
+      padding-bottom: 1.5rem !important;
+    }
+
+    /* Hide sticky social buttons — not needed in app */
+    .sticky-social-wrapper {
+      display: none !important;
+    }
+
+    /* Adjust toast position to clear bottom nav */
+    .toast {
+      bottom: calc(var(--pwa-bottomnav-height) + env(safe-area-inset-bottom) + 12px) !important;
+      right: max(16px, env(safe-area-inset-right)) !important;
+    }
+  }
+</style>

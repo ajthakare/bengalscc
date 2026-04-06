@@ -1,0 +1,99 @@
+---
+// PWA Top Bar — only visible in display-mode: standalone
+// firstName is fetched client-side to avoid extra server calls on web
+---
+
+<header class="pwa-topbar" id="pwa-topbar">
+  <a href="/fixtures" class="pwa-topbar-logo">
+    <img src="/icons/icon-192.png" alt="GSCC" width="32" height="32" />
+  </a>
+
+  <span class="pwa-topbar-greeting" id="pwa-greeting">GSCC</span>
+
+  <a href="/logout?from=pwa" class="pwa-topbar-logout" aria-label="Logout">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+      <polyline points="16 17 21 12 16 7"></polyline>
+      <line x1="21" y1="12" x2="9" y2="12"></line>
+    </svg>
+  </a>
+</header>
+
+<script>
+  // Only fetch name when actually in PWA standalone mode
+  function updateGreeting() {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+      || (navigator as any).standalone === true;
+
+    if (!isStandalone) return;
+
+    fetch('/.netlify/functions/auth-check')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.authenticated && data.user?.firstName) {
+          const el = document.getElementById('pwa-greeting');
+          if (el) el.textContent = `Hi, ${data.user.firstName}`;
+        }
+      })
+      .catch(() => {/* silently ignore */});
+  }
+
+  updateGreeting();
+</script>
+
+<style>
+  .pwa-topbar {
+    display: none; /* hidden in browser */
+  }
+
+  @media (display-mode: standalone) {
+    .pwa-topbar {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      /* Total height = content area + status bar safe area */
+      height: calc(var(--pwa-topbar-height, 52px) + env(safe-area-inset-top));
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: 6px;
+      padding-left: max(16px, env(safe-area-inset-left));
+      padding-right: max(16px, env(safe-area-inset-right));
+      background: linear-gradient(135deg, #8c1d18 0%, #5a1410 40%, #1a0a09 100%);
+      border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+  }
+
+  .pwa-topbar-logo img {
+    border-radius: 6px;
+    display: block;
+  }
+
+  .pwa-topbar-greeting {
+    font-family: 'Inter Variable', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: #E5C878;
+    letter-spacing: 0.01em;
+  }
+
+  .pwa-topbar-logout {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    color: #E5C878;
+    transition: background 0.2s;
+  }
+
+  .pwa-topbar-logout:hover,
+  .pwa-topbar-logout:active {
+    background: rgba(255, 255, 255, 0.12);
+  }
+</style>

@@ -1,0 +1,16 @@
+---
+export const prerender = false;
+
+// PWA entry point — routes based on auth status
+// start_url in manifest.json points here
+import { validateAdminSession, isMember } from '../middleware/auth';
+
+const cookieHeader = Astro.request.headers.get('cookie');
+const session = cookieHeader ? validateAdminSession(cookieHeader) : null;
+
+if (session && isMember(session)) {
+  return Astro.redirect('/fixtures');
+} else {
+  return Astro.redirect('/login');
+}
+---

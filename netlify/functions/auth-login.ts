@@ -132,7 +132,7 @@ export const handler: Handler = async (
     });
     const auditLogs = (await auditLogsStore.get('logs', { type: 'json' })) || [];
 
-    // Redirect all users to homepage after login
+    // Redirect to home page after login (PWA overrides this client-side to /fixtures)
     const redirectTo = '/';
 
     auditLogs.push({

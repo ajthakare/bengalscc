@@ -441,9 +441,9 @@ if (!isSuperAdmin) {
               onclick="deleteUser('${user.username}')"
               class="btn-delete ${isCurrentUser || isOnlyUser ? 'disabled' : ''}"
               ${isCurrentUser || isOnlyUser ? 'disabled' : ''}
-              title="${isCurrentUser ? 'Cannot delete your own account' : isOnlyUser ? 'Cannot delete the last admin' : 'Delete user'}"
+              title="${isCurrentUser ? 'Cannot revoke your own access' : isOnlyUser ? 'Cannot revoke the last admin' : 'Revoke admin access'}"
             >
-              Delete
+              Revoke Access
             </button>
           </td>
         `;
@@ -453,7 +453,7 @@ if (!isSuperAdmin) {
     }
 
     async function deleteUser(username) {
-      if (!confirm(`Are you sure you want to delete admin user "${username}"? This cannot be undone.`)) {
+      if (!confirm(`Are you sure you want to revoke admin access for "${username}"? They will be demoted to a regular member.`)) {
         return;
       }
 

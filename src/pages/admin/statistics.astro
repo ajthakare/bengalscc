@@ -1142,6 +1142,7 @@ if (!isAdminUser) {
 </style>
 
 <script>
+  import { escapeHtml, populateTeamFilter as _populateTeamFilter } from '../../utils/admin-ui';
   let seasons = [];
   let currentViewMode = 'season'; // 'season' or 'career'
   let currentSeasonId = '';
@@ -1441,18 +1442,9 @@ if (!isAdminUser) {
 
 
   function populateTeamFilter() {
-    const seasonId = seasonFilter.value || currentSeasonId;
-    const season = seasons.find((s) => s.id === seasonId);
-    const teams = season?.teams || [];
-    const currentValue = teamFilter.value;
-    teamFilter.innerHTML = '<option value="">All Teams</option>' +
-      teams.map((t) => `<option value="${escapeHtml(t.teamName)}">${escapeHtml(t.teamName)}</option>`).join('');
-    // Restore selection if still valid
-    if (teams.some((t) => t.teamName === currentValue)) {
-      teamFilter.value = currentValue;
-    } else {
+    _populateTeamFilter(seasons, seasonFilter, teamFilter, currentSeasonId, () => {
       currentTeamName = '';
-    }
+    });
   }
 
   async function loadSeasons() {
@@ -1766,13 +1758,6 @@ if (!isAdminUser) {
       renderStatistics();
     });
   });
-
-  // Helper functions
-  function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  }
 
   // Advanced Statistics
   let chartInstances = {};

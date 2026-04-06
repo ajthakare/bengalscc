@@ -132,8 +132,8 @@ export const handler: Handler = async (
     });
     const auditLogs = (await auditLogsStore.get('logs', { type: 'json' })) || [];
 
-    // Redirect all users to homepage after login
-    const redirectTo = '/';
+    // Redirect to schedule page after login
+    const redirectTo = '/fixtures';
 
     auditLogs.push({
       id: uuidv4(),

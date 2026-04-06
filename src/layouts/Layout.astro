@@ -221,6 +221,11 @@ const showPWANav = !!(session && isMember(session));
       padding-bottom: 1.5rem !important;
     }
 
+    /* Hide sticky social buttons — not needed in app */
+    .sticky-social-wrapper {
+      display: none !important;
+    }
+
     /* Adjust toast position to clear bottom nav */
     .toast {
       bottom: calc(var(--pwa-bottomnav-height) + env(safe-area-inset-bottom) + 12px) !important;

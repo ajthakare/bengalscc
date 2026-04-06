@@ -18,8 +18,10 @@ export interface Season {
 export interface TeamDefinition {
   teamName: string;              // Team name (flexible per season)
   division: string;              // "WB-D2", "WB-D3", "PB-D1", "T20", "T30", "T40", etc.
-  captain?: string;              // Player ID
-  viceCaptain?: string;          // Player ID
+  captain?: string;              // Player name
+  viceCaptain?: string;          // Player name
+  homeGroundName?: string;       // Home ground name
+  homeGroundAddress?: string;    // Home ground address
 }
 
 // ============================================================================

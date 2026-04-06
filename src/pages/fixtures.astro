@@ -11,9 +11,6 @@ const session = validateAdminSession(cookieHeader || '');
 const isAuthenticated = !!session;
 const isAuthenticatedMember = session && isMember(session);
 
-// Our teams
-const OUR_TEAMS = ['Bengal Tigers', 'Bengal Bulls', 'Bengal Thunder Cats'];
-
 // Fetch active season
 let activeSeason: any = null;
 try {
@@ -24,6 +21,9 @@ try {
 } catch (error) {
     console.error('Error fetching active season:', error);
 }
+
+// Our teams - derived from active season
+const OUR_TEAMS = activeSeason?.teams?.map((t: any) => t.teamName) ?? [];
 
 // Fetch fixtures for active season
 let fixturesData: any[] = [];
@@ -184,11 +184,12 @@ const pastByMonth = pastFixtures.reduce((acc: Record<string, Fixture[]>, fixture
 }, {});
 
 // Get team color based on team name
-function getTeamColor(teamName: string): string {
-    if (teamName.includes('Tigers')) return 'bg-amber-100 border-amber-300 text-amber-900';
-    if (teamName.includes('Bulls')) return 'bg-blue-100 border-blue-300 text-blue-800';
-    if (teamName.includes('Thunder')) return 'bg-purple-100 border-purple-300 text-purple-800';
-    return 'bg-gray-100 border-gray-300 text-gray-800';
+function getTeamColor(teamName: string): { bg: string; border: string; color: string } {
+    if (teamName.includes('Tigers')) return { bg: '#fef3c7', border: '#fcd34d', color: '#78350f' };
+    if (teamName.includes('Bulls')) return { bg: '#dbeafe', border: '#93c5fd', color: '#1e40af' };
+    if (teamName.includes('Thunder')) return { bg: '#f3e8ff', border: '#d8b4fe', color: '#6b21a8' };
+    if (teamName.includes('Bears')) return { bg: '#dcfce7', border: '#86efac', color: '#166534' };
+    return { bg: '#f3f4f6', border: '#d1d5db', color: '#1f2937' };
 }
 
 // Get result badge styling
@@ -253,7 +254,7 @@ function getResultBadge(result: string): { text: string; color: string; icon: st
                 <div class={`grid gap-6 ${upcomingWeekendMatches.length === 1 ? 'md:grid-cols-1' : upcomingWeekendMatches.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
                     {upcomingWeekendMatches.map(match => (
                         <div class="fixture-card bg-white rounded-lg border-2 border-gray-200 p-5" data-team={match.ourTeam}>
-                            <div class={`inline-block px-4 py-2 rounded-full text-base font-bold mb-3 ${getTeamColor(match.ourTeam)}`}>
+                            <div class="inline-block px-4 py-2 rounded-full text-base font-bold mb-3" style={`background:${getTeamColor(match.ourTeam).bg};border:1px solid ${getTeamColor(match.ourTeam).border};color:${getTeamColor(match.ourTeam).color}`}>
                                 {match.ourTeam}
                             </div>
                             <div class="text-xl font-bold text-gray-900 mb-2">
@@ -343,24 +344,18 @@ function getResultBadge(result: string): { text: string; color: string; icon: st
             >
                 All Teams ({fixtures.length})
             </button>
-            <button
-                class="filter-btn px-4 py-2 rounded-lg font-semibold transition-all border-2 bg-amber-100 border-amber-300 text-amber-900 hover:bg-amber-200"
-                data-team="Bengal Tigers"
-            >
-                Bengal Tigers ({fixtures.filter(f => f.ourTeam === 'Bengal Tigers').length})
-            </button>
-            <button
-                class="filter-btn px-4 py-2 rounded-lg font-semibold transition-all border-2 bg-blue-100 border-blue-300 text-blue-800 hover:bg-blue-200"
-                data-team="Bengal Bulls"
-            >
-                Bengal Bulls ({fixtures.filter(f => f.ourTeam === 'Bengal Bulls').length})
-            </button>
-            <button
-                class="filter-btn px-4 py-2 rounded-lg font-semibold transition-all border-2 bg-purple-100 border-purple-300 text-purple-800 hover:bg-purple-200"
-                data-team="Bengal Thunder Cats"
-            >
-                Bengal Thunder Cats ({fixtures.filter(f => f.ourTeam === 'Bengal Thunder Cats').length})
-            </button>
+            {OUR_TEAMS.map((teamName: string) => {
+                const c = getTeamColor(teamName);
+                return (
+                    <button
+                        class="filter-btn px-4 py-2 rounded-lg font-semibold transition-all border-2"
+                        style={`background:${c.bg};border-color:${c.border};color:${c.color}`}
+                        data-team={teamName}
+                    >
+                        {teamName} ({fixtures.filter(f => f.ourTeam === teamName).length})
+                    </button>
+                );
+            })}
         </div>
     </div>
 
@@ -432,7 +427,7 @@ function getResultBadge(result: string): { text: string; color: string; icon: st
                             >
                                 {/* Header */}
                                 <div class="flex items-start justify-between mb-4">
-                                    <div class={`px-4 py-2 rounded-full text-base font-bold ${getTeamColor(fixture.ourTeam)}`}>
+                                    <div class="px-4 py-2 rounded-full text-base font-bold" style={`background:${getTeamColor(fixture.ourTeam).bg};border:1px solid ${getTeamColor(fixture.ourTeam).border};color:${getTeamColor(fixture.ourTeam).color}`}>
                                         {fixture.ourTeam}
                                     </div>
                                     <div class="flex items-center gap-2">

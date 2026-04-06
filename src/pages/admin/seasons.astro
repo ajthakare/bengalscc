@@ -90,6 +90,9 @@ if (!isAdminUser) {
     </div>
   </div>
 
+  <!-- Shared datalist for player autocomplete -->
+  <datalist id="players-datalist"></datalist>
+
   <!-- Create/Edit Season Modal -->
   <div id="season-modal" class="modal" style="display: none;">
     <div class="modal-content modal-large">
@@ -259,12 +262,18 @@ if (!isAdminUser) {
   }
 
   .team-badge {
-    padding: 0.25rem 0.75rem;
+    padding: 0.5rem 0.75rem;
     background: #f3f4f6;
     border: 1px solid #d1d5db;
     border-radius: 6px;
     font-size: 0.75rem;
     color: #374151;
+    line-height: 1.6;
+  }
+
+  .team-badge-meta {
+    color: #6b7280;
+    font-size: 0.7rem;
   }
 
   .season-actions {
@@ -347,12 +356,14 @@ if (!isAdminUser) {
     font-size: 4rem;
     margin-bottom: 1rem;
   }
+
 </style>
 
 <script>
   let seasons = [];
   let editingSeasonId = null;
   let teamFieldCount = 0;
+  let allPlayers = [];
 
   // DOM elements
   const loadingState = document.getElementById('loading-state');
@@ -416,7 +427,13 @@ if (!isAdminUser) {
         <div class="season-teams">
           <div class="teams-label">${season.teams.length} Team(s):</div>
           <div class="team-badges">
-            ${season.teams.map((team) => `<span class="team-badge">${escapeHtml(team.teamName)} (${escapeHtml(team.division)})</span>`).join('')}
+            ${season.teams.map((team) => `
+              <div class="team-badge">
+                <strong>${escapeHtml(team.teamName)}</strong> (${escapeHtml(team.division)})
+                ${team.captain ? `<br><span class="team-badge-meta">&#x1F451; ${escapeHtml(team.captain)}</span>` : ''}
+                ${team.viceCaptain ? `<span class="team-badge-meta"> &bull; VC: ${escapeHtml(team.viceCaptain)}</span>` : ''}
+                ${team.homeGroundName ? `<br><span class="team-badge-meta">&#x1F3E0; ${escapeHtml(team.homeGroundName)}${team.homeGroundAddress ? ` &mdash; ${escapeHtml(team.homeGroundAddress)}` : ''}</span>` : ''}
+              </div>`).join('')}
           </div>
         </div>
         <div class="season-actions">
@@ -453,6 +470,7 @@ if (!isAdminUser) {
     addTeamField('Bengal Thunder Cats', 'PB-D1');
     formError.style.display = 'none';
     seasonModal.style.display = 'flex';
+    loadPlayers();
   });
 
   // Edit season
@@ -472,11 +490,12 @@ if (!isAdminUser) {
     teamsContainer.innerHTML = '';
     teamFieldCount = 0;
     season.teams.forEach((team) => {
-      addTeamField(team.teamName, team.division, team.captain, team.viceCaptain);
+      addTeamField(team.teamName, team.division, team.captain, team.viceCaptain, team.homeGroundName, team.homeGroundAddress);
     });
 
     formError.style.display = 'none';
     seasonModal.style.display = 'flex';
+    loadPlayers();
   };
 
   // Set active season
@@ -533,7 +552,7 @@ if (!isAdminUser) {
   };
 
   // Add team field
-  window.addTeamField = (teamName = '', division = '', captain = '', viceCaptain = '') => {
+  window.addTeamField = (teamName = '', division = '', captain = '', viceCaptain = '', homeGroundName = '', homeGroundAddress = '') => {
     teamFieldCount++;
     const fieldId = `team-${teamFieldCount}`;
 
@@ -557,6 +576,24 @@ if (!isAdminUser) {
             <label class="form-label">Division*</label>
             <input type="text" name="division" required value="${escapeHtml(division)}" class="form-input" placeholder="e.g., WB-D2, T20, T30" />
           </div>
+          <div class="form-group">
+            <label class="form-label">Captain</label>
+            <input type="text" name="captain" value="${escapeHtml(captain)}" class="form-input" placeholder="Search player..." list="players-datalist" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Vice Captain</label>
+            <input type="text" name="viceCaptain" value="${escapeHtml(viceCaptain)}" class="form-input" placeholder="Search player..." list="players-datalist" />
+          </div>
+        </div>
+        <div class="form-grid" style="margin-top:0.75rem">
+          <div class="form-group">
+            <label class="form-label">Home Ground Name</label>
+            <input type="text" name="homeGroundName" value="${escapeHtml(homeGroundName)}" class="form-input" placeholder="e.g., Birch Grove Intermediate School" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Home Ground Address</label>
+            <input type="text" name="homeGroundAddress" value="${escapeHtml(homeGroundAddress)}" class="form-input" placeholder="e.g., 37490 Birch St, Newark" />
+          </div>
         </div>
       </div>
     `;
@@ -578,10 +615,21 @@ if (!isAdminUser) {
 
     // Collect teams
     const teamFields = teamsContainer.querySelectorAll('.team-field');
-    const teams = Array.from(teamFields).map((field) => ({
-      teamName: field.querySelector('[name="teamName"]').value,
-      division: field.querySelector('[name="division"]').value,
-    }));
+    const teams = Array.from(teamFields).map((field) => {
+      const team = {
+        teamName: field.querySelector('[name="teamName"]').value,
+        division: field.querySelector('[name="division"]').value,
+      };
+      const captain = field.querySelector('[name="captain"]').value.trim();
+      const viceCaptain = field.querySelector('[name="viceCaptain"]').value.trim();
+      const homeGroundName = field.querySelector('[name="homeGroundName"]').value.trim();
+      const homeGroundAddress = field.querySelector('[name="homeGroundAddress"]').value.trim();
+      if (captain) team.captain = captain;
+      if (viceCaptain) team.viceCaptain = viceCaptain;
+      if (homeGroundName) team.homeGroundName = homeGroundName;
+      if (homeGroundAddress) team.homeGroundAddress = homeGroundAddress;
+      return team;
+    });
 
     if (teams.length === 0) {
       formError.style.display = 'block';
@@ -630,6 +678,22 @@ if (!isAdminUser) {
     seasonForm.reset();
     editingSeasonId = null;
   };
+
+  async function loadPlayers() {
+    if (allPlayers.length > 0) return;
+    try {
+      const response = await fetch('/.netlify/functions/players-list?status=active');
+      if (response.ok) {
+        allPlayers = await response.json();
+        const datalist = document.getElementById('players-datalist');
+        datalist.innerHTML = allPlayers
+          .map(p => `<option value="${escapeHtml(`${p.firstName} ${p.lastName}`)}">`)
+          .join('');
+      }
+    } catch (e) {
+      console.error('Failed to load players:', e);
+    }
+  }
 
   // Helper functions
   function formatDate(dateStr) {

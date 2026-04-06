@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>How to Install the GSCC App</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f5f5;
+      color: #1f2937;
+      padding: 32px 24px;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    /* ── Header ── */
+    .header {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+    .header img {
+      width: 72px;
+      height: 72px;
+      border-radius: 18px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+      margin-bottom: 14px;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .header h1 {
+      font-size: 26px;
+      font-weight: 800;
+      color: #355c7d;
+      margin-bottom: 6px;
+    }
+    .header p {
+      font-size: 14px;
+      color: #6b7280;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    /* ── Section card ── */
+    .section {
+      background: #fff;
+      border-radius: 14px;
+      padding: 22px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+      margin-bottom: 24px;
+    }
+    .section-title {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 18px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #f3f4f6;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .browser-icon {
+      width: 24px;
+      height: 24px;
+    }
+
+    /* ── Steps grid ── */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+    .step {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .step-num {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #8c1d18;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .step-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #111827;
+      line-height: 1.3;
+    }
+
+    /* ── Screenshot ── */
+    .shot-wrap {
+      position: relative;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+    }
+    .shot-wrap img {
+      width: 100%;
+      display: block;
+    }
+    .callout {
+      position: absolute;
+      background: #8c1d18;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 20px;
+      white-space: nowrap;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    /* ── Shared last steps ── */
+    .last-steps {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 24px;
+    }
+    .last-step-label {
+      font-size: 12px;
+      color: #4b5563;
+      text-align: center;
+      margin-top: 6px;
+      line-height: 1.4;
+    }
+
+    /* ── Footer ── */
+    .footer {
+      text-align: center;
+      font-size: 12px;
+      color: #9ca3af;
+      margin-top: 28px;
+    }
+    .footer a { color: #8c1d18; text-decoration: none; }
+
+    /* ── Print styles ── */
+    @media print {
+      body { background: #fff; padding: 16px; }
+      .section { box-shadow: none; border: 1px solid #e5e7eb; }
+      @page { margin: 1.5cm; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <img src="../icons/icon-192.png" alt="GSCC logo" />
+    <h1>How to Install the GSCC App</h1>
+    <p>Add Golden State Cricket Club to your home screen — no App Store needed. Works on any iPhone.</p>
+  </div>
+
+  <!-- Safari -->
+  <div class="section">
+    <div class="section-title">
+      <!-- Safari compass icon -->
+      <svg class="browser-icon" viewBox="0 0 24 24" fill="none" stroke="#8c1d18" stroke-width="1.8">
+        <circle cx="12" cy="12" r="9"/>
+        <path d="M16.5 7.5l-3 6-6 3 3-6 6-3z" fill="#8c1d18" stroke="none"/>
+        <circle cx="12" cy="12" r="1" fill="#fff"/>
+      </svg>
+      Safari
+    </div>
+
+    <div class="steps">
+
+      <!-- Step 1 -->
+      <div class="step">
+        <div class="step-header">
+          <div class="step-num">1</div>
+          <div class="step-label">Tap the <strong>options menu</strong> at bottom of Safari</div>
+        </div>
+        <div class="shot-wrap">
+          <img src="./chrome-menu.jpg" alt="Safari options menu showing Share option" />
+          <div class="callout" style="top:8%;left:3%;">
+            Tap Share
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="step">
+        <div class="step-header">
+          <div class="step-num">2</div>
+          <div class="step-label">Tap "Add to Home Screen" in the share sheet</div>
+        </div>
+        <div class="shot-wrap">
+          <img src="./safari-share-sheet.jpg" alt="Share sheet with Add to Home Screen" />
+          <div class="callout" style="top:62%;left:3%;">
+            Tap here →
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="step">
+        <div class="step-header">
+          <div class="step-num">3</div>
+          <div class="step-label">Tap <strong>Add</strong> to confirm</div>
+        </div>
+        <div class="shot-wrap">
+          <img src="./add-to-homescreen.jpg" alt="Add to Home Screen dialog" />
+          <div class="callout" style="top:5%;right:3%;">
+            Tap Add
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Chrome -->
+  <div class="section">
+    <div class="section-title">
+      <!-- Chrome icon -->
+      <svg class="browser-icon" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="9" fill="#f1f1f1"/>
+        <path d="M12 3a9 9 0 0 1 7.79 4.5H12a4.5 4.5 0 0 0-3.9 2.25L4.83 4.96A9 9 0 0 1 12 3z" fill="#EA4335"/>
+        <path d="M3 12a9 9 0 0 0 4.5 7.79l3-5.2A4.5 4.5 0 0 1 7.5 12H3z" fill="#34A853"/>
+        <path d="M12 21a9 9 0 0 0 7.79-4.5H12a4.5 4.5 0 0 1-3.9-2.25l-3 5.19A9 9 0 0 0 12 21z" fill="#FBBC05"/>
+        <circle cx="12" cy="12" r="3.2" fill="white"/>
+        <circle cx="12" cy="12" r="2.3" fill="#4285F4"/>
+      </svg>
+      Chrome
+    </div>
+
+    <div class="steps">
+
+      <!-- Step 1 -->
+      <div class="step">
+        <div class="step-header">
+          <div class="step-num">1</div>
+          <div class="step-label">Tap the <strong>share icon (↑)</strong> in the Chrome address bar</div>
+        </div>
+        <div class="shot-wrap">
+          <img src="./safari-address-bar.jpg" alt="Chrome address bar with share icon" />
+          <div class="callout" style="top:6%;right:3%;">
+            Tap ↑
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="step">
+        <div class="step-header">
+          <div class="step-num">2</div>
+          <div class="step-label">Tap "Add to Home Screen" in the share sheet</div>
+        </div>
+        <div class="shot-wrap">
+          <img src="./safari-share-sheet.jpg" alt="Share sheet with Add to Home Screen" />
+          <div class="callout" style="top:62%;left:3%;">
+            Tap here →
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="step">
+        <div class="step-header">
+          <div class="step-num">3</div>
+          <div class="step-label">Tap <strong>Add</strong> to confirm</div>
+        </div>
+        <div class="shot-wrap">
+          <img src="./add-to-homescreen.jpg" alt="Add to Home Screen dialog" />
+          <div class="callout" style="top:5%;right:3%;">
+            Tap Add
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Result -->
+  <div class="section">
+    <div class="section-title">
+      <svg class="browser-icon" viewBox="0 0 24 24" fill="none" stroke="#34A853" stroke-width="2">
+        <path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      That's it — the app is on your home screen!
+    </div>
+    <div class="last-steps">
+      <div>
+        <div class="shot-wrap">
+          <img src="./homescreen-icon.jpg" alt="GSCC app icon on home screen" />
+        </div>
+        <p class="last-step-label">The GSCC icon appears on your home screen. Tap it to launch the app.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;justify-content:center;gap:12px;padding:16px;">
+        <div style="display:flex;gap:10px;align-items:flex-start;">
+          <span style="color:#8c1d18;font-size:18px;line-height:1;">✓</span>
+          <span style="font-size:13px;color:#374151;">Opens full-screen, no browser bar</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start;">
+          <span style="color:#8c1d18;font-size:18px;line-height:1;">✓</span>
+          <span style="font-size:13px;color:#374151;">Works like a native app</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start;">
+          <span style="color:#8c1d18;font-size:18px;line-height:1;">✓</span>
+          <span style="font-size:13px;color:#374151;">No App Store download needed</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start;">
+          <span style="color:#8c1d18;font-size:18px;line-height:1;">✓</span>
+          <span style="font-size:13px;color:#374151;">Stays up-to-date automatically</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Questions? Contact us at <a href="mailto:gsbengalsinc@gmail.com">gsbengalsinc@gmail.com</a>
+    &nbsp;·&nbsp; goldenstatecc.org
+  </div>
+
+</body>
+</html>

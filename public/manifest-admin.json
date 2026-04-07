@@ -6,6 +6,10 @@
   "scope": "/admin/",
   "display": "standalone",
   "orientation": "portrait",
+  "capture_links": "none",
+  "launch_handler": {
+    "client_mode": "auto"
+  },
   "background_color": "#000000",
   "theme_color": "#355c7d",
   "icons": [

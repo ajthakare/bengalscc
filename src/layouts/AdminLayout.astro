@@ -11,7 +11,7 @@ interface Props {
   title: string;
   username: string;
   userRole?: 'super_admin' | 'admin';
-  activePage: 'inquiries' | 'users' | 'seasons' | 'fixtures' | 'players' | 'roster' | 'availability' | 'statistics' | 'logs' | 'practices';
+  activePage: 'inquiries' | 'users' | 'seasons' | 'fixtures' | 'players' | 'roster' | 'availability' | 'statistics' | 'logs' | 'practices' | 'notifications';
 }
 
 const { title, username, userRole = 'admin', activePage } = Astro.props;
@@ -90,6 +90,13 @@ const isSuperAdmin = userRole === 'super_admin';
               <path d="M10 6v4l3 3"/>
             </svg>
             <span>Practice Sessions</span>
+          </a>
+
+          <a href="/admin/notifications" class:list={['nav-item', { active: activePage === 'notifications' }]}>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            </svg>
+            <span>Send Notification</span>
           </a>
 
           <!-- Season Setup Section -->
@@ -672,6 +679,18 @@ const isSuperAdmin = userRole === 'super_admin';
       });
     </script>
 
+    <!-- Admin PWA Install Banner -->
+    <div id="admin-pwa-install-banner" style="display:none;" role="banner" aria-label="Install app">
+      <img src="/icons/icon-192.png" alt="GSCC Admin" width="36" height="36" class="admin-pwa-install-icon" />
+      <span class="admin-pwa-install-text">Install the GSCC Admin app</span>
+      <button id="admin-pwa-install-btn" class="admin-pwa-install-action">Install</button>
+      <button id="admin-pwa-install-dismiss" class="admin-pwa-install-close" aria-label="Dismiss">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
     <!-- Service Worker Registration (for Admin PWA) -->
     <script>
       if ('serviceWorker' in navigator) {
@@ -679,6 +698,46 @@ const isSuperAdmin = userRole === 'super_admin';
           navigator.serviceWorker.register('/sw.js').catch(() => {/* silently ignore */});
         });
       }
+
+      // Admin PWA Install Prompt
+      let deferredPrompt: any = null;
+
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+
+        const dismissed = localStorage.getItem('gscc-admin-pwa-dismissed');
+        if (dismissed) {
+          const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+          if (Date.now() - parseInt(dismissed, 10) < thirtyDays) return;
+        }
+
+        const banner = document.getElementById('admin-pwa-install-banner');
+        if (banner) banner.style.display = 'flex';
+      });
+
+      document.getElementById('admin-pwa-install-btn')?.addEventListener('click', async () => {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          const banner = document.getElementById('admin-pwa-install-banner');
+          if (banner) banner.style.display = 'none';
+        }
+        deferredPrompt = null;
+      });
+
+      document.getElementById('admin-pwa-install-dismiss')?.addEventListener('click', () => {
+        const banner = document.getElementById('admin-pwa-install-banner');
+        if (banner) banner.style.display = 'none';
+        localStorage.setItem('gscc-admin-pwa-dismissed', Date.now().toString());
+      });
+
+      window.addEventListener('appinstalled', () => {
+        const banner = document.getElementById('admin-pwa-install-banner');
+        if (banner) banner.style.display = 'none';
+        deferredPrompt = null;
+      });
 
       // Admin PWA layout: measure chrome heights and fix main-content between bars
       function applyAdminPWALayout() {
@@ -716,6 +775,78 @@ const isSuperAdmin = userRole === 'super_admin';
       :root {
         --admin-pwa-topbar-height: 52px;
         --admin-pwa-bottomnav-height: 56px;
+      }
+
+      /* Admin PWA Install Banner */
+      #admin-pwa-install-banner {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 9999;
+        align-items: center;
+        gap: 12px;
+        padding: 12px max(16px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+        background: linear-gradient(135deg, #355c7d 0%, #1e3a52 100%);
+        border-top: 1px solid rgba(229, 200, 120, 0.3);
+        box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.3);
+      }
+
+      .admin-pwa-install-icon {
+        border-radius: 8px;
+        flex-shrink: 0;
+      }
+
+      .admin-pwa-install-text {
+        flex: 1;
+        font-size: 14px;
+        font-weight: 600;
+        color: #fff;
+        min-width: 0;
+      }
+
+      .admin-pwa-install-action {
+        flex-shrink: 0;
+        padding: 8px 20px;
+        background: #E5C878;
+        color: #1e3a52;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: opacity 0.2s;
+      }
+
+      .admin-pwa-install-action:hover {
+        opacity: 0.85;
+      }
+
+      .admin-pwa-install-close {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        background: none;
+        border: none;
+        color: rgba(255, 255, 255, 0.7);
+        cursor: pointer;
+        border-radius: 6px;
+        transition: background 0.2s;
+      }
+
+      .admin-pwa-install-close:hover {
+        background: rgba(255, 255, 255, 0.12);
+        color: #fff;
+      }
+
+      @media (display-mode: standalone) {
+        /* Hide install banner in standalone mode */
+        #admin-pwa-install-banner {
+          display: none !important;
+        }
       }
 
       @media (display-mode: standalone) {

@@ -1,4 +1,5 @@
 {
+  "id": "/admin/app",
   "name": "GSCC Admin Panel",
   "short_name": "GSCC Admin",
   "description": "Golden State Cricket Club - Admin Portal for managing availability, players, practices and statistics",

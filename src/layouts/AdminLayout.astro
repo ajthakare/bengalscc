@@ -4,6 +4,8 @@ import '../styles/admin.css';
 import '@fontsource-variable/inter/wght.css';
 import interWoff2 from '@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url';
 import logo from '../assets/GSCC.svg';
+import AdminPWATopBar from '../components/AdminPWATopBar.astro';
+import AdminPWABottomNav from '../components/AdminPWABottomNav.astro';
 
 interface Props {
   title: string;
@@ -24,9 +26,20 @@ const isSuperAdmin = userRole === 'super_admin';
     <meta name="robots" content="noindex, nofollow" />
     <title>{title}</title>
     <link rel="icon" type="image/svg+xml" href={logo.src} />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest-admin.json" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="GSCC Admin" />
+    <meta name="theme-color" content="#355c7d" />
     <link rel="preload" as="font" type="font/woff2" href={interWoff2} crossorigin />
   </head>
   <body class="antialiased text-body">
+    <!-- Admin PWA chrome: top bar + bottom nav (visible only in standalone mode via CSS) -->
+    <AdminPWATopBar />
+    <AdminPWABottomNav />
+
     <div class="admin-container bg-noise">
       <!-- Mobile Menu Button -->
       <button id="mobile-menu-btn" class="mobile-menu-btn" aria-label="Toggle menu">
@@ -658,5 +671,88 @@ const isSuperAdmin = userRole === 'super_admin';
         });
       });
     </script>
+
+    <!-- Service Worker Registration (for Admin PWA) -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {/* silently ignore */});
+        });
+      }
+
+      // Admin PWA layout: measure chrome heights and fix main-content between bars
+      function applyAdminPWALayout() {
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+          || (navigator as any).standalone === true;
+        if (!isStandalone) return;
+
+        const mainContent = document.querySelector('.main-content') as HTMLElement;
+        if (!mainContent) return;
+
+        const topBar = document.getElementById('admin-pwa-topbar');
+        const bottomNav = document.getElementById('admin-pwa-bottom-nav');
+
+        const topOffset = topBar ? topBar.getBoundingClientRect().height : 0;
+        const bottomOffset = bottomNav ? bottomNav.getBoundingClientRect().height : 0;
+
+        mainContent.style.position = 'fixed';
+        mainContent.style.top = topOffset + 'px';
+        mainContent.style.bottom = bottomOffset + 'px';
+        mainContent.style.left = '0';
+        mainContent.style.right = '0';
+        mainContent.style.marginLeft = '0';
+        mainContent.style.overflowY = 'auto';
+        mainContent.style.overflowX = 'hidden';
+        mainContent.style.padding = '0 16px 16px';
+        mainContent.style.minHeight = 'unset';
+      }
+
+      requestAnimationFrame(applyAdminPWALayout);
+    </script>
+
+    <style is:global>
+      /* ─── Admin PWA Standalone Layout ─────────────────────────── */
+
+      :root {
+        --admin-pwa-topbar-height: 52px;
+        --admin-pwa-bottomnav-height: 56px;
+      }
+
+      @media (display-mode: standalone) {
+        html, body {
+          height: 100dvh;
+          overflow: hidden;
+        }
+
+        /* Hide sidebar and mobile menu controls — replaced by PWA chrome */
+        .sidebar,
+        .mobile-menu-btn,
+        .mobile-overlay {
+          display: none !important;
+        }
+
+        /* admin-container: no flex row needed in standalone */
+        .admin-container {
+          display: block !important;
+        }
+
+        /* main-content: JS applies exact pixel values after measuring bars,
+           CSS sets the fallback using custom properties */
+        .main-content {
+          position: fixed !important;
+          top: calc(var(--admin-pwa-topbar-height) + env(safe-area-inset-top)) !important;
+          bottom: calc(var(--admin-pwa-bottomnav-height) + env(safe-area-inset-bottom)) !important;
+          left: 0 !important;
+          right: 0 !important;
+          margin-left: 0 !important;
+          overflow-y: auto !important;
+          overflow-x: hidden !important;
+          -webkit-overflow-scrolling: touch;
+          overscroll-behavior-y: contain;
+          padding: 0 16px 16px !important;
+          min-height: unset !important;
+        }
+      }
+    </style>
   </body>
 </html>

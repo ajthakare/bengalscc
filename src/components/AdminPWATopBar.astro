@@ -1,0 +1,98 @@
+---
+// Admin PWA Top Bar — only visible in display-mode: standalone
+// Username is fetched client-side to avoid extra server calls on web
+import logo from '../assets/GSCC.svg';
+---
+
+<header class="admin-pwa-topbar" id="admin-pwa-topbar">
+  <a href="/admin/availability" class="admin-pwa-topbar-logo">
+    <img src={logo.src} alt="GSCC" width="28" height="28" />
+  </a>
+
+  <span class="admin-pwa-topbar-title" id="admin-pwa-title">GSCC Admin</span>
+
+  <a href="/admin/logout?from=pwa" class="admin-pwa-topbar-logout" aria-label="Logout">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+      <polyline points="16 17 21 12 16 7"></polyline>
+      <line x1="21" y1="12" x2="9" y2="12"></line>
+    </svg>
+  </a>
+</header>
+
+<script>
+  function updateAdminGreeting() {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+      || (navigator as any).standalone === true;
+
+    if (!isStandalone) return;
+
+    fetch('/.netlify/functions/auth-check')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.authenticated && data.user?.firstName) {
+          const el = document.getElementById('admin-pwa-title');
+          if (el) el.textContent = `Hi, ${data.user.firstName}`;
+        }
+      })
+      .catch(() => {/* silently ignore */});
+  }
+
+  updateAdminGreeting();
+</script>
+
+<style>
+  .admin-pwa-topbar {
+    display: none; /* hidden in browser */
+  }
+
+  @media (display-mode: standalone) {
+    .admin-pwa-topbar {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      height: calc(var(--admin-pwa-topbar-height, 52px) + env(safe-area-inset-top));
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: 6px;
+      padding-left: max(16px, env(safe-area-inset-left));
+      padding-right: max(16px, env(safe-area-inset-right));
+      background: linear-gradient(135deg, #355c7d 0%, #1e3a50 40%, #0d1f2d 100%);
+      border-bottom: 1px solid rgba(246, 114, 128, 0.35);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+  }
+
+  .admin-pwa-topbar-logo img {
+    border-radius: 6px;
+    display: block;
+  }
+
+  .admin-pwa-topbar-title {
+    font-family: 'Inter Variable', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: #f0c6ca;
+    letter-spacing: 0.01em;
+  }
+
+  .admin-pwa-topbar-logout {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    color: #f0c6ca;
+    transition: background 0.2s;
+  }
+
+  .admin-pwa-topbar-logout:hover,
+  .admin-pwa-topbar-logout:active {
+    background: rgba(255, 255, 255, 0.12);
+  }
+</style>

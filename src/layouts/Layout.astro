@@ -136,8 +136,7 @@ const showPWANav = !!(session && isMember(session));
             siteWrapper.style.right = '0';
             siteWrapper.style.overflowY = 'auto';
             siteWrapper.style.overflowX = 'hidden';
-            siteWrapper.style.paddingLeft = '0';
-            siteWrapper.style.paddingRight = '0';
+            siteWrapper.style.padding = '0';
           }
 
           // requestAnimationFrame ensures CSS + layout are fully computed before measuring
@@ -172,10 +171,15 @@ const showPWANav = !!(session && isMember(session));
       overflow-x: hidden;
       -webkit-overflow-scrolling: touch;
       overscroll-behavior-y: contain;
-      padding-left: 0 !important;
-      padding-right: 0 !important;
+      padding: 0 !important;
       min-height: unset !important;
       background-color: var(--color-bg-body, #f9fafb);
+    }
+
+    /* Kill any top spacing on the main content area itself */
+    body[data-pwa-nav="true"] .site-main {
+      padding-top: 0 !important;
+      margin-top: 0 !important;
     }
 
     body[data-pwa-nav="false"] .site-wrapper {

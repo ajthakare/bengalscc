@@ -27,6 +27,12 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     X-XSS-Protection = "1; mode=block"
 
+# Service worker must never be cached — Chrome checks for updates on each load
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
 # Cache static assets
 [[headers]]
   for = "/media/*"

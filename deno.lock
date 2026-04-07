@@ -30,6 +30,7 @@
         "npm:@types/papaparse@^5.5.2",
         "npm:@types/react-dom@^19.2.2",
         "npm:@types/react@^19.2.2",
+        "npm:@types/web-push@^3.6.4",
         "npm:astro@^5.16.10",
         "npm:bcryptjs@^3.0.3",
         "npm:blobshape@1",
@@ -45,7 +46,8 @@
         "npm:tailwindcss@^4.1.16",
         "npm:ts-jest@^29.4.6",
         "npm:unique-names-generator@^4.7.1",
-        "npm:vitest@^4.0.18"
+        "npm:vitest@^4.0.18",
+        "npm:web-push@^3.6.7"
       ]
     }
   }

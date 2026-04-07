@@ -45,70 +45,8 @@ if (!isAdminUser) {
   <div class="availability-page" data-role={userRole}>
     <!-- Page Header -->
     <div class="page-header">
-      <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
-        <div>
-          <h1 class="page-title">Fixtures & Availability</h1>
-          <p class="page-description">Track player availability, selection, duties, and match results</p>
-        </div>
-        <button id="open-notif-panel" onclick="document.getElementById('notif-panel-overlay').style.display='flex'" style="display:flex; align-items:center; gap:0.5rem; padding:0.5rem 1rem; background:#355c7d; color:#fff; border:none; border-radius:0.5rem; font-size:0.875rem; font-weight:600; cursor:pointer; white-space:nowrap; flex-shrink:0;">
-          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
-          Send Notification
-        </button>
-      </div>
-    </div>
-
-    <!-- Send Notification Modal -->
-    <div id="notif-panel-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center; padding:1rem;">
-      <div style="background:#fff; border-radius:1rem; width:100%; max-width:480px; padding:1.5rem; display:flex; flex-direction:column; gap:1rem; max-height:90dvh; overflow-y:auto;">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <h2 style="font-size:1.125rem; font-weight:700; color:#1f2937;">Send Push Notification</h2>
-          <button onclick="closeNotifPanel()" style="background:none; border:none; cursor:pointer; color:#6b7280; font-size:1.25rem; line-height:1;">✕</button>
-        </div>
-
-        <!-- Quick presets -->
-        <div>
-          <p style="font-size:0.75rem; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.5rem;">Quick presets</p>
-          <div style="display:flex; flex-direction:column; gap:0.375rem;">
-            <button class="notif-preset" data-title="Vote for Next Week's Fixtures" data-body="Check upcoming matches and mark your availability before voting closes." data-url="/myfixtures" onclick="applyPreset(this)">
-              📅 Vote for fixtures
-            </button>
-            <button class="notif-preset" data-title="Voting Closes in 2 Hours" data-body="Last chance! Mark your availability for this weekend's fixtures now." data-url="/myfixtures" onclick="applyPreset(this)">
-              ⏰ Voting closing soon
-            </button>
-            <button class="notif-preset" data-title="Practice Vote is Open" data-body="Let us know if you're coming to practice this week." data-url="/mypractice" onclick="applyPreset(this)">
-              🏏 Practice vote open
-            </button>
-          </div>
-        </div>
-
-        <hr style="border:none; border-top:1px solid #e5e7eb;" />
-
-        <!-- Custom fields -->
-        <div style="display:flex; flex-direction:column; gap:0.75rem;">
-          <div>
-            <label style="font-size:0.8125rem; font-weight:600; color:#374151; display:block; margin-bottom:0.25rem;">Title</label>
-            <input id="notif-title" type="text" maxlength="60" placeholder="Notification title" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:0.5rem; font-size:0.875rem; box-sizing:border-box;" />
-          </div>
-          <div>
-            <label style="font-size:0.8125rem; font-weight:600; color:#374151; display:block; margin-bottom:0.25rem;">Message</label>
-            <textarea id="notif-body" maxlength="140" rows="3" placeholder="Notification message..." style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:0.5rem; font-size:0.875rem; resize:vertical; box-sizing:border-box;"></textarea>
-          </div>
-          <div>
-            <label style="font-size:0.8125rem; font-weight:600; color:#374151; display:block; margin-bottom:0.25rem;">Opens</label>
-            <select id="notif-url" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:0.5rem; font-size:0.875rem; box-sizing:border-box;">
-              <option value="/myfixtures">My Fixtures page</option>
-              <option value="/mypractice">My Practice page</option>
-            </select>
-          </div>
-        </div>
-
-        <div id="notif-send-result" style="display:none; padding:0.75rem; border-radius:0.5rem; font-size:0.875rem;"></div>
-
-        <div style="display:flex; gap:0.75rem;">
-          <button onclick="closeNotifPanel()" style="flex:1; padding:0.625rem; background:#f3f4f6; color:#374151; border:none; border-radius:0.5rem; font-size:0.875rem; font-weight:600; cursor:pointer;">Cancel</button>
-          <button id="notif-send-btn" onclick="sendNotification()" style="flex:1; padding:0.625rem; background:#355c7d; color:#fff; border:none; border-radius:0.5rem; font-size:0.875rem; font-weight:600; cursor:pointer;">Send to All Players</button>
-        </div>
-      </div>
+      <h1 class="page-title">Fixtures & Availability</h1>
+      <p class="page-description">Track player availability, selection, duties, and match results</p>
     </div>
 
     <!-- Filters -->
@@ -1183,22 +1121,6 @@ if (!isAdminUser) {
     }
   }
 
-  .notif-preset {
-    display: block;
-    width: 100%;
-    text-align: left;
-    padding: 0.625rem 0.875rem;
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.5rem;
-    font-size: 0.875rem;
-    color: #374151;
-    cursor: pointer;
-    transition: background 0.15s;
-  }
-  .notif-preset:hover {
-    background: #e0ecf8;
-  }
 </style>
 
 <script>
@@ -2875,81 +2797,5 @@ Please let the captain know if you need an extra colored jersey.`;
     return `${days[date.getDay()]}, ${months[date.getMonth()]} ${date.getDate()} ${date.getFullYear()}`;
   }
 
-  // ─── Send Notification ────────────────────────────────────────────────────
-
-  function closeNotifPanel() {
-    document.getElementById('notif-panel-overlay').style.display = 'none';
-    const result = document.getElementById('notif-send-result');
-    result.style.display = 'none';
-    result.textContent = '';
-    document.getElementById('notif-send-btn').textContent = 'Send to All Players';
-    document.getElementById('notif-send-btn').disabled = false;
-  }
-
-  function applyPreset(btn) {
-    document.getElementById('notif-title').value = btn.dataset.title;
-    document.getElementById('notif-body').value = btn.dataset.body;
-    const urlSelect = document.getElementById('notif-url');
-    const opt = [...urlSelect.options].find(o => o.value === btn.dataset.url);
-    if (opt) urlSelect.value = btn.dataset.url;
-    // Highlight selected preset
-    document.querySelectorAll('.notif-preset').forEach(b => b.style.background = '');
-    btn.style.background = '#e0ecf8';
-  }
-
-  async function sendNotification() {
-    const title = document.getElementById('notif-title').value.trim();
-    const body = document.getElementById('notif-body').value.trim();
-    const url = document.getElementById('notif-url').value;
-    const resultEl = document.getElementById('notif-send-result');
-    const sendBtn = document.getElementById('notif-send-btn');
-
-    if (!title || !body) {
-      resultEl.style.display = 'block';
-      resultEl.style.background = '#fef2f2';
-      resultEl.style.color = '#991b1b';
-      resultEl.textContent = 'Please fill in both title and message.';
-      return;
-    }
-
-    sendBtn.disabled = true;
-    sendBtn.textContent = 'Sending...';
-    resultEl.style.display = 'none';
-
-    try {
-      const res = await fetch('/.netlify/functions/push-send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, body, url }),
-      });
-      const data = await res.json();
-
-      resultEl.style.display = 'block';
-      if (res.ok) {
-        resultEl.style.background = '#f0fdf4';
-        resultEl.style.color = '#166534';
-        resultEl.textContent = `Sent to ${data.sent} player${data.sent !== 1 ? 's' : ''}.${data.expired > 0 ? ` (${data.expired} expired subscriptions removed)` : ''}`;
-        sendBtn.textContent = 'Sent!';
-      } else {
-        resultEl.style.background = '#fef2f2';
-        resultEl.style.color = '#991b1b';
-        resultEl.textContent = data.error || 'Failed to send notification.';
-        sendBtn.disabled = false;
-        sendBtn.textContent = 'Send to All Players';
-      }
-    } catch (err) {
-      resultEl.style.display = 'block';
-      resultEl.style.background = '#fef2f2';
-      resultEl.style.color = '#991b1b';
-      resultEl.textContent = 'Network error. Please try again.';
-      sendBtn.disabled = false;
-      sendBtn.textContent = 'Send to All Players';
-    }
-  }
-
-  // Close overlay when clicking backdrop
-  document.getElementById('notif-panel-overlay')?.addEventListener('click', function(e) {
-    if (e.target === this) closeNotifPanel();
-  });
 
 </script>

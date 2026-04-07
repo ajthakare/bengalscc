@@ -29,7 +29,8 @@ if (cookieHeader) {
 if (!authenticated) return Astro.redirect('/admin/login');
 if (!isAdminUser) return Astro.redirect('/');
 
-const { id: fixtureId } = Astro.params;
+const { seasonId } = Astro.params;
+const fixtureId = Astro.url.searchParams.get('fid') || '';
 ---
 
 <AdminLayout
@@ -429,8 +430,12 @@ const { id: fixtureId } = Astro.params;
   }
 </style>
 
-<script define:vars={{ fixtureId, userRole }}>
-  import { escapeHtml } from '../../../utils/admin-ui';
+<script define:vars={{ fixtureId, seasonId, userRole }}>
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = String(text ?? '');
+    return div.innerHTML;
+  }
 
   const isSuperAdmin = userRole === 'super_admin';
   let currentFixture = null;
@@ -465,8 +470,9 @@ const { id: fixtureId } = Astro.params;
       if (cached) {
         currentFixture = JSON.parse(cached);
       } else {
-        // Fallback: fetch fixtures list (active season)
-        const fixturesResp = await fetch('/.netlify/functions/fixtures-list');
+        // Fallback: fetch fixtures list using seasonId from URL path
+        if (!seasonId) throw new Error('Missing season ID');
+        const fixturesResp = await fetch(`/.netlify/functions/fixtures-list?seasonId=${seasonId}`);
         if (!fixturesResp.ok) throw new Error('Failed to load fixtures');
         const allFixtures = await fixturesResp.json();
         currentFixture = allFixtures.find(f => f.id === fixtureId);

@@ -658,30 +658,36 @@ if (!isAdminUser) {
       display: none !important;
     }
 
-    /* Make the 3-column table fit the screen without horizontal scroll */
+    /* Make the 3-column table fit the screen without horizontal scroll.
+       Must set overflow on BOTH axes — overflow-x:visible alone gets
+       coerced to auto by the browser when overflow-y is non-visible. */
     .players-page .table-container {
-      overflow-x: visible !important;
+      overflow: visible !important;
     }
     .players-page .data-table {
       width: 100% !important;
       table-layout: fixed !important;
     }
+    .players-page .data-table th,
+    .players-page .data-table td {
+      min-width: 0 !important;
+      overflow-wrap: anywhere !important;
+      word-break: break-word !important;
+      padding: 0.75rem 0.5rem !important;
+    }
     .players-page .data-table th:nth-child(1),
     .players-page .data-table td:nth-child(1) {
-      width: 30% !important;
-      word-break: break-word;
+      width: 32% !important;
     }
     .players-page .data-table th:nth-child(2),
     .players-page .data-table td:nth-child(2) {
       width: 30% !important;
-      word-break: break-word;
-      font-size: 0.8rem;
+      font-size: 0.78rem !important;
     }
     .players-page .data-table th:nth-child(3),
     .players-page .data-table td:nth-child(3) {
-      width: 40% !important;
-      word-break: break-word;
-      font-size: 0.8rem;
+      width: 38% !important;
+      font-size: 0.78rem !important;
     }
   }
 

@@ -1491,10 +1491,12 @@ if (!isAdminUser) {
     const isPWA = window.matchMedia('(display-mode: standalone)').matches
       || (navigator).standalone === true;
     if (isPWA) {
-      // Store fixture data so the detail page can use it without re-fetching
       const fixture = fixtures.find((f) => f.id === fixtureId);
+      // Store fixture data so the detail page can use it without re-fetching
       if (fixture) sessionStorage.setItem(`fixture-${fixtureId}`, JSON.stringify(fixture));
-      window.location.href = `/admin/availability/${fixtureId}`;
+      // seasonId in path (stable), fixtureId as query param
+      const sid = fixture?.seasonId || '';
+      window.location.href = `/admin/availability/${sid}?fid=${fixtureId}`;
       return;
     }
 

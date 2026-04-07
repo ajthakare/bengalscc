@@ -101,7 +101,7 @@ export function createSessionCookie(
   return serialize(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
     secure: isProduction,
-    sameSite: 'strict',
+    sameSite: 'lax',
     maxAge: 60 * 60 * 24 * 15, // 15 days
     path: '/',
   });

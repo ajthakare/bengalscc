@@ -281,23 +281,23 @@ if (!isAdminUser) {
       <!-- Scoring App Section (for all fixtures) -->
       <div id="scoring-app-section" style="margin-top: 1rem; padding-top: 1.5rem; border-top: 2px solid #e5e7eb; padding: 1.5rem;">
         <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.5rem; color: #111827;">
-          🏏 NCCA CricHeroes Link
+          🏏 NCCA Scorecard Link
         </h3>
         <p style="font-size: 0.875rem; color: #6b7280; margin-bottom: 1rem;">
-          Add a link to the NCCA CricHeroes scoring app for live scoring (optional)
+          Add a link to the NCCA scorecard for live scoring (optional)
         </p>
 
         <div class="form-group">
-          <label for="scoring-app-url" class="form-label">CricHeroes URL</label>
+          <label for="scoring-app-url" class="form-label">Scorecard URL</label>
           <input
             type="url"
             id="scoring-app-url"
             class="form-input"
-            placeholder="https://cricheroes.com/..."
+            placeholder="https://..."
             style="width: 100%;"
           >
           <small style="color: #6b7280; font-size: 0.75rem; margin-top: 0.25rem; display: block;">
-            Paste the CricHeroes app or web link. This will be displayed on the public fixtures page.
+            Paste the NCCA scorecard link. This will be displayed on the public fixtures page.
           </small>
         </div>
       </div>
@@ -2293,7 +2293,7 @@ if (!isAdminUser) {
 
   // Validate YouTube URL
   function isValidYouTubeUrl(url) {
-    const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)[\w-]+/;
+    const youtubeRegex = /^https?:\/\/(www\.)?(youtube\.com|youtu\.be)\/.+/;
     return youtubeRegex.test(url);
   }
 

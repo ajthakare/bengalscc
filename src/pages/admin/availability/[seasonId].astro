@@ -185,12 +185,12 @@ const fixtureId = Astro.url.searchParams.get('fid') || '';
 
       <!-- CricHeroes Section -->
       <div style="margin-top: 2rem; padding-top: 2rem; border-top: 2px solid #e5e7eb;">
-        <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.5rem; color: #111827;">🏏 NCCA CricHeroes Link</h3>
-        <p style="font-size: 0.875rem; color: #6b7280; margin-bottom: 1rem;">Add a link to the NCCA CricHeroes scoring app for live scoring (optional)</p>
+        <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.5rem; color: #111827;">🏏 NCCA Scorecard Link</h3>
+        <p style="font-size: 0.875rem; color: #6b7280; margin-bottom: 1rem;">Add a link to the NCCA scorecard for live scoring (optional)</p>
         <div class="form-group">
-          <label for="scoring-app-url" class="form-label">CricHeroes URL</label>
-          <input type="url" id="scoring-app-url" class="form-input" placeholder="https://cricheroes.com/…" style="width: 100%;" />
-          <small style="color: #6b7280; font-size: 0.75rem; margin-top: 0.25rem; display: block;">Paste the CricHeroes app or web link. This will be displayed on the public fixtures page.</small>
+          <label for="scoring-app-url" class="form-label">Scorecard URL</label>
+          <input type="url" id="scoring-app-url" class="form-input" placeholder="https://..." style="width: 100%;" />
+          <small style="color: #6b7280; font-size: 0.75rem; margin-top: 0.25rem; display: block;">Paste the NCCA scorecard link. This will be displayed on the public fixtures page.</small>
         </div>
       </div>
 
@@ -771,7 +771,7 @@ const fixtureId = Astro.url.searchParams.get('fid') || '';
   }
 
   function isValidYouTubeUrl(url) {
-    return /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)[\w-]+/.test(url);
+    return /^https?:\/\/(www\.)?(youtube\.com|youtu\.be)\/.+/.test(url);
   }
   function isValidUrl(url) {
     try { new URL(url); return true; } catch { return false; }

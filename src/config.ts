@@ -75,20 +75,20 @@ export const SPONSORS = {
 
     current: [
         {
-            name: 'MAZALA Pizza',
+            name: 'Dimple Sheth',
             tier: 'platinum' as const,
-            description: 'Indian Pizza, Chicago-based, first store in Downtown San Jose',
-            logo: '/sponsors/mazala.png',
-            website: 'https://mazalapizza.com',
-            year: 2025
+            description: 'Real Estate Agent, Bay Area',
+            logo: '/sponsors/dimple-seth.png',
+            website: '#',
+            year: 2026
         },
         {
-            name: 'T10 Sports',
+            name: 'Parktown Pizza Company',
             tier: 'gold' as const,
-            description: 'Official Jersey & Kit Partner',
-            logo: '/sponsors/t10.png',
+            description: 'India Fusion Pizza & Wings with 5 Outlets in Bay Area',
+            logo: '/sponsors/parktown.png',
             website: '#',
-            year: 2025
+            year: 2026
         },
         {
             name: 'NACL Sports Center',
@@ -96,11 +96,18 @@ export const SPONSORS = {
             description: 'Practice & Ground Sponsor',
             logo: '/sponsors/nacl.png',
             website: '#',
-            year: 2025
+            year: 2026
         }
     ],
 
     past: [
+        {
+            name: 'MAZALA Pizza',
+            tier: 'platinum' as const,
+            description: 'Indian Pizza, Chicago-based, first store in Downtown San Jose',
+            years: [2025],
+            logo: '/sponsors/mazala.png'
+        },
         {
             name: 'Parktown Pizza Company',
             tier: 'platinum' as const,
@@ -133,14 +140,14 @@ export const SPONSORS = {
             name: 'T10 Sports',
             tier: 'gold' as const,
             description: 'Official Jersey & Kit Partner',
-            years: [2023, 2024],
+            years: [2023, 2024, 2025],
             logo: '/sponsors/t10.png'
         },
         {
             name: 'NACL Sports Center',
             tier: 'gold' as const,
             description: 'Practice & Ground Sponsor',
-            years: [2024],
+            years: [2024, 2025],
             logo: '/sponsors/nacl.png'
         }
     ],

@@ -11,6 +11,11 @@ import { SPONSORS } from '../../config';
 // Organize past sponsors by year for timeline
 const sponsorsByYear = [
     {
+        year: 2025,
+        platinum: SPONSORS.past.filter((s) => s.years?.includes(2025) && s.tier === 'platinum'),
+        gold: SPONSORS.past.filter((s) => s.years?.includes(2025) && s.tier === 'gold')
+    },
+    {
         year: 2024,
         platinum: SPONSORS.past.filter((s) => s.years?.includes(2024) && s.tier === 'platinum'),
         gold: SPONSORS.past.filter((s) => s.years?.includes(2024) && s.tier === 'gold')

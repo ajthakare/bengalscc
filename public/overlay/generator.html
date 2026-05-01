@@ -367,6 +367,18 @@
     .score-panel { display: none; }
     .score-panel.visible { display: block; }
 
+    /* ── Chroma swatch ── */
+    .chroma-swatch {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      border: 1px solid rgba(0,0,0,0.15);
+      vertical-align: middle;
+      margin-right: 6px;
+      flex-shrink: 0;
+    }
+
     /* ── Gold divider ── */
     .gold-bar {
       height: 3px;
@@ -465,6 +477,47 @@
       </div>
     </div>
 
+    <!-- Step 3 -->
+    <div class="card">
+      <p class="card-title">Step 3 — Streaming app</p>
+      <div class="radio-group">
+        <label class="radio-option active" id="opt-obs-label">
+          <input type="radio" name="appMode" value="obs" checked onchange="setAppMode('obs')" />
+          <div>
+            <div class="radio-label">OBS Studio</div>
+            <div class="radio-desc">Transparent background — check "Allow transparency" in Browser Source settings</div>
+          </div>
+        </label>
+        <label class="radio-option" id="opt-prism-label">
+          <input type="radio" name="appMode" value="prism" onchange="setAppMode('prism')" />
+          <div>
+            <div class="radio-label">Prism Live / other apps</div>
+            <div class="radio-desc">Uses chroma key — apply the green or magenta filter in your app</div>
+          </div>
+        </label>
+      </div>
+
+      <div class="score-panel" id="panel-chroma">
+        <label class="input-label">Chroma key color</label>
+        <div style="display:flex;gap:10px;">
+          <label class="radio-option" id="opt-green-label" style="flex:1;">
+            <input type="radio" name="chromaColor" value="green" checked onchange="updateButton()" />
+            <span class="chroma-swatch" style="background:#00ff00;"></span>
+            <div>
+              <div class="radio-label">Green screen</div>
+            </div>
+          </label>
+          <label class="radio-option" id="opt-magenta-label" style="flex:1;">
+            <input type="radio" name="chromaColor" value="magenta" onchange="updateButton()" />
+            <span class="chroma-swatch" style="background:#ff00ff;"></span>
+            <div>
+              <div class="radio-label">Magenta screen</div>
+            </div>
+          </label>
+        </div>
+      </div>
+    </div>
+
     <!-- Generate -->
     <button class="btn-primary" id="generateBtn" onclick="generate()" disabled>
       Generate combined overlay URL
@@ -480,8 +533,11 @@
           <button class="btn-secondary" id="copyBtn" onclick="copyUrl()">Copy URL</button>
           <a class="btn-outline-primary" id="openBtn" href="#" target="_blank">Preview in browser</a>
         </div>
-        <div class="hint">
-          <strong>Using in OBS:</strong> Add a Browser Source → paste this URL → set width to <strong>1920</strong>, height to <strong>1080</strong> → enable "Shutdown source when not visible" → under Custom CSS add: <code>body { background: transparent !important; }</code>
+        <div class="hint" id="obsHint" style="display:block;">
+          <strong>OBS Studio:</strong> Add a Browser Source → paste this URL → width <strong>1920</strong>, height <strong>1080</strong> → check <strong>"Allow transparency"</strong>. If that option isn't visible, add <code>body { background: transparent !important; }</code> under Custom CSS.
+        </div>
+        <div class="hint" id="prismHint" style="display:none;">
+          <strong>Prism Live:</strong> Add a Web/Browser source → paste this URL → width <strong>1920</strong>, height <strong>1080</strong>. Then add a <strong>Chroma Key</strong> effect to that layer and set the key color to match the background you selected (green or magenta).
         </div>
       </div>
     </div>
@@ -491,8 +547,21 @@
     let selectedTeamUrl = null;
     let generatedUrl = null;
     let scoreMode = 'matchid';
+    let appMode = 'obs';
     const BASE = window.location.origin;
     const CRICCLUBS_BASE = 'https://static.cricclubs.com/overlay-cc/CC_1712/ccindex.html?matchId={id}&clubId=1191';
+
+    function setAppMode(mode) {
+      appMode = mode;
+      document.getElementById('panel-chroma').classList.toggle('visible', mode === 'prism');
+      document.getElementById('opt-obs-label').classList.toggle('active', mode === 'obs');
+      document.getElementById('opt-prism-label').classList.toggle('active', mode === 'prism');
+      if (document.getElementById('obsHint')) {
+        document.getElementById('obsHint').style.display   = mode === 'obs'   ? 'block' : 'none';
+        document.getElementById('prismHint').style.display = mode === 'prism' ? 'block' : 'none';
+      }
+      updateButton();
+    }
 
     function setScoreMode(mode) {
       scoreMode = mode;
@@ -531,12 +600,18 @@
         ? selectedTeamUrl
         : BASE + selectedTeamUrl;
 
-      generatedUrl = BASE + '/overlay/combined.html'
+      let url = BASE + '/overlay/combined.html'
         + '?top=' + encodeURIComponent(topFull)
         + '&score=' + encodeURIComponent(scoreVal);
 
+      if (appMode === 'prism') {
+        const color = document.querySelector('input[name="chromaColor"]:checked').value;
+        url += '&bg=' + color;
+      }
+
+      generatedUrl = url;
       document.getElementById('resultUrl').textContent = generatedUrl;
-      document.getElementById('openBtn').href = generatedUrl;
+      document.getElementById('openBtn').href = generatedUrl + (appMode === 'prism' ? '' : '&preview=1');
       document.getElementById('resultBox').classList.add('visible');
 
       const copyBtn = document.getElementById('copyBtn');

@@ -10,9 +10,26 @@
     html, body {
       width: 1920px;
       height: 1080px;
-      background: transparent;
+      background: transparent !important;
+      background-color: rgba(0,0,0,0) !important;
       overflow: hidden;
     }
+
+    /* Preview mode: checkered pattern so transparent areas are obvious in browser */
+    body.preview-mode {
+      background-image:
+        linear-gradient(45deg, #ccc 25%, transparent 25%),
+        linear-gradient(-45deg, #ccc 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #ccc 75%),
+        linear-gradient(-45deg, transparent 75%, #ccc 75%) !important;
+      background-size: 40px 40px !important;
+      background-position: 0 0, 0 20px, 20px -20px, -20px 0px !important;
+      background-color: #e0e0e0 !important;
+    }
+
+    /* Chroma key background modes */
+    body.bg-green   { background: #00ff00 !important; }
+    body.bg-magenta { background: #ff00ff !important; }
 
     #score-frame {
       position: fixed;
@@ -25,22 +42,52 @@
       pointer-events: none;
       z-index: 2;
     }
+
+    /* Preview badge */
+    #preview-badge {
+      position: fixed;
+      bottom: 12px;
+      right: 12px;
+      background: rgba(0,0,0,0.65);
+      color: #fff;
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      z-index: 999;
+      pointer-events: none;
+      letter-spacing: 0.04em;
+    }
   </style>
 </head>
 <body>
   <script>
-    // Scale to fit the current viewport (browser preview). OBS sets viewport to
-    // exactly 1920x1080 so scale = 1.0 there and nothing changes.
+    const params = new URLSearchParams(window.location.search);
+    const topUrl    = params.get('top');
+    const scoreUrl  = params.get('score');
+    const isPreview = params.get('preview') === '1';
+    const bg        = params.get('bg'); // 'green' | 'magenta' | null
+
+    // Chroma key background
+    if (bg === 'green')   document.body.classList.add('bg-green');
+    if (bg === 'magenta') document.body.classList.add('bg-magenta');
+
+    // Preview mode: show checkered background so transparent areas are visible
+    if (isPreview && !bg) {
+      document.body.classList.add('preview-mode');
+      const badge = document.createElement('div');
+      badge.id = 'preview-badge';
+      badge.textContent = 'PREVIEW — checkered = transparent';
+      document.body.appendChild(badge);
+    }
+
+    // Scale to fit viewport for browser preview. OBS viewport = 1920×1080 → scale 1.0, no change.
     function fitToViewport() {
       const scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
       document.documentElement.style.zoom = scale;
     }
     fitToViewport();
     window.addEventListener('resize', fitToViewport);
-
-    const params = new URLSearchParams(window.location.search);
-    const topUrl = params.get('top');
-    const scoreUrl = params.get('score');
 
     async function loadTopOverlay(url) {
       const res = await fetch(url);
@@ -72,7 +119,7 @@
 
     async function init() {
       if (!topUrl && !scoreUrl) {
-        document.body.innerHTML =
+        document.body.innerHTML +=
           '<div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-family:Arial;font-size:24px;color:red;background:rgba(0,0,0,0.7);padding:20px 40px;border-radius:8px;text-align:center;">No overlay URLs provided.<br>Use /overlay/generator.html to create a combined link.</div>';
         return;
       }

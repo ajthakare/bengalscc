@@ -27,6 +27,12 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     X-XSS-Protection = "1; mode=block"
 
+# Overlay pages must be embeddable in iframes (combined.html loads team overlays as iframes)
+[[headers]]
+  for = "/overlay/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+
 # Service worker must never be cached — Chrome checks for updates on each load
 [[headers]]
   for = "/sw.js"

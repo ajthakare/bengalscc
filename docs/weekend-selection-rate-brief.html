@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Weekend Selection Rate — Problem Brief</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #1a1a2e;
+      background: #fff;
+      padding: 40px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    @media print {
+      body { padding: 20px; font-size: 13px; }
+      .no-print { display: none; }
+      h2 { page-break-before: always; }
+      h2:first-of-type { page-break-before: avoid; }
+      table { page-break-inside: avoid; }
+      .scenario-block { page-break-inside: avoid; }
+    }
+
+    /* Header */
+    .doc-header {
+      border-bottom: 3px solid #f67280;
+      padding-bottom: 20px;
+      margin-bottom: 32px;
+    }
+    .doc-header h1 {
+      font-size: 26px;
+      font-weight: 700;
+      color: #1a1a2e;
+    }
+    .doc-header .subtitle {
+      color: #666;
+      margin-top: 4px;
+      font-size: 13px;
+    }
+    .doc-header .meta {
+      margin-top: 12px;
+      display: flex;
+      gap: 24px;
+      font-size: 12px;
+      color: #888;
+    }
+    .doc-header .meta span strong { color: #444; }
+
+    /* Sections */
+    h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin: 36px 0 14px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #eee;
+    }
+    h3 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #355c7d;
+      margin: 20px 0 8px;
+    }
+    h4 {
+      font-size: 13px;
+      font-weight: 600;
+      color: #555;
+      margin: 14px 0 6px;
+    }
+    p { margin-bottom: 10px; }
+
+    /* Team badges */
+    .teams-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin: 16px 0;
+    }
+    .team-card {
+      border: 1px solid #eee;
+      border-radius: 8px;
+      padding: 12px 16px;
+      background: #fafafa;
+    }
+    .team-card .team-name {
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .team-card .team-meta { font-size: 12px; color: #666; margin-top: 2px; }
+    .tigers { border-left: 4px solid #f97316; }
+    .bulls { border-left: 4px solid #3b82f6; }
+    .bears { border-left: 4px solid #22c55e; }
+    .thundercats { border-left: 4px solid #a855f7; }
+
+    /* Formula box */
+    .formula-box {
+      background: #f0f4ff;
+      border: 1px solid #c7d7f7;
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin: 14px 0;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 2;
+    }
+    .formula-box .label {
+      font-family: -apple-system, sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #6b7280;
+      margin-bottom: 6px;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0 20px;
+      font-size: 13px;
+    }
+    th {
+      background: #f3f4f6;
+      text-align: left;
+      padding: 8px 12px;
+      font-weight: 600;
+      font-size: 12px;
+      color: #374151;
+      border-bottom: 2px solid #e5e7eb;
+    }
+    td {
+      padding: 7px 12px;
+      border-bottom: 1px solid #f0f0f0;
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafafa; }
+    .tick { color: #16a34a; font-weight: 700; }
+    .cross { color: #dc2626; font-weight: 700; }
+    .dash { color: #9ca3af; }
+    .highlight-row td { background: #fff7ed; font-weight: 500; }
+    .result-col { font-weight: 600; }
+    .good { color: #16a34a; }
+    .bad { color: #dc2626; }
+    .neutral { color: #6b7280; }
+
+    /* Scenario blocks */
+    .scenario-block {
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 18px 20px;
+      margin: 18px 0;
+      background: #fff;
+    }
+    .scenario-block.problem { border-left: 4px solid #ef4444; }
+    .scenario-block.good-outcome { border-left: 4px solid #22c55e; }
+    .scenario-block.neutral-outcome { border-left: 4px solid #f59e0b; }
+    .scenario-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+    }
+    .scenario-label.problem { color: #dc2626; }
+    .scenario-label.good { color: #16a34a; }
+    .scenario-label.neutral { color: #d97706; }
+    .scenario-title { font-weight: 700; font-size: 14px; margin-bottom: 8px; }
+
+    /* Callout boxes */
+    .callout {
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin: 16px 0;
+      font-size: 13px;
+    }
+    .callout.info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+    .callout.warning { background: #fffbeb; border-left: 4px solid #f59e0b; }
+    .callout.success { background: #f0fdf4; border-left: 4px solid #22c55e; }
+    .callout strong { font-weight: 700; }
+
+    /* Solution cards */
+    .solution-card {
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      margin: 20px 0;
+      overflow: hidden;
+    }
+    .solution-header {
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .solution-header.s1 { background: #eff6ff; border-bottom: 1px solid #dbeafe; }
+    .solution-header.s2 { background: #f0fdf4; border-bottom: 1px solid #dcfce7; }
+    .solution-header.s3 { background: #faf5ff; border-bottom: 1px solid #f3e8ff; }
+    .solution-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+    .s1 .solution-badge { background: #3b82f6; color: #fff; }
+    .s2 .solution-badge { background: #22c55e; color: #fff; }
+    .s3 .solution-badge { background: #a855f7; color: #fff; }
+    .recommended-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 20px;
+      background: #f59e0b;
+      color: #fff;
+      white-space: nowrap;
+    }
+    .solution-title { font-weight: 700; font-size: 15px; }
+    .solution-body { padding: 16px 20px; }
+
+    /* Comparison table */
+    .comparison-header { background: #1a1a2e; color: #fff; }
+    .comparison-header th { color: #e5e7eb; background: #1a1a2e; }
+
+    /* Stats side-by-side */
+    .stats-compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 14px 0;
+    }
+    .stats-box {
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 14px;
+    }
+    .stats-box h4 { margin-top: 0; }
+    .stats-box.current { border-top: 3px solid #ef4444; }
+    .stats-box.proposed { border-top: 3px solid #22c55e; }
+
+    /* Key insight */
+    .key-insight {
+      background: linear-gradient(135deg, #1a1a2e 0%, #355c7d 100%);
+      color: #fff;
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin: 24px 0;
+    }
+    .key-insight h3 { color: #f67280; margin-top: 0; border: none; }
+    .key-insight p { color: #e2e8f0; margin-bottom: 8px; }
+    .key-insight p:last-child { margin-bottom: 0; }
+
+    /* Open questions */
+    .questions-list {
+      counter-reset: questions;
+      list-style: none;
+      padding: 0;
+      margin: 12px 0;
+    }
+    .questions-list li {
+      counter-increment: questions;
+      display: flex;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 13px;
+    }
+    .questions-list li:last-child { border-bottom: none; }
+    .questions-list li::before {
+      content: counter(questions);
+      background: #f67280;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    ul, ol { padding-left: 20px; margin: 8px 0; }
+    li { margin-bottom: 4px; }
+
+    .page-break { page-break-before: always; }
+
+    hr { border: none; border-top: 1px solid #eee; margin: 28px 0; }
+
+    .footer {
+      margin-top: 48px;
+      padding-top: 16px;
+      border-top: 1px solid #eee;
+      font-size: 12px;
+      color: #9ca3af;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===================== HEADER ===================== -->
+  <div class="doc-header">
+    <h1>Weekend-Level Selection Rate</h1>
+    <div class="subtitle">Problem Brief — Golden State Cricket Club (GSCC)</div>
+    <div class="meta">
+      <span><strong>Prepared:</strong> April 2026</span>
+      <span><strong>Status:</strong> Discussion — solution not yet decided</span>
+      <span><strong>Audience:</strong> Club committee &amp; selectors</span>
+    </div>
+  </div>
+
+  <!-- ===================== SECTION 1: CONTEXT ===================== -->
+  <h2>1. Club &amp; Team Structure</h2>
+
+  <p>GSCC fields four competitive teams each season. The key distinction is between <strong>T20 teams</strong> (which have exclusive, committed cores) and <strong>T40/T30 teams</strong> (which draw from a shared, broader pool).</p>
+
+  <div class="teams-grid">
+    <div class="team-card tigers">
+      <div class="team-name">Bengal Tigers</div>
+      <div class="team-meta">T20 · ~15 exclusive core players</div>
+    </div>
+    <div class="team-card bulls">
+      <div class="team-name">Bengal Bulls</div>
+      <div class="team-meta">T20 · ~15 exclusive core players (separate from Tigers)</div>
+    </div>
+    <div class="team-card bears">
+      <div class="team-name">Bengal Bears</div>
+      <div class="team-meta">T40 · ~4–5 core players · all roster members eligible</div>
+    </div>
+    <div class="team-card thundercats">
+      <div class="team-name">Bengal ThunderCats</div>
+      <div class="team-meta">T30 · few core players · all roster members eligible</div>
+    </div>
+  </div>
+
+  <div class="callout info">
+    <strong>Key rules:</strong>
+    <ul style="margin-top:6px;">
+      <li>A player is core to <em>at most one</em> T20 team — Tigers and Bulls cores do not overlap.</li>
+      <li>All ~50 club members are in the roster for Bears and ThunderCats and are eligible to play.</li>
+      <li>All games are on weekends. A <strong>weekend = Saturday + Sunday</strong>.</li>
+      <li>Multiple team fixtures can fall on the same weekend (e.g., Tigers play Saturday, ThunderCats play Sunday).</li>
+    </ul>
+  </div>
+
+  <!-- ===================== SECTION 2: CURRENT FORMULA ===================== -->
+  <h2>2. How Selection Is Currently Tracked</h2>
+
+  <p>For each player, per team, per season:</p>
+
+  <div class="formula-box">
+    <div class="label">Current formula</div>
+    Availability Rate  =  timesAvailable  /  totalFixturesForTeam  × 100<br/>
+    Selection Rate     =  gamesPlayed     /  timesAvailable         × 100
+  </div>
+
+  <p>The formula behaves differently depending on whether a player is <strong>core</strong> to that team:</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Player type</th>
+        <th>Fixture denominator</th>
+        <th>Availability counted as</th>
+        <th>Selection counted as</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Core to team</strong> (e.g., core Tigers)</td>
+        <td>ALL past fixtures for that team</td>
+        <td>Fixture-by-fixture — missing a fixture counts against you</td>
+        <td>Each game played / available</td>
+      </tr>
+      <tr>
+        <td><strong>Non-core / guest</strong> (e.g., Tigers player in Bears game)</td>
+        <td>Only fixtures they were selected in</td>
+        <td>Always treated as available (if selected)</td>
+        <td>Always 100% — selected = available</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Example — Player A, core to Tigers (10-fixture season)</h3>
+
+  <table>
+    <thead>
+      <tr><th>Fixture</th><th>Available?</th><th>Selected?</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>TIG-01</td><td class="tick">✓</td><td class="tick">✓</td><td></td></tr>
+      <tr><td>TIG-02</td><td class="tick">✓</td><td class="tick">✓</td><td></td></tr>
+      <tr><td>TIG-03</td><td class="tick">✓</td><td class="cross">✗</td><td>Available, not picked</td></tr>
+      <tr><td>TIG-04</td><td class="cross">✗</td><td class="cross">✗</td><td>Unavailable</td></tr>
+      <tr><td>TIG-05 to TIG-10</td><td class="dash">—</td><td class="cross">✗</td><td>No record submitted (counts as unavailable)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="formula-box">
+    timesAvailable = 3 &nbsp;|&nbsp; gamesPlayed = 2 &nbsp;|&nbsp; totalFixtures = 10<br/>
+    Availability Rate = 3 / 10 × 100 = <strong>30%</strong><br/>
+    Selection Rate    = 2 / 3  × 100 = <strong>67%</strong>
+  </div>
+
+  <!-- ===================== SECTION 3: THE PROBLEM ===================== -->
+  <h2>3. The Problem — Multi-Game Weekends</h2>
+
+  <p>On weekends where multiple teams play, a player may be <strong>available for more than one game</strong>. The current fixture-level formula does not understand that these games happen on the same weekend — it treats each fixture independently. This creates unfair distortions.</p>
+
+  <!-- Scenario A -->
+  <div class="scenario-block problem">
+    <div class="scenario-label problem">Problem Scenario A — The "Bumped to Another Team" Case</div>
+    <div class="scenario-title">Player A is core to Tigers. Tigers selectors choose someone else, but offer Player A a ThunderCats slot the same weekend.</div>
+    <p style="margin-top:8px;">The club <em>gave</em> Player A a game. They played. But the current formula says:</p>
+    <table>
+      <thead><tr><th>Team</th><th>What happened</th><th>What formula records</th><th>Fair?</th></tr></thead>
+      <tbody>
+        <tr class="highlight-row">
+          <td>Tigers</td>
+          <td>Available, not selected</td>
+          <td class="bad">−1 to selection rate</td>
+          <td class="bad">✗ Penalised</td>
+        </tr>
+        <tr>
+          <td>ThunderCats</td>
+          <td>Selected, played</td>
+          <td class="neutral">+1 to non-core count (always 100%)</td>
+          <td class="neutral">Ignored effectively</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="callout warning" style="margin-top:12px;">
+      <strong>Result:</strong> A player who received a game and played is penalised as if they were dropped without any compensation. Their Tigers selection rate falls even though the club did right by them.
+    </div>
+  </div>
+
+  <!-- Scenario B -->
+  <div class="scenario-block problem">
+    <div class="scenario-label problem">Problem Scenario B — The Invisible Non-Core Player</div>
+    <div class="scenario-title">Player B has no core team. They vote for every Bears and ThunderCats game all season but are never selected.</div>
+    <table>
+      <thead><tr><th>Weekend</th><th>Voted for</th><th>Selected</th><th>Formula records</th></tr></thead>
+      <tbody>
+        <tr><td>Weekend 1</td><td>Bears + TC</td><td class="cross">None</td><td class="neutral dash">Nothing (non-core, not selected)</td></tr>
+        <tr><td>Weekend 2</td><td>Bears + TC</td><td class="cross">None</td><td class="neutral dash">Nothing</td></tr>
+        <tr><td colspan="4" style="text-align:center; color:#9ca3af; font-size:12px;">... same for all 10 weekends ...</td></tr>
+      </tbody>
+    </table>
+    <div class="callout warning" style="margin-top:12px;">
+      <strong>Result:</strong> Player B shows 0 games played and 0% selection, but the formula cannot tell if they were never picked or never voted. The formula is blind to non-core availability.
+    </div>
+  </div>
+
+  <!-- Scenario C -->
+  <div class="scenario-block neutral-outcome">
+    <div class="scenario-label neutral">Problem Scenario C — Inflated Club-Level Rate</div>
+    <div class="scenario-title">Player C is core to Tigers (7/10 selected) and also plays 3 Bears games as a guest.</div>
+    <table>
+      <thead><tr><th>Team</th><th>Games played</th><th>Times available</th><th>Selection rate</th></tr></thead>
+      <tbody>
+        <tr><td>Tigers (core)</td><td>7</td><td>9</td><td>78%</td></tr>
+        <tr><td>Bears (non-core)</td><td>3</td><td>3</td><td>100%</td></tr>
+        <tr style="font-weight:600; background:#f9fafb;"><td>Club total</td><td>10</td><td>12</td><td class="bad">83%</td></tr>
+      </tbody>
+    </table>
+    <div class="callout warning" style="margin-top:12px;">
+      <strong>Result:</strong> Club-level selection rate (83%) overstates the picture. Guest games always add equal amounts to numerator and denominator, pulling the overall rate upward artificially.
+    </div>
+  </div>
+
+  <!-- ===================== SECTION 4: DESIRED OUTCOME ===================== -->
+  <h2>4. What We Actually Want to Measure</h2>
+
+  <div class="key-insight">
+    <h3>The Fairness Goal</h3>
+    <p>With ~50 members, we want to give equal opportunities to most players. Better players will naturally get more games, but the <strong>gap between a skilled and an average player's selection rate should not be drastically wide</strong>.</p>
+    <p>The right question to ask is: <em>"When this player was available and willing to play, how often did the club actually give them a game — across the whole weekend?"</em></p>
+    <p>If a player was bumped from Tigers but given ThunderCats the same day, <strong>the club kept their promise</strong>. That should count as a successful weekend, not a failed one.</p>
+  </div>
+
+  <h3>Weekend-Level Scenarios — What We Expect</h3>
+
+  <p>Assume a typical weekend where both Tigers and ThunderCats play (Sat + Sun). Player A is core to Tigers.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Available for</th>
+        <th>Selected for</th>
+        <th>Current verdict</th>
+        <th>Expected verdict</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>W1</td>
+        <td>Tigers + TC</td>
+        <td>Tigers</td>
+        <td class="good">✓ Selected (Tigers)</td>
+        <td class="good">✓ Got a game</td>
+      </tr>
+      <tr class="highlight-row">
+        <td>W2</td>
+        <td>Tigers + TC</td>
+        <td>ThunderCats only</td>
+        <td class="bad">✗ Tigers miss (penalised)</td>
+        <td class="good">✓ Got a game</td>
+      </tr>
+      <tr>
+        <td>W3</td>
+        <td>Tigers + TC</td>
+        <td>Both</td>
+        <td class="good">✓✓ Selected in both</td>
+        <td class="good">✓ Got a game (double)</td>
+      </tr>
+      <tr>
+        <td>W4</td>
+        <td>Tigers + TC</td>
+        <td>Neither</td>
+        <td class="bad">✗ Not selected</td>
+        <td class="bad">✗ Missed weekend</td>
+      </tr>
+      <tr>
+        <td>W5</td>
+        <td>Tigers only</td>
+        <td>Neither</td>
+        <td class="bad">✗ Not selected</td>
+        <td class="bad">✗ Missed weekend</td>
+      </tr>
+      <tr>
+        <td>W6</td>
+        <td>TC only</td>
+        <td>TC</td>
+        <td class="good">✓ Non-core game</td>
+        <td class="good">✓ Got a game</td>
+      </tr>
+      <tr>
+        <td>W7</td>
+        <td>TC only</td>
+        <td>Neither</td>
+        <td class="neutral">— (non-core, not counted)</td>
+        <td class="bad">✗ Missed weekend</td>
+      </tr>
+      <tr>
+        <td>W8</td>
+        <td>Neither</td>
+        <td>—</td>
+        <td class="neutral">— (not counted)</td>
+        <td class="neutral">— (not counted, absent)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>W2 is the critical broken case.</strong> W7 is also broken — the player showed up and voted but got nothing, and the current formula silently ignores it.</p>
+
+  <!-- ===================== SECTION 5: SOLUTIONS ===================== -->
+  <div class="page-break"></div>
+  <h2>5. Proposed Solutions</h2>
+
+  <!-- Solution 1 -->
+  <div class="solution-card">
+    <div class="solution-header s1">
+      <span class="solution-badge">Solution 1</span>
+      <span class="solution-title">Weekend Selection Rate — New Additive Metric</span>
+    </div>
+    <div class="solution-body">
+      <p>Group all fixtures by weekend (Sat–Sun pair). For each weekend where a player was available for at least one game, record whether they were selected for <em>any</em> game that weekend.</p>
+
+      <div class="formula-box">
+        <div class="label">New formula (weekend level)</div>
+        Weekend Selection Rate    = weekends_selected_in_any_game / weekends_available_for_any_game × 100<br/>
+        Weekend Availability Rate = weekends_available / weekends_core_team_played × 100  <span style="color:#6b7280">(core players only)</span>
+      </div>
+
+      <h4>Full-season example — Player A (core Tigers, 10 weekends, some multi-game)</h4>
+      <table>
+        <thead>
+          <tr>
+            <th>Weekend</th>
+            <th>Fixtures</th>
+            <th>Available for</th>
+            <th>Selected for</th>
+            <th>Weekend result</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Wk 1</td><td>Tigers only</td><td>Tigers</td><td>Tigers</td><td class="good result-col">✓ Selected</td></tr>
+          <tr><td>Wk 2</td><td>Tigers only</td><td>Tigers</td><td>Tigers</td><td class="good result-col">✓ Selected</td></tr>
+          <tr class="highlight-row"><td>Wk 3</td><td>Tigers + TC</td><td>Both</td><td>TC only</td><td class="good result-col">✓ Selected (TC)</td></tr>
+          <tr><td>Wk 4</td><td>Tigers + TC</td><td>Both</td><td>Tigers</td><td class="good result-col">✓ Selected</td></tr>
+          <tr><td>Wk 5</td><td>Tigers + TC</td><td>Both</td><td>Both</td><td class="good result-col">✓ Selected (double)</td></tr>
+          <tr><td>Wk 6</td><td>Tigers only</td><td>Tigers</td><td>None</td><td class="bad result-col">✗ Not selected</td></tr>
+          <tr><td>Wk 7</td><td>Tigers + TC</td><td>Both</td><td>None</td><td class="bad result-col">✗ Not selected</td></tr>
+          <tr><td>Wk 8</td><td>Tigers only</td><td>None</td><td>—</td><td class="neutral result-col">— Absent</td></tr>
+          <tr><td>Wk 9</td><td>Tigers only</td><td>Tigers</td><td>None</td><td class="bad result-col">✗ Not selected</td></tr>
+          <tr><td>Wk 10</td><td>Tigers only</td><td>Tigers</td><td>Tigers</td><td class="good result-col">✓ Selected</td></tr>
+        </tbody>
+      </table>
+
+      <div class="formula-box">
+        weekendsAvailable = 9 (all except Wk 8)<br/>
+        weekendsSelected  = 6 (Wk 1,2,3,4,5,10)<br/>
+        <strong>Weekend Selection Rate = 6/9 × 100 = 67%</strong>
+      </div>
+
+      <div class="stats-compare">
+        <div class="stats-box current">
+          <h4>Current formula (fixture-level)</h4>
+          <ul style="font-size:13px;">
+            <li>Tigers selection rate: <strong class="bad">~60%</strong> (Wk 3 counted as miss)</li>
+            <li>TC non-core: 100% (meaningless)</li>
+            <li>Club rate: inflated blend</li>
+          </ul>
+        </div>
+        <div class="stats-box proposed">
+          <h4>Solution 1 (weekend-level)</h4>
+          <ul style="font-size:13px;">
+            <li>Weekend selection rate: <strong class="good">67%</strong> (Wk 3 = got a game)</li>
+            <li>Per-team stats: unchanged</li>
+            <li>Clear fairness signal</li>
+          </ul>
+        </div>
+      </div>
+
+      <h4>Pros &amp; Cons</h4>
+      <table>
+        <tbody>
+          <tr><td class="tick">✓</td><td>Directly answers "did the player get an opportunity?"</td></tr>
+          <tr><td class="tick">✓</td><td>Does not change or break existing per-team stats</td></tr>
+          <tr><td class="tick">✓</td><td>Works naturally for both core and non-core players</td></tr>
+          <tr><td class="cross">✗</td><td>Adds a new metric — need to decide where to display it</td></tr>
+          <tr><td class="cross">✗</td><td>Requires grouping fixtures by Sat–Sun pair in the calculation engine</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Solution 2 -->
+  <div class="solution-card">
+    <div class="solution-header s2">
+      <span class="solution-badge">Solution 2</span>
+      <span class="solution-title">Availability-Adjusted Core Team Rate</span>
+    </div>
+    <div class="solution-body">
+      <p>Keep the fixture-level formula but change what counts as a "miss" for a core team. If a player was not selected for their core game but <em>was</em> selected for another game the same weekend, don't penalise their core team rate.</p>
+
+      <div class="formula-box">
+        <div class="label">Modified rule — core team selection numerator</div>
+        Count as selected if:  wasSelected_core_game = true<br/>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;OR  (wasSelected_core_game = false  AND  wasSelected_any_other_game_same_weekend = true)
+      </div>
+
+      <h4>Example — Wk 3 from above (Tigers + TC weekend)</h4>
+      <table>
+        <thead><tr><th>Fixture</th><th>wasSelected</th><th>Current rate</th><th>Adjusted rate</th></tr></thead>
+        <tbody>
+          <tr><td>Tigers</td><td class="cross">✗</td><td class="bad">−1 miss</td><td class="good">No miss (TC covered it)</td></tr>
+          <tr><td>ThunderCats</td><td class="tick">✓</td><td class="neutral">+1 non-core (100%)</td><td class="good">+1 core adjustment</td></tr>
+        </tbody>
+      </table>
+
+      <h4>Pros &amp; Cons</h4>
+      <table>
+        <tbody>
+          <tr><td class="tick">✓</td><td>Fixes the "bumped but compensated" scenario directly</td></tr>
+          <tr><td class="tick">✓</td><td>No new metric — modifies the existing selection rate</td></tr>
+          <tr><td class="cross">✗</td><td>Changes existing numbers — historical comparisons shift</td></tr>
+          <tr><td class="cross">✗</td><td>Harder to explain to players why their rate changed</td></tr>
+          <tr><td class="cross">✗</td><td>Doesn't fix the non-core visibility problem (Scenario B)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Solution 3 -->
+  <div class="solution-card">
+    <div class="solution-header s3">
+      <span class="solution-badge">Solution 3</span>
+      <span class="solution-title">Dual-Layer Stats</span>
+      <span class="recommended-badge">Recommended</span>
+    </div>
+    <div class="solution-body">
+      <p>Keep all per-team stats exactly as they are today (useful for selectors). Add a new <strong>Weekend Participation</strong> layer alongside them for fairness reporting.</p>
+
+      <h4>Two views, two purposes</h4>
+      <table>
+        <thead>
+          <tr><th>Layer</th><th>Granularity</th><th>Purpose</th><th>Audience</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Per-team stats</strong><br/><span style="font-size:12px;color:#666;">(unchanged)</span></td>
+            <td>Per fixture</td>
+            <td>Team selection decisions — how reliable is this player for my specific team?</td>
+            <td>Selectors</td>
+          </tr>
+          <tr>
+            <td><strong>Weekend stats</strong><br/><span style="font-size:12px;color:#666;">(new)</span></td>
+            <td>Per Sat–Sun weekend</td>
+            <td>Fairness reporting — is every player getting a proportional share of opportunities?</td>
+            <td>Committee, all members</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>New weekend-level fields per player per season</h4>
+      <table>
+        <thead><tr><th>Field</th><th>Definition</th></tr></thead>
+        <tbody>
+          <tr><td><code>weekendsTotal</code></td><td>Weekends where the player's core team played (core players) or where they were available (non-core)</td></tr>
+          <tr><td><code>weekendsAvailable</code></td><td>Weekends where they were marked available for at least one game</td></tr>
+          <tr><td><code>weekendsSelected</code></td><td>Weekends where they were selected for at least one game (any team)</td></tr>
+          <tr><td><code>weekendAvailabilityRate</code></td><td>weekendsAvailable / weekendsTotal × 100</td></tr>
+          <tr><td><code>weekendSelectionRate</code></td><td>weekendsSelected / weekendsAvailable × 100</td></tr>
+        </tbody>
+      </table>
+
+      <h4>Full-season comparison across player types (10-weekend season)</h4>
+      <table>
+        <thead class="comparison-header">
+          <tr>
+            <th>Player</th>
+            <th>Profile</th>
+            <th>Games played</th>
+            <th>Current selection %</th>
+            <th>Weekend selection %</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Player A</strong></td>
+            <td>Core Tigers, bumped 2× but given TC slot</td>
+            <td>9 (7T + 2TC)</td>
+            <td class="bad">Tigers: 70%<br/>Club: ~83% (inflated)</td>
+            <td class="good">9/9 available weekends = <strong>100%</strong></td>
+          </tr>
+          <tr>
+            <td><strong>Player B</strong></td>
+            <td>Core Tigers, always picked for Tigers</td>
+            <td>8</td>
+            <td class="good">Tigers: 89%</td>
+            <td class="good">8/9 = <strong>89%</strong></td>
+          </tr>
+          <tr>
+            <td><strong>Player C</strong></td>
+            <td>No core, voted every weekend, got 5 games</td>
+            <td>5</td>
+            <td class="neutral">Non-core: 100% (misleading)</td>
+            <td class="good">5/10 = <strong>50%</strong> (honest)</td>
+          </tr>
+          <tr>
+            <td><strong>Player D</strong></td>
+            <td>No core, voted every weekend, got 0 games</td>
+            <td>0</td>
+            <td class="neutral">0 games, formula silent</td>
+            <td class="bad">0/10 = <strong>0%</strong> (visible problem)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout success">
+        <strong>Player D is now visible.</strong> The committee can see that Player D voted for 10 weekends and never got a game — a clear signal to investigate whether they're being overlooked.
+      </div>
+
+      <h4>Pros &amp; Cons</h4>
+      <table>
+        <tbody>
+          <tr><td class="tick">✓</td><td>Existing per-team stats are completely unchanged — no confusion for selectors</td></tr>
+          <tr><td class="tick">✓</td><td>Makes non-core player participation visible for the first time</td></tr>
+          <tr><td class="tick">✓</td><td>Cleanly answers the fairness/equal-opportunity question</td></tr>
+          <tr><td class="tick">✓</td><td>Natural fit as a "club dashboard" view for the committee</td></tr>
+          <tr><td class="cross">✗</td><td>More data to display — UI needs a new section</td></tr>
+          <tr><td class="cross">✗</td><td>Slightly more complex calculation (weekend grouping)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===================== SECTION 6: OPEN QUESTIONS ===================== -->
+  <div class="page-break"></div>
+  <h2>6. Open Questions for Discussion</h2>
+
+  <ul class="questions-list">
+    <li>
+      <div>
+        <strong>Which solution?</strong> Solutions 1 and 3 are essentially the same metric. The choice is whether to keep per-team stats and add weekend stats alongside (Solution 3), or replace the headline rate with weekend stats (Solution 1). Solution 2 is a different approach that modifies existing numbers rather than adding a new view.
+      </div>
+    </li>
+    <li>
+      <div>
+        <strong>Denominator for core players' weekend availability.</strong> Should <code>weekendsTotal</code> count "all weekends the core team played" or "all weekends in the season where any fixture occurred"? The first option is stricter for T20 core players.
+      </div>
+    </li>
+    <li>
+      <div>
+        <strong>What counts as "the same weekend"?</strong> Saturday + Sunday of the same calendar week is the working assumption. Does a Monday fixture (rare) belong to the previous or the next weekend?
+      </div>
+    </li>
+    <li>
+      <div>
+        <strong>Should we enforce the no-dual-T20-core rule in code?</strong> Currently nothing prevents an admin from accidentally marking a player as core to both Tigers and Bulls. Should the system warn or block this?
+      </div>
+    </li>
+    <li>
+      <div>
+        <strong>Where should weekend stats appear in the admin UI?</strong> Options: a new column in the existing statistics table, a separate "Weekend Summary" tab, or a fairness report page visible to committee members.
+      </div>
+    </li>
+  </ul>
+
+  <!-- ===================== FOOTER ===================== -->
+  <hr/>
+  <div class="footer">
+    Golden State Cricket Club · Internal Document · April 2026<br/>
+    Prepared for committee review — not for public distribution
+  </div>
+
+</body>
+</html>

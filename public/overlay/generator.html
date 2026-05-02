@@ -465,13 +465,50 @@
       </div>
     </div>
 
+    <!-- Step 3 -->
+    <div class="card">
+      <p class="card-title">Step 3 — Output format</p>
+      <div class="radio-group">
+        <label class="radio-option active" id="opt-combined-label">
+          <input type="radio" name="outputMode" value="combined" checked onchange="setOutputMode('combined')" />
+          <div>
+            <div class="radio-label">Combined URL</div>
+            <div class="radio-desc">One single browser source — best for OBS and Android streaming apps</div>
+          </div>
+        </label>
+        <label class="radio-option" id="opt-separate-label">
+          <input type="radio" name="outputMode" value="separate" onchange="setOutputMode('separate')" />
+          <div>
+            <div class="radio-label">Two separate URLs</div>
+            <div class="radio-desc">Add each overlay as its own source — required for Prism Live / Streamlabs on iPhone</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
     <!-- Generate -->
     <button class="btn-primary" id="generateBtn" onclick="generate()" disabled>
       Generate overlay URLs
     </button>
 
-    <!-- Result -->
-    <div class="result-box" id="resultBox">
+    <!-- Result: combined -->
+    <div class="result-box" id="resultBoxCombined">
+      <div style="height:20px;"></div>
+      <div class="card">
+        <p class="card-title">Combined overlay URL</p>
+        <div class="result-url" id="resultUrlCombined"></div>
+        <div class="btn-row">
+          <button class="btn-secondary" id="copyBtnCombined" onclick="copyUrl('combined')">Copy URL</button>
+          <a class="btn-outline-primary" id="openBtnCombined" href="#" target="_blank">Preview</a>
+        </div>
+        <div class="hint">
+          Add as a single browser source at <strong>1920 × 1080</strong>. In OBS check <strong>"Allow transparency"</strong> or add <code>body { background: transparent !important; }</code> under Custom CSS.
+        </div>
+      </div>
+    </div>
+
+    <!-- Result: two separate -->
+    <div class="result-box" id="resultBoxSeparate">
       <div style="height:20px;"></div>
       <div class="card">
         <p class="card-title" style="margin-bottom:4px;">Source 1 — Logo overlay</p>
@@ -501,8 +538,18 @@
   <script>
     let selectedTeamUrl = null;
     let scoreMode = 'matchid';
+    let outputMode = 'combined';
     const BASE = window.location.origin;
     const CRICCLUBS_BASE = 'https://static.cricclubs.com/overlay-cc/CC_1712/ccindex.html?matchId={id}&clubId=1191';
+
+    function setOutputMode(mode) {
+      outputMode = mode;
+      document.getElementById('opt-combined-label').classList.toggle('active', mode === 'combined');
+      document.getElementById('opt-separate-label').classList.toggle('active', mode === 'separate');
+      document.getElementById('resultBoxCombined').classList.remove('visible');
+      document.getElementById('resultBoxSeparate').classList.remove('visible');
+    }
+
     function setScoreMode(mode) {
       scoreMode = mode;
       document.getElementById('panel-matchid').classList.toggle('visible', mode === 'matchid');
@@ -542,25 +589,40 @@
         ? selectedTeamUrl
         : BASE + selectedTeamUrl;
 
-      generatedUrls.logos = topFull;
-      generatedUrls.score = scoreVal;
+      if (outputMode === 'combined') {
+        const url = BASE + '/overlay/combined.html'
+          + '?top=' + encodeURIComponent(topFull)
+          + '&score=' + encodeURIComponent(scoreVal);
+        generatedUrls.combined = url;
 
-      document.getElementById('resultUrlLogos').textContent = topFull;
-      document.getElementById('openBtnLogos').href = topFull;
-      document.getElementById('resultUrlScore').textContent = scoreVal;
-      ['copyBtnLogos', 'copyBtnScore'].forEach(id => {
-        document.getElementById(id).textContent = 'Copy URL';
-        document.getElementById(id).classList.remove('copied');
-      });
-      document.getElementById('resultBox').classList.add('visible');
+        document.getElementById('resultUrlCombined').textContent = url;
+        document.getElementById('openBtnCombined').href = url;
+        document.getElementById('copyBtnCombined').textContent = 'Copy URL';
+        document.getElementById('copyBtnCombined').classList.remove('copied');
+        document.getElementById('resultBoxCombined').classList.add('visible');
+        document.getElementById('resultBoxSeparate').classList.remove('visible');
+      } else {
+        generatedUrls.logos = topFull;
+        generatedUrls.score = scoreVal;
+
+        document.getElementById('resultUrlLogos').textContent = topFull;
+        document.getElementById('openBtnLogos').href = topFull;
+        document.getElementById('resultUrlScore').textContent = scoreVal;
+        ['copyBtnLogos', 'copyBtnScore'].forEach(id => {
+          document.getElementById(id).textContent = 'Copy URL';
+          document.getElementById(id).classList.remove('copied');
+        });
+        document.getElementById('resultBoxSeparate').classList.add('visible');
+        document.getElementById('resultBoxCombined').classList.remove('visible');
+      }
     }
 
     function copyUrl(which) {
+      const btnMap = { combined: 'copyBtnCombined', logos: 'copyBtnLogos', score: 'copyBtnScore' };
       const url = generatedUrls[which];
-      const btnId = which === 'logos' ? 'copyBtnLogos' : 'copyBtnScore';
       if (!url) return;
       navigator.clipboard.writeText(url).then(() => {
-        const btn = document.getElementById(btnId);
+        const btn = document.getElementById(btnMap[which]);
         btn.textContent = 'Copied!';
         btn.classList.add('copied');
         setTimeout(() => {

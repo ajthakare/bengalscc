@@ -520,25 +520,49 @@
 
     <!-- Generate -->
     <button class="btn-primary" id="generateBtn" onclick="generate()" disabled>
-      Generate combined overlay URL
+      Generate overlay URLs
     </button>
 
-    <!-- Result -->
-    <div class="result-box" id="resultBox">
+    <!-- Result: OBS (single URL) -->
+    <div class="result-box" id="resultBoxObs">
       <div style="height:20px;"></div>
       <div class="card">
         <p class="card-title">Your combined overlay URL</p>
-        <div class="result-url" id="resultUrl"></div>
+        <div class="result-url" id="resultUrlObs"></div>
         <div class="btn-row">
-          <button class="btn-secondary" id="copyBtn" onclick="copyUrl()">Copy URL</button>
-          <a class="btn-outline-primary" id="openBtn" href="#" target="_blank">Preview in browser</a>
+          <button class="btn-secondary" id="copyBtnObs" onclick="copyUrl('obs')">Copy URL</button>
+          <a class="btn-outline-primary" id="openBtnObs" href="#" target="_blank">Preview in browser</a>
         </div>
-        <div class="hint" id="obsHint" style="display:block;">
+        <div class="hint">
           <strong>OBS Studio:</strong> Add a Browser Source → paste this URL → width <strong>1920</strong>, height <strong>1080</strong> → check <strong>"Allow transparency"</strong>. If that option isn't visible, add <code>body { background: transparent !important; }</code> under Custom CSS.
         </div>
-        <div class="hint" id="prismHint" style="display:none;">
-          <strong>Prism Live:</strong> Add a Web/Browser source → paste this URL → width <strong>1920</strong>, height <strong>1080</strong>. Then add a <strong>Chroma Key</strong> effect to that layer and set the key color to match the background you selected (green or magenta).
+      </div>
+    </div>
+
+    <!-- Result: Prism Live (two separate URLs) -->
+    <div class="result-box" id="resultBoxPrism">
+      <div style="height:20px;"></div>
+      <div class="card">
+        <p class="card-title" style="margin-bottom:4px;">Source 1 — Logo overlay</p>
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Add as a Web source in Prism → apply Chroma Key effect → set Similarity to <strong>50+</strong></p>
+        <div class="result-url" id="resultUrlPrismLogos"></div>
+        <div class="btn-row" style="margin-bottom:0;">
+          <button class="btn-secondary" id="copyBtnPrismLogos" onclick="copyUrl('prism-logos')">Copy URL</button>
+          <a class="btn-outline-primary" id="openBtnPrismLogos" href="#" target="_blank">Preview</a>
         </div>
+      </div>
+      <div style="height:12px;"></div>
+      <div class="card">
+        <p class="card-title" style="margin-bottom:4px;">Source 2 — Score ticker</p>
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Add as a second Web source in Prism → <strong>no chroma key needed</strong> → place this layer above Source 1</p>
+        <div class="result-url" id="resultUrlPrismScore"></div>
+        <div class="btn-row" style="margin-bottom:0;">
+          <button class="btn-secondary" id="copyBtnPrismScore" onclick="copyUrl('prism-score')">Copy URL</button>
+        </div>
+      </div>
+      <div style="height:12px;"></div>
+      <div class="hint">
+        <strong>Prism Live setup:</strong> Add Source 1 as a Web source → stretch it to fill the canvas → Chroma Key ON → tap Color eyedropper on the green area → set <strong>Similarity to 50–60</strong>. Then add Source 2 as a second Web source on top (no chroma key) → stretch to fill canvas.
       </div>
     </div>
   </div>
@@ -556,10 +580,9 @@
       document.getElementById('panel-chroma').classList.toggle('visible', mode === 'prism');
       document.getElementById('opt-obs-label').classList.toggle('active', mode === 'obs');
       document.getElementById('opt-prism-label').classList.toggle('active', mode === 'prism');
-      if (document.getElementById('obsHint')) {
-        document.getElementById('obsHint').style.display   = mode === 'obs'   ? 'block' : 'none';
-        document.getElementById('prismHint').style.display = mode === 'prism' ? 'block' : 'none';
-      }
+      // Hide both result boxes when switching mode
+      document.getElementById('resultBoxObs').classList.remove('visible');
+      document.getElementById('resultBoxPrism').classList.remove('visible');
       updateButton();
     }
 
@@ -592,6 +615,8 @@
       document.getElementById('generateBtn').disabled = !(selectedTeamUrl && getScoreUrl());
     }
 
+    const generatedUrls = {};
+
     function generate() {
       const scoreVal = getScoreUrl();
       if (!selectedTeamUrl || !scoreVal) return;
@@ -600,29 +625,45 @@
         ? selectedTeamUrl
         : BASE + selectedTeamUrl;
 
-      let url = BASE + '/overlay/combined.html'
-        + '?top=' + encodeURIComponent(topFull)
-        + '&score=' + encodeURIComponent(scoreVal);
+      if (appMode === 'obs') {
+        const url = BASE + '/overlay/combined.html'
+          + '?top=' + encodeURIComponent(topFull)
+          + '&score=' + encodeURIComponent(scoreVal);
+        generatedUrls.obs = url;
 
-      if (appMode === 'prism') {
+        document.getElementById('resultUrlObs').textContent = url;
+        document.getElementById('openBtnObs').href = url + '&preview=1';
+        document.getElementById('copyBtnObs').textContent = 'Copy URL';
+        document.getElementById('copyBtnObs').classList.remove('copied');
+        document.getElementById('resultBoxObs').classList.add('visible');
+        document.getElementById('resultBoxPrism').classList.remove('visible');
+      } else {
         const color = document.querySelector('input[name="chromaColor"]:checked').value;
-        url += '&bg=' + color;
+        const logosUrl = BASE + '/overlay/combined.html'
+          + '?top=' + encodeURIComponent(topFull)
+          + '&bg=' + color;
+        generatedUrls.prismLogos = logosUrl;
+        generatedUrls.prismScore = scoreVal;
+
+        document.getElementById('resultUrlPrismLogos').textContent = logosUrl;
+        document.getElementById('openBtnPrismLogos').href = logosUrl;
+        document.getElementById('resultUrlPrismScore').textContent = scoreVal;
+        ['copyBtnPrismLogos','copyBtnPrismScore'].forEach(id => {
+          document.getElementById(id).textContent = 'Copy URL';
+          document.getElementById(id).classList.remove('copied');
+        });
+        document.getElementById('resultBoxPrism').classList.add('visible');
+        document.getElementById('resultBoxObs').classList.remove('visible');
       }
-
-      generatedUrl = url;
-      document.getElementById('resultUrl').textContent = generatedUrl;
-      document.getElementById('openBtn').href = generatedUrl + (appMode === 'prism' ? '' : '&preview=1');
-      document.getElementById('resultBox').classList.add('visible');
-
-      const copyBtn = document.getElementById('copyBtn');
-      copyBtn.textContent = 'Copy URL';
-      copyBtn.classList.remove('copied');
     }
 
-    function copyUrl() {
-      if (!generatedUrl) return;
-      navigator.clipboard.writeText(generatedUrl).then(() => {
-        const btn = document.getElementById('copyBtn');
+    function copyUrl(which) {
+      const map = { obs: 'obs', 'prism-logos': 'prismLogos', 'prism-score': 'prismScore' };
+      const btnMap = { obs: 'copyBtnObs', 'prism-logos': 'copyBtnPrismLogos', 'prism-score': 'copyBtnPrismScore' };
+      const url = generatedUrls[map[which]];
+      if (!url) return;
+      navigator.clipboard.writeText(url).then(() => {
+        const btn = document.getElementById(btnMap[which]);
         btn.textContent = 'Copied!';
         btn.classList.add('copied');
         setTimeout(() => {

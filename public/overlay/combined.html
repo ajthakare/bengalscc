@@ -15,22 +15,6 @@
       overflow: hidden;
     }
 
-    /* Preview mode: checkered pattern so transparent areas are obvious in browser */
-    body.preview-mode {
-      background-image:
-        linear-gradient(45deg, #ccc 25%, transparent 25%),
-        linear-gradient(-45deg, #ccc 25%, transparent 25%),
-        linear-gradient(45deg, transparent 75%, #ccc 75%),
-        linear-gradient(-45deg, transparent 75%, #ccc 75%) !important;
-      background-size: 40px 40px !important;
-      background-position: 0 0, 0 20px, 20px -20px, -20px 0px !important;
-      background-color: #e0e0e0 !important;
-    }
-
-    /* Chroma key background modes */
-    body.bg-green   { background: #00ff00 !important; }
-    body.bg-magenta { background: #ff00ff !important; }
-
     #score-frame {
       position: fixed;
       top: 0;
@@ -42,53 +26,20 @@
       pointer-events: none;
       z-index: 2;
     }
-
-    /* Preview badge */
-    #preview-badge {
-      position: fixed;
-      bottom: 12px;
-      right: 12px;
-      background: rgba(0,0,0,0.65);
-      color: #fff;
-      font-family: Arial, sans-serif;
-      font-size: 12px;
-      padding: 6px 12px;
-      border-radius: 6px;
-      z-index: 999;
-      pointer-events: none;
-      letter-spacing: 0.04em;
-    }
   </style>
 </head>
 <body>
   <script>
-    const params = new URLSearchParams(window.location.search);
-    const topUrl    = params.get('top');
-    const scoreUrl  = params.get('score');
-    const isPreview = params.get('preview') === '1';
-    const bg        = params.get('bg'); // 'green' | 'magenta' | null
-
-    // Chroma key background
-    if (bg === 'green')   document.body.classList.add('bg-green');
-    if (bg === 'magenta') document.body.classList.add('bg-magenta');
-
-    // Preview mode: show checkered background so transparent areas are visible
-    if (isPreview && !bg) {
-      document.body.classList.add('preview-mode');
-      const badge = document.createElement('div');
-      badge.id = 'preview-badge';
-      badge.textContent = 'PREVIEW — checkered = transparent';
-      document.body.appendChild(badge);
-    }
-
+    const params   = new URLSearchParams(window.location.search);
+    const topUrl   = params.get('top');
+    const scoreUrl = params.get('score');
 
     async function loadTopOverlay(url) {
-      const res = await fetch(url);
+      const res  = await fetch(url);
       const html = await res.text();
       const parser = new DOMParser();
-      const doc = parser.parseFromString(html, 'text/html');
+      const doc  = parser.parseFromString(html, 'text/html');
 
-      // Inject styles, stripping html/body rules that would conflict with this page
       doc.querySelectorAll('style').forEach(styleEl => {
         const cleaned = styleEl.textContent
           .replace(/html\s*,\s*body\s*\{[^}]*\}/gs, '')
@@ -99,10 +50,8 @@
         document.head.appendChild(newStyle);
       });
 
-      // Inject body HTML (position:fixed elements anchor to viewport correctly)
       document.body.insertAdjacentHTML('beforeend', doc.body.innerHTML);
 
-      // Re-execute scripts (innerHTML doesn't run them)
       doc.querySelectorAll('script').forEach(oldScript => {
         const newScript = document.createElement('script');
         newScript.textContent = oldScript.textContent;
@@ -118,11 +67,8 @@
       }
 
       if (topUrl) {
-        try {
-          await loadTopOverlay(topUrl);
-        } catch (e) {
-          console.error('Failed to load top overlay:', e);
-        }
+        try { await loadTopOverlay(topUrl); }
+        catch (e) { console.error('Failed to load top overlay:', e); }
       }
 
       if (scoreUrl) {

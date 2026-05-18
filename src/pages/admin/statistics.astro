@@ -1148,6 +1148,7 @@ if (!isAdminUser) {
   let currentSeasonId = '';
   let currentTeamName = '';
   let statisticsData = [];
+  let totalFixturesForDisplay = 0;
   let sortColumn = 'playerName';
   let sortDirection = 'asc';
 
@@ -1517,6 +1518,8 @@ if (!isAdminUser) {
       throw new Error('No season selected');
     }
 
+    totalFixturesForDisplay = 0;
+
     if (currentTeamName) {
       // Load specific team stats
       const response = await fetch(
@@ -1531,6 +1534,7 @@ if (!isAdminUser) {
       if (!response.ok) throw new Error('Failed to load team statistics');
 
       const teamStats = await response.json();
+      totalFixturesForDisplay = teamStats.totalFixtures || 0;
       statisticsData = teamStats.playerStats.map((p) => ({
         playerId: p.playerId,
         playerName: p.playerName,
@@ -1562,6 +1566,8 @@ if (!isAdminUser) {
       if (allStats.calculatedAt) {
         displayLastCalculated(allStats.calculatedAt);
       }
+
+      totalFixturesForDisplay = allStats.basicStats?.summary?.totalFixtures || 0;
 
       // Transform basic stats data to table format (Overview tab)
       statisticsData = allStats.basicStats.playerStats.map((p) => ({
@@ -1660,7 +1666,9 @@ if (!isAdminUser) {
 
   function updateStatsCards() {
     const totalPlayers = new Set(statisticsData.map((s) => s.playerId)).size;
-    const totalFixtures = Math.max(...statisticsData.map((s) => s.totalFixtures), 0);
+    const totalFixtures = currentViewMode === 'season'
+      ? totalFixturesForDisplay
+      : Math.max(...statisticsData.map((s) => s.totalFixtures), 0);
     const avgAvailability = statisticsData.length > 0
       ? Math.round(
           statisticsData.reduce((sum, s) => sum + s.availabilityRate, 0) / statisticsData.length

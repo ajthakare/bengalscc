@@ -1297,6 +1297,9 @@ if (!isAdminUser) {
     thisSunday.setDate(today.getDate() + daysUntilSunday);
     const thisSundayStr = thisSunday.toISOString().split('T')[0];
 
+    const sevenDaysFromNow = new Date(today);
+    sevenDaysFromNow.setDate(today.getDate() + 7);
+
     // Categorize fixtures
     const weekendFixtures = fixtureList.filter((f) => {
       const fDate = f.date.split('T')[0];
@@ -1322,6 +1325,11 @@ if (!isAdminUser) {
 
       // Build badges for header
       let badges = [];
+
+      // Voting open badge (only for upcoming fixtures)
+      if (!isPast && fixture.availabilityOpen) {
+        badges.push(`<div class="availability-badge" style="background: #d1fae5; color: #065f46; border: 1px solid #10b981;">Voting Open Early</div>`);
+      }
 
       // Player selection badge (always show)
       if (hasEnoughPlayers) {
@@ -1351,6 +1359,31 @@ if (!isAdminUser) {
             </div>
             <div style="display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end;">
               ${badges.join('')}
+              ${(() => {
+                if (isPast) return '';
+                const fDate = new Date(fixture.date + 'T00:00:00');
+                const isWithin7Days = fDate <= sevenDaysFromNow;
+                // Button only relevant before the automatic 7-day window kicks in,
+                // OR if it's currently open early (allow admin to hide it)
+                if (isWithin7Days && !fixture.availabilityOpen) return '';
+                const label = fixture.availabilityOpen ? 'Hide Early Voting' : 'Open Voting Early';
+                const btnStyle = fixture.availabilityOpen
+                  ? 'border: 1px solid #10b981; background: #d1fae5; color: #065f46;'
+                  : 'border: 1px solid #d1d5db; background: white; color: #6b7280;';
+                return `
+                <button
+                  class="btn btn-sm"
+                  style="padding: 0.375rem 0.75rem; font-size: 0.8rem; ${btnStyle} display: flex; align-items: center; gap: 0.375rem; margin-top: 0.25rem;"
+                  onclick="event.stopPropagation(); toggleVoting('${fixture.id}', '${fixture.seasonId}', ${fixture.availabilityOpen ? 'true' : 'false'})"
+                  title="${label}"
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="6" width="10" height="7" rx="1"/>
+                    <path d="M4 6V4a3 3 0 0 1 6 0v2"/>
+                  </svg>
+                  ${label}
+                </button>`;
+              })()}
               ${hasEnoughPlayers ? `
                 <button
                   class="btn btn-sm"
@@ -1484,6 +1517,30 @@ if (!isAdminUser) {
     } else {
       grid.style.display = 'none';
       chevron.style.transform = 'rotate(-90deg)';
+    }
+  };
+
+  window.toggleVoting = async (fixtureId, seasonId, currentlyOpen) => {
+    const fixture = fixtures.find((f) => f.id === fixtureId);
+    if (!fixture) return;
+
+    const newValue = !currentlyOpen;
+    const label = newValue ? 'Open voting early' : 'Hide early voting';
+    if (!confirm(`${label} for ${fixture.gameNumber}?`)) return;
+
+    try {
+      const response = await fetch('/.netlify/functions/fixtures-update', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: fixtureId, seasonId, availabilityOpen: newValue }),
+      });
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'Failed to update fixture');
+      }
+      await loadFixtures();
+    } catch (error) {
+      alert('Error: ' + error.message);
     }
   };
 

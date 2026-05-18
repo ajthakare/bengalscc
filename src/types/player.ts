@@ -48,6 +48,7 @@ export interface Fixture {
   umpireFeeAmount?: number;      // Amount paid for umpire fee
   youtubeVideoUrl?: string;      // YouTube video link (live or recorded)
   scoringAppUrl?: string;        // Scoring app link (e.g., CricHeroes)
+  availabilityOpen?: boolean;    // Admin override: open availability voting before 7-day window
   createdAt: string;
   createdBy: string;
 }

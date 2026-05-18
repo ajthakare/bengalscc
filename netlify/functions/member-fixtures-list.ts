@@ -91,7 +91,7 @@ export const handler: Handler = async (
 
     // Filter fixtures:
     // 1. For player's teams
-    // 2. Within next 7 days (inclusive)
+    // 2. Within next 7 days OR admin has opened voting early
     const upcomingFixtures = allFixtures.filter(fixture => {
       const fixtureDate = parseLocalDate(fixture.date);
       fixtureDate.setHours(0, 0, 0, 0);
@@ -99,7 +99,7 @@ export const handler: Handler = async (
       return (
         playerTeams.includes(fixture.team) &&
         fixtureDate >= today &&
-        fixtureDate <= sevenDaysFromNow
+        (fixtureDate <= sevenDaysFromNow || fixture.availabilityOpen === true)
       );
     });
 
@@ -164,6 +164,7 @@ export const handler: Handler = async (
           division: fixture.division,
           groundAddress: fixture.groundAddress,
           isHomeTeam: fixture.isHomeTeam,
+          availabilityOpen: fixture.availabilityOpen ?? false,
           myAvailability,
           submittedAt,
           canUpdate,

@@ -95,7 +95,7 @@ export const handler: Handler = async (
       };
     }
 
-    if (fixtureDate > sevenDaysFromNow) {
+    if (fixtureDate > sevenDaysFromNow && !fixture.availabilityOpen) {
       return {
         statusCode: 403,
         body: JSON.stringify({ error: 'Can only update availability for fixtures in the next 7 days' }),

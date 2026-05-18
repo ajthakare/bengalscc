@@ -1,7 +1,7 @@
 import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
 import { validateAdminSession } from '../../src/middleware/auth';
-import { parseLocalDate } from './_utils';
+import { parseLocalDate, getPacificToday } from './_utils';
 import type {
   Player,
   CoreRosterAssignment,
@@ -98,6 +98,10 @@ export const handler: Handler = async (
       siteID: process.env.SITE_ID || '',
       token: process.env.NETLIFY_AUTH_TOKEN || '',
     });
+
+    // Today (Pacific) as YYYY-MM-DD for past-fixture comparisons
+    const pacificToday = getPacificToday();
+    const todayStr = `${pacificToday.getFullYear()}-${String(pacificToday.getMonth() + 1).padStart(2, '0')}-${String(pacificToday.getDate()).padStart(2, '0')}`;
 
     // Load all players
     const allPlayers =
@@ -412,7 +416,10 @@ export const handler: Handler = async (
               seasonName: season.name,
               teamName: teamName,
               totalPlayers: 0,
-              totalFixtures: fixtures.filter((f) => f.team === teamName).length,
+              totalFixtures: fixtures.filter((f) => {
+                if (f.team !== teamName) return false;
+                return f.date.split('T')[0] < todayStr;
+              }).length,
               averageAvailabilityRate: 0,
               averageSelectionRate: 0,
               playerStats: [],
@@ -550,11 +557,13 @@ export const handler: Handler = async (
         });
 
         seasonSummary.totalPlayers += teamSummary.totalPlayers;
-        seasonSummary.totalFixtures = Math.max(
-          seasonSummary.totalFixtures,
-          teamSummary.totalFixtures
-        );
       }
+
+      // Total past fixtures across all teams in this season
+      const seasonFixtures = seasonDataMap.get(season.id)?.fixtures || [];
+      seasonSummary.totalFixtures = seasonFixtures.filter(
+        (f) => f.date.split('T')[0] < todayStr
+      ).length;
 
       // Calculate season averages
       const allPlayerStats = seasonTeamSummaries.flatMap((ts) => ts.playerStats);

@@ -101,6 +101,29 @@ export const handler: Handler = async (
         }
       },
 
+      // Plain Stats tab (no core-gating)
+      plainStats: {
+        playerStats: (summary.playerStats || []).map((p: any) => ({
+          playerId: p.playerId,
+          playerName: p.playerName,
+          teams: p.teams,
+          activityStats: p.activityStats || {
+            timesAvailable: 0,
+            timesSelected: 0,
+            availabilityRate: 0,
+            selectionRate: 0,
+          },
+          teamActivityStats: p.teamActivityStats || {},
+        })),
+        summary: summary.activitySummary || {
+          totalPastFixtures: summary.totalFixtures || 0,
+          totalPlayersWithActivity: 0,
+          totalAvailabilityRecords: 0,
+          totalSelectionRecords: 0,
+          teamPastFixtures: {},
+        },
+      },
+
       // Advanced stats (Advanced tab)
       advancedStats: {
         playerOfMatchLeaderboard: advancedStats.playerOfMatchLeaderboard || [],

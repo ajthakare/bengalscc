@@ -174,6 +174,19 @@ export interface SeasonStats {
     [teamName: string]: TeamSeasonStats;
   };
   clubStats: ClubSeasonStats;
+  activityStats?: ActivityStats;   // Plain (no core-gating) availability/selection counts
+  teamActivityStats?: {            // Plain counts broken down per team for filtering
+    [teamName: string]: ActivityStats;
+  };
+}
+
+// Plain availability/selection counts, ignoring core-roster gating.
+// Used by the "Plain Stats" tab so every player shows up regardless of core status.
+export interface ActivityStats {
+  timesAvailable: number;          // # past fixtures where wasAvailable
+  timesSelected: number;           // # past fixtures where wasSelected
+  availabilityRate: number;        // timesAvailable / season past fixtures
+  selectionRate: number;           // timesSelected / timesAvailable
 }
 
 export interface TeamSeasonStats {
@@ -198,6 +211,7 @@ export interface CareerStats {
   totalGamesPlayed: number;
   careerAvailabilityRate: number;
   careerSelectionRate: number;
+  activity?: ActivityStats;        // Plain (no core-gating) career counts
 }
 
 // Team-level statistics summary

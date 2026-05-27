@@ -14,6 +14,7 @@ import type {
   CareerStats,
   TeamStatisticsSummary,
   SeasonStatisticsSummary,
+  ActivityStats,
 } from '../../src/types/player';
 
 /**
@@ -231,6 +232,20 @@ export const handler: Handler = async (
       }
     }
 
+    // Past-fixture count per season and per-team, used as denominators for Plain Stats rates
+    const seasonPastFixturesMap = new Map<string, number>();
+    const seasonTeamPastFixturesMap = new Map<string, Map<string, number>>();
+    for (const [seasonId, seasonData] of seasonDataMap) {
+      const fixtures = seasonData.fixtures || [];
+      const pastFixtures = fixtures.filter((f) => f.date.split('T')[0] < todayStr);
+      seasonPastFixturesMap.set(seasonId, pastFixtures.length);
+      const byTeam = new Map<string, number>();
+      for (const f of pastFixtures) {
+        byTeam.set(f.team, (byTeam.get(f.team) || 0) + 1);
+      }
+      seasonTeamPastFixturesMap.set(seasonId, byTeam);
+    }
+
     // Now calculate statistics for each player using pre-loaded data
     let playersUpdated = 0;
     const teamStatsSummaries: Map<string, TeamStatisticsSummary> = new Map();
@@ -255,6 +270,10 @@ export const handler: Handler = async (
       let careerTotalFixturesForCalc = 0;
       let careerTimesAvailable = 0;
       let careerGamesPlayed = 0;
+      // Plain (no core-gating) career counters for the Plain Stats tab
+      let careerPlainTimesAvailable = 0;
+      let careerPlainTimesSelected = 0;
+      let careerSeasonPastFixtures = 0;
       const seasonsParticipated = new Set<string>();
 
       // Process each season using pre-loaded data
@@ -293,6 +312,12 @@ export const handler: Handler = async (
         }>();
 
         let hasAnyAvailability = false;
+        // Plain counters for this season (no core gating)
+        let plainTimesAvailable = 0;
+        let plainTimesSelected = 0;
+        // Per-team plain counters so the Plain Stats tab can filter by team
+        const plainAvailableByTeam = new Map<string, number>();
+        const plainSelectedByTeam = new Map<string, number>();
 
         // Process ALL availability records for this player in this season
         const now = new Date();
@@ -316,6 +341,16 @@ export const handler: Handler = async (
             const isPastFixture = fixtureDate < now;
 
             if (!isPastFixture) continue; // Skip future fixtures
+
+            // Plain (no core-gating) counters
+            if (playerRecord.wasAvailable) {
+              plainTimesAvailable++;
+              plainAvailableByTeam.set(teamName, (plainAvailableByTeam.get(teamName) || 0) + 1);
+            }
+            if (playerRecord.wasSelected) {
+              plainTimesSelected++;
+              plainSelectedByTeam.set(teamName, (plainSelectedByTeam.get(teamName) || 0) + 1);
+            }
 
             const isCore = coreTeams.has(teamName);
 
@@ -463,12 +498,49 @@ export const handler: Handler = async (
               : 0,
         };
 
+        const seasonPastFixtures = seasonPastFixturesMap.get(season.id) || 0;
+        seasonStats.activityStats = {
+          timesAvailable: plainTimesAvailable,
+          timesSelected: plainTimesSelected,
+          availabilityRate:
+            seasonPastFixtures > 0
+              ? Math.round((plainTimesAvailable / seasonPastFixtures) * 100)
+              : 0,
+          selectionRate:
+            plainTimesAvailable > 0
+              ? Math.round((plainTimesSelected / plainTimesAvailable) * 100)
+              : 0,
+        };
+
+        // Per-team plain breakdown for team-filtering on the Plain Stats tab
+        const teamPastFixtures = seasonTeamPastFixturesMap.get(season.id) || new Map();
+        const teamActivityStats: { [teamName: string]: ActivityStats } = {};
+        const allActivityTeams = new Set<string>([
+          ...plainAvailableByTeam.keys(),
+          ...plainSelectedByTeam.keys(),
+        ]);
+        for (const teamName of allActivityTeams) {
+          const tAvailable = plainAvailableByTeam.get(teamName) || 0;
+          const tSelected = plainSelectedByTeam.get(teamName) || 0;
+          const tPast = teamPastFixtures.get(teamName) || 0;
+          teamActivityStats[teamName] = {
+            timesAvailable: tAvailable,
+            timesSelected: tSelected,
+            availabilityRate: tPast > 0 ? Math.round((tAvailable / tPast) * 100) : 0,
+            selectionRate: tAvailable > 0 ? Math.round((tSelected / tAvailable) * 100) : 0,
+          };
+        }
+        seasonStats.teamActivityStats = teamActivityStats;
+
         playerStats.seasonStats[season.id] = seasonStats;
 
         careerTotalFixtures += clubTotalFixtures;
         careerTotalFixturesForCalc += clubTotalFixturesForCalc;
         careerTimesAvailable += clubTimesAvailable;
         careerGamesPlayed += clubGamesPlayed;
+        careerPlainTimesAvailable += plainTimesAvailable;
+        careerPlainTimesSelected += plainTimesSelected;
+        careerSeasonPastFixtures += seasonPastFixtures;
       }
 
       // Calculate career stats
@@ -484,6 +556,18 @@ export const handler: Handler = async (
           careerTimesAvailable > 0
             ? Math.round((careerGamesPlayed / careerTimesAvailable) * 100)
             : 0,
+        activity: {
+          timesAvailable: careerPlainTimesAvailable,
+          timesSelected: careerPlainTimesSelected,
+          availabilityRate:
+            careerSeasonPastFixtures > 0
+              ? Math.round((careerPlainTimesAvailable / careerSeasonPastFixtures) * 100)
+              : 0,
+          selectionRate:
+            careerPlainTimesAvailable > 0
+              ? Math.round((careerPlainTimesSelected / careerPlainTimesAvailable) * 100)
+              : 0,
+        },
       };
 
       // Save player statistics with delay
@@ -621,9 +705,23 @@ export const handler: Handler = async (
               teams: teams,
               clubStats: seasonStats.clubStats,
               teamStatsBreakdown: seasonStats.teamStats,
+              activityStats: seasonStats.activityStats,
+              teamActivityStats: seasonStats.teamActivityStats || {},
             });
           }
         }
+
+        const activityPlayers = playerStatsList.filter(
+          (p) => p.activityStats && (p.activityStats.timesAvailable > 0 || p.activityStats.timesSelected > 0)
+        );
+        const totalAvailabilityRecords = activityPlayers.reduce(
+          (sum, p) => sum + (p.activityStats?.timesAvailable || 0),
+          0
+        );
+        const totalSelectionRecords = activityPlayers.reduce(
+          (sum, p) => sum + (p.activityStats?.timesSelected || 0),
+          0
+        );
 
         // Create the complete summary object
         const completeSummary = {
@@ -634,6 +732,13 @@ export const handler: Handler = async (
           averageAvailabilityRate: seasonSummary.averageAvailabilityRate,
           averageSelectionRate: seasonSummary.averageSelectionRate,
           playerStats: playerStatsList,
+          activitySummary: {
+            totalPastFixtures: seasonPastFixturesMap.get(season.id) || 0,
+            totalPlayersWithActivity: activityPlayers.length,
+            totalAvailabilityRecords,
+            totalSelectionRecords,
+            teamPastFixtures: Object.fromEntries(seasonTeamPastFixturesMap.get(season.id) || new Map()),
+          },
           calculatedAt: new Date().toISOString(),
           calculatedBy: session.username,
         };

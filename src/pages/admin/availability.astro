@@ -2411,6 +2411,42 @@ if (!isAdminUser) {
 
   // ==================== Team Announcement Functions ====================
 
+  // Compute reporting time from a fixture's start time and division.
+  // Rules: 8:30 AM games always report at 8:00 AM. Otherwise T40/C2 = 60 min before,
+  // T20/T30 = 45 min before, unknown formats default to 45 min.
+  function computeReportingTime(fixture) {
+    const timeStr = (fixture.time || '').trim();
+    if (timeStr === '8:30 AM') return '8:00 AM';
+
+    const m = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (!m) return timeStr;
+
+    const division = (fixture.division || '').toUpperCase();
+    let offsetMin = 45;
+    if (division.startsWith('T40') || division.startsWith('C2')) offsetMin = 60;
+    else if (division.startsWith('T20') || division.startsWith('T30')) offsetMin = 45;
+
+    let hours = parseInt(m[1], 10);
+    const minutes = parseInt(m[2], 10);
+    const period = m[3].toUpperCase();
+    let total = (hours % 12) * 60 + minutes + (period === 'PM' ? 720 : 0) - offsetMin;
+    if (total < 0) total += 1440;
+    const h = Math.floor(total / 60);
+    const min = total % 60;
+    const newPeriod = h >= 12 ? 'PM' : 'AM';
+    const display = h % 12 || 12;
+    return `${display}:${String(min).padStart(2, '0')} ${newPeriod}`;
+  }
+
+  function getTeamEmoji(teamName) {
+    const t = (teamName || '').toLowerCase();
+    if (t.includes('thunder cat')) return '🐯';
+    if (t.includes('bear')) return '🐻';
+    if (t.includes('tiger')) return '🐅';
+    if (t.includes('bull')) return '🐂';
+    return '';
+  }
+
   window.generateTeamAnnouncement = async (fixtureId) => {
     try {
       const fixture = fixtures.find((f) => f.id === fixtureId);
@@ -2447,10 +2483,6 @@ if (!isAdminUser) {
       // Determine home/away
       const gameType = fixture.isHomeTeam ? 'Home' : 'Away';
 
-      // Get season info
-      const season = seasons.find(s => s.id === fixture.seasonId);
-      const seasonName = season ? season.name : 'Season';
-
       // Extract game number from fixture.gameNumber (e.g., "Game 8" -> "8")
       const gameNum = fixture.gameNumber.replace('Game ', '');
 
@@ -2480,16 +2512,18 @@ if (!isAdminUser) {
       ];
 
       // Generate message
-      const message = `TEAM ANNOUNCEMENT
+      const teamEmoji = getTeamEmoji(fixture.team);
+      const message = `*TEAM ANNOUNCEMENT*
+*${fixture.team}${teamEmoji ? ' ' + teamEmoji : ''}*
 
-${fixture.team} ${seasonName}
 Game: ${fixture.team} vs ${fixture.opponent}
-Date: ${formattedDate}
-Reporting Time: ${fixture.time}
+Date: *${formattedDate}*
+Match Time: ${fixture.time}
+Reporting Time: *${computeReportingTime(fixture)}*
 Game Type: ${gameType}
 Ground Address: ${fixture.venue}${fixture.groundAddress ? ', ' + fixture.groundAddress : ''}
 
-${fixture.team} XI
+*${fixture.team} XI*
 
 ${selectedPlayers.map((p, idx) => `${String(idx + 1).padStart(2, ' ')}.⁠ ⁠@⁨${p.playerName}⁩`).join('\n')}
 

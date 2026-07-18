@@ -10,6 +10,7 @@
 [functions]
   node_bundler = "esbuild"
   included_files = ["src/types/**/*.ts"]
+  external_node_modules = ["@sparticuz/chromium", "puppeteer-core"]
 
 # Redirects for admin panel (SPA-like routing)
 [[redirects]]

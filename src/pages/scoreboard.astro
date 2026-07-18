@@ -1,0 +1,235 @@
+---
+export const prerender = false;
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Test: CricClubs Live Score</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary:      #8C1D18;
+      --primary-dark: #6e1613;
+      --gold:         #D4AF37;
+      --bg-body:      #FFFFFF;
+      --bg-card:      #F8FAFC;
+      --text-body:    #111827;
+      --text-muted:   #64748B;
+      --text-subtle:  #94A3B8;
+      --border:       #E5E7EB;
+      --border-strong:#D1D5DB;
+      --shadow-card:  0 1px 3px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.06);
+      --radius:       0.75rem;
+    }
+
+    body {
+      font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+      background: var(--bg-body);
+      color: var(--text-body);
+      min-height: 100vh;
+    }
+
+    .site-header {
+      background: var(--primary);
+      padding: 0 24px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .site-header img {
+      height: 36px;
+      width: auto;
+    }
+
+    .site-header .brand {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.01em;
+    }
+
+    .site-header .brand span {
+      font-weight: 400;
+      color: rgba(255,255,255,0.65);
+    }
+
+    .page {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 40px 20px 60px;
+    }
+
+    .page-title {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--text-body);
+      margin-bottom: 4px;
+    }
+
+    .page-subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 32px;
+    }
+
+    .gold-bar {
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary) 0%, var(--gold) 100%);
+      border-radius: 2px;
+      margin-bottom: 32px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      box-shadow: var(--shadow-card);
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-subtle);
+      margin-bottom: 16px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .input-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-body);
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 11px 14px;
+      background: #fff;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-body);
+      font-family: inherit;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      box-shadow: var(--shadow-card);
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(140, 29, 24, 0.1);
+    }
+
+    input[type="text"]::placeholder { color: var(--text-subtle); }
+
+    .btn-primary {
+      padding: 11px 20px;
+      background: var(--primary);
+      color: #fff;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      box-shadow: 0 2px 6px rgba(140, 29, 24, 0.3);
+      white-space: nowrap;
+    }
+
+    .btn-primary:hover  { background: var(--primary-dark); }
+    .btn-primary:active { transform: scale(0.99); }
+
+    .status-line {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin: 16px 0 8px;
+      min-height: 16px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 260px;
+      padding: 14px;
+      background: #fff;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-body);
+      font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', monospace;
+      font-size: 12px;
+      line-height: 1.7;
+      resize: vertical;
+      box-shadow: var(--shadow-card);
+    }
+  </style>
+</head>
+<body>
+
+  <header class="site-header">
+    <img src="/GSCC_png.png" alt="GSCC" onerror="this.style.display='none'" />
+    <div class="brand">Golden State Cricket Club <span>/ Stream Tools</span></div>
+  </header>
+
+  <div class="page">
+    <h1 class="page-title">Live Score Tester</h1>
+    <p class="page-subtitle">Look up the current score, wickets, overs, and target for a CricClubs match ID.</p>
+    <div class="gold-bar"></div>
+
+    <div class="card">
+      <p class="card-title">Match lookup</p>
+      <label class="input-label" for="matchId">CricClubs Match ID</label>
+      <form id="form" class="input-row">
+        <input type="text" id="matchId" placeholder="e.g. 8626" required />
+        <button type="submit" class="btn-primary">Submit</button>
+      </form>
+    </div>
+
+    <p class="status-line" id="status"></p>
+
+    <textarea id="output" readonly placeholder="Response will appear here..."></textarea>
+  </div>
+
+  <script>
+    const form = document.getElementById('form') as HTMLFormElement;
+    const output = document.getElementById('output') as HTMLTextAreaElement;
+    const status = document.getElementById('status') as HTMLParagraphElement;
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const matchId = (document.getElementById('matchId') as HTMLInputElement).value.trim();
+      if (!matchId) return;
+
+      status.textContent = 'Loading...';
+      output.value = '';
+
+      try {
+        const res = await fetch(`/.netlify/functions/cricclubs-live-score?matchId=${encodeURIComponent(matchId)}`);
+        const data = await res.json();
+        status.textContent = `Status: ${res.status}`;
+        output.value = JSON.stringify(data, null, 2);
+      } catch (err) {
+        status.textContent = 'Request failed';
+        output.value = String(err);
+      }
+    });
+  </script>
+</body>
+</html>

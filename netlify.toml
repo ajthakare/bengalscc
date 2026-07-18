@@ -11,6 +11,12 @@
   node_bundler = "esbuild"
   included_files = ["src/types/**/*.ts"]
 
+# @sparticuz/chromium bundles a large Chromium binary; scope it to only the
+# one function that needs it so it isn't duplicated into every function's
+# bundle (that caused an ENOSPC build failure - out of disk space).
+[functions."cricclubs-live-score"]
+  external_node_modules = ["@sparticuz/chromium", "puppeteer-core"]
+
 # Redirects for admin panel (SPA-like routing)
 [[redirects]]
   from = "/admin/*"

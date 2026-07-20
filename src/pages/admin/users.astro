@@ -709,6 +709,8 @@ if (!isSuperAdmin) {
           `;
         } else if (member.registrationStatus === 'approved') {
           actions = `<button onclick="suspendMember('${member.id}')" class="btn-suspend">Suspend</button>`;
+        } else if (member.registrationStatus === 'suspended') {
+          actions = `<button onclick="reactivateMember('${member.id}')" class="btn-approve">Reactivate</button>`;
         }
 
         row.innerHTML = `
@@ -909,6 +911,30 @@ if (!isSuperAdmin) {
         await loadMembers();
       } catch (error) {
         alert('Failed to suspend member: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      }
+    };
+
+    window.reactivateMember = async function(memberId) {
+      if (!confirm('Reactivate this member? They will be able to log in again.')) return;
+
+      try {
+        const response = await fetch('/.netlify/functions/members-reactivate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ playerId: memberId })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to reactivate member');
+        }
+
+        alert('Member reactivated');
+        await loadMembers();
+      } catch (error) {
+        alert('Failed to reactivate member: ' + (error instanceof Error ? error.message : 'Unknown error'));
       }
     };
 

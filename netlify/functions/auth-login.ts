@@ -1,6 +1,5 @@
 import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
-import { v4 as uuidv4 } from 'uuid';
 import {
   verifyPassword,
   createSession,
@@ -124,28 +123,8 @@ export const handler: Handler = async (
     // Create session cookie
     const cookie = createSessionCookie(token, isProduction);
 
-    // Create audit log entry
-    const auditLogsStore = getStore({
-      name: 'audit-logs',
-      siteID: process.env.SITE_ID || '',
-      token: process.env.NETLIFY_AUTH_TOKEN || '',
-    });
-    const auditLogs = (await auditLogsStore.get('logs', { type: 'json' })) || [];
-
     // Redirect to home page after login (PWA overrides this client-side to /fixtures)
     const redirectTo = '/';
-
-    auditLogs.push({
-      id: uuidv4(),
-      timestamp: new Date().toISOString(),
-      action: role === 'super_admin' || role === 'admin' ? 'ADMIN_LOGIN' : 'MEMBER_LOGIN',
-      username: player.email,
-      details: `${role} login: ${player.firstName} ${player.lastName}`,
-      entityType: 'player',
-      entityId: player.id,
-    });
-
-    await auditLogsStore.setJSON('logs', auditLogs);
 
     return {
       statusCode: 200,

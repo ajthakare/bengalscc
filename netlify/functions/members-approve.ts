@@ -2,6 +2,7 @@ import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
 import { v4 as uuidv4 } from 'uuid';
 import { validateAdminSession, isSuperAdmin } from '../../src/middleware/auth';
+import { addAuditLog } from '../../src/utils/auditLog';
 import type { Player } from '../../src/types/player';
 
 /**
@@ -172,25 +173,13 @@ export const handler: Handler = async (
     // Save updated players array
     await playersStore.setJSON('players-all', players);
 
-    // Create audit log entry
-    const auditLogsStore = getStore({
-      name: 'audit-logs',
-      siteID: process.env.SITE_ID || '',
-      token: process.env.NETLIFY_AUTH_TOKEN || '',
-    });
-    const auditLogs = (await auditLogsStore.get('logs', { type: 'json' })) || [];
-
-    auditLogs.push({
-      id: uuidv4(),
-      timestamp: now,
-      action: createNew ? 'MEMBER_CREATED_FROM_REGISTRATION' : 'MEMBER_APPROVED',
-      username: session.email,
-      details: actionDetails,
-      entityType: 'player',
-      entityId: approvedPlayer.id,
-    });
-
-    await auditLogsStore.setJSON('logs', auditLogs);
+    await addAuditLog(
+      session.email!,
+      createNew ? 'MEMBER_CREATED_FROM_REGISTRATION' : 'MEMBER_APPROVED',
+      actionDetails,
+      approvedPlayer.id,
+      { entityType: 'player' }
+    );
 
     return {
       statusCode: 200,

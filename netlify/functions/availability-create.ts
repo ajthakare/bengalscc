@@ -1,6 +1,7 @@
 import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
 import { validateAdminSession } from '../../src/middleware/auth';
+import { addAuditLog } from '../../src/utils/auditLog';
 import type { FixtureAvailability, Fixture, CoreRosterAssignment, Player } from '../../src/types/player';
 import { randomUUID } from 'crypto';
 
@@ -193,6 +194,14 @@ export const handler: Handler = async (
     });
 
     await availabilityStore.setJSON(indexKey, updatedIndex);
+
+    await addAuditLog(
+      session.username,
+      'availability_create',
+      `Opened availability tracking for ${fixture.gameNumber} (${fixture.team} vs ${fixture.opponent})`,
+      fixture.gameNumber,
+      { seasonId: activeSeason.id, fixtureId, rosterSize: playerAvailability.length }
+    );
 
     return {
       statusCode: 201,

@@ -1,7 +1,7 @@
 import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
-import { v4 as uuidv4 } from 'uuid';
 import { validateAdminSession, isSuperAdmin } from '../../src/middleware/auth';
+import { addAuditLog } from '../../src/utils/auditLog';
 import type { Player } from '../../src/types/player';
 
 /**
@@ -97,25 +97,13 @@ export const handler: Handler = async (
     // Invalidate all sessions for this player (optional - could be done by clearing session store)
     // For now, we'll rely on the auth-check endpoint to reject suspended accounts
 
-    // Create audit log entry
-    const auditLogsStore = getStore({
-      name: 'audit-logs',
-      siteID: process.env.SITE_ID || '',
-      token: process.env.NETLIFY_AUTH_TOKEN || '',
-    });
-    const auditLogs = (await auditLogsStore.get('logs', { type: 'json' })) || [];
-
-    auditLogs.push({
-      id: uuidv4(),
-      timestamp: now,
-      action: 'MEMBER_SUSPENDED',
-      username: session.email,
-      details: `Suspended member: ${player.firstName} ${player.lastName} (${player.email}) - Reason: ${reason}`,
-      entityType: 'player',
-      entityId: playerId,
-    });
-
-    await auditLogsStore.setJSON('logs', auditLogs);
+    await addAuditLog(
+      session.email!,
+      'MEMBER_SUSPENDED',
+      `Suspended member: ${player.firstName} ${player.lastName} (${player.email}) - Reason: ${reason}`,
+      playerId,
+      { entityType: 'player' }
+    );
 
     return {
       statusCode: 200,

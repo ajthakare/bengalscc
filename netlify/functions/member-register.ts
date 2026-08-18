@@ -2,6 +2,7 @@ import type { Context } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
 import { v4 as uuidv4 } from 'uuid';
 import { hashPassword } from '../../src/middleware/auth';
+import { addAuditLog } from '../../src/utils/auditLog';
 import type { Player } from '../../src/types/player';
 
 export default async (req: Request, context: Context) => {
@@ -196,25 +197,13 @@ export default async (req: Request, context: Context) => {
     // Save to Blobs
     await playersStore.setJSON('players-all', players);
 
-    // Create audit log entry
-    const auditLogsStore = getStore({
-      name: 'audit-logs',
-      siteID: process.env.SITE_ID || '',
-      token: process.env.NETLIFY_AUTH_TOKEN || '',
-    });
-    const auditLogs = (await auditLogsStore.get('logs', { type: 'json' })) || [];
-
-    auditLogs.push({
-      id: uuidv4(),
-      timestamp: now,
-      action: 'MEMBER_REGISTRATION',
-      username: normalizedEmail,
-      details: `New member registration: ${firstName} ${lastName} (${normalizedEmail})`,
-      entityType: 'player',
-      entityId: newPlayer.id,
-    });
-
-    await auditLogsStore.setJSON('logs', auditLogs);
+    await addAuditLog(
+      normalizedEmail,
+      'MEMBER_REGISTRATION',
+      `New member registration: ${firstName} ${lastName} (${normalizedEmail})`,
+      newPlayer.id,
+      { entityType: 'player' }
+    );
 
     // Return success (do NOT log in automatically - must be approved first)
     return new Response(

@@ -1,6 +1,7 @@
 import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
 import { validateAdminSession } from '../../src/middleware/auth';
+import { addAuditLog } from '../../src/utils/auditLog';
 import type { CoreRosterAssignment, Player, Season } from '../../src/types/player';
 import { randomUUID } from 'crypto';
 
@@ -154,6 +155,16 @@ export const handler: Handler = async (
     const teamKey = `core-roster-${seasonId}-${teamName}`;
     const teamAssignments = assignments.filter(a => a.teamName === teamName);
     await coreStore.setJSON(teamKey, teamAssignments);
+
+    await addAuditLog(
+      session.username,
+      'ROSTER_UPDATE',
+      isCore
+        ? `Marked ${player.firstName} ${player.lastName} as core to ${teamName} (${season.name})`
+        : `Removed ${player.firstName} ${player.lastName} from ${teamName} core roster (${season.name})`,
+      playerId,
+      { entityType: 'core-roster', teamName, seasonId }
+    );
 
     return {
       statusCode: 200,

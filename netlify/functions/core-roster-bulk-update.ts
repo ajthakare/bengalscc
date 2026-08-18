@@ -1,6 +1,7 @@
 import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
 import { validateAdminSession } from '../../src/middleware/auth';
+import { addAuditLog } from '../../src/utils/auditLog';
 import type { CoreRosterAssignment, Player, Season } from '../../src/types/player';
 import { randomUUID } from 'crypto';
 
@@ -127,6 +128,7 @@ export const handler: Handler = async (
     // Process each update
     let updatedCount = 0;
     const errors: string[] = [];
+    const changeSummaries: string[] = [];
 
     for (const update of updates) {
       const { playerId, inRoster, isCore, isCaptain, isViceCaptain } = update;
@@ -170,6 +172,7 @@ export const handler: Handler = async (
         if (existingIndex !== -1) {
           assignments.splice(existingIndex, 1);
           updatedCount++;
+          changeSummaries.push(`${player.firstName} ${player.lastName}: removed`);
         }
       } else {
         // Add to roster or update existing assignment
@@ -213,6 +216,9 @@ export const handler: Handler = async (
         }
 
         updatedCount++;
+        changeSummaries.push(
+          `${player.firstName} ${player.lastName}: ${isCore ? 'core' : 'squad'}${isCaptain ? ' (C)' : ''}${isViceCaptain ? ' (VC)' : ''}`
+        );
       }
     }
 
@@ -233,6 +239,14 @@ export const handler: Handler = async (
     const teamKey = `core-roster-${seasonId}-${teamName}`;
     const teamAssignments = assignments.filter(a => a.teamName === teamName);
     await coreStore.setJSON(teamKey, teamAssignments);
+
+    await addAuditLog(
+      session.username,
+      'ROSTER_BULK_UPDATE',
+      `Updated roster for ${teamName} (${season.name}): ${changeSummaries.join('; ')}`,
+      `${seasonId}-${teamName}`,
+      { entityType: 'core-roster', teamName, seasonId, updatedCount }
+    );
 
     return {
       statusCode: 200,

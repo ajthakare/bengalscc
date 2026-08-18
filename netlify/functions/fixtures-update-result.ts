@@ -1,6 +1,7 @@
 import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
 import { validateAdminSession } from '../../src/middleware/auth';
+import { addAuditLog } from '../../src/utils/auditLog';
 import type { Fixture } from '../../src/types/player';
 
 /**
@@ -181,13 +182,28 @@ export const handler: Handler = async (
       }
     }
 
+    const existingFixture = fixtures[fixtureIndex];
+
     fixtures[fixtureIndex] = {
-      ...fixtures[fixtureIndex],
+      ...existingFixture,
       ...updates,
     };
 
     // Save back to Blobs
     await fixturesStore.setJSON(`fixtures-${seasonId}`, fixtures);
+
+    const changedFields = Object.keys(updates);
+    const description = result !== undefined
+      ? `Updated result for fixture ${existingFixture.gameNumber}: ${result}${playerOfMatch ? ` (POM: ${playerOfMatch})` : ''}`
+      : `Updated umpire fee for fixture ${existingFixture.gameNumber}`;
+
+    await addAuditLog(
+      session.username,
+      'fixture_result_update',
+      description,
+      existingFixture.gameNumber,
+      { seasonId, changedFields, updates }
+    );
 
     return {
       statusCode: 200,

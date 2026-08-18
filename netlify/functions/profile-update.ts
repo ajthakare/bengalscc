@@ -1,7 +1,7 @@
 import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
-import { v4 as uuidv4 } from 'uuid';
 import { validateAdminSession, isMember, verifyPassword, hashPassword } from '../../src/middleware/auth';
+import { addAuditLog } from '../../src/utils/auditLog';
 import type { Player } from '../../src/types/player';
 
 /**
@@ -225,14 +225,6 @@ export const handler: Handler = async (
     // Save updated players array
     await playersStore.setJSON('players-all', players);
 
-    // Create audit log entry
-    const auditLogsStore = getStore({
-      name: 'audit-logs',
-      siteID: process.env.SITE_ID || '',
-      token: process.env.NETLIFY_AUTH_TOKEN || '',
-    });
-    const auditLogs = (await auditLogsStore.get('logs', { type: 'json' })) || [];
-
     const updates: string[] = [];
     if (phone !== undefined) updates.push('phone');
     if (newPassword) updates.push('password');
@@ -243,17 +235,13 @@ export const handler: Handler = async (
     if (jobCompany !== undefined) updates.push('job company');
     if (jobTitle !== undefined) updates.push('job title');
 
-    auditLogs.push({
-      id: uuidv4(),
-      timestamp: now,
-      action: 'PROFILE_UPDATED',
-      username: session.email,
-      details: `Updated profile: ${updates.join(', ')}`,
-      entityType: 'player',
-      entityId: player.id,
-    });
-
-    await auditLogsStore.setJSON('logs', auditLogs);
+    await addAuditLog(
+      session.email!,
+      'PROFILE_UPDATED',
+      `Updated profile: ${updates.join(', ')}`,
+      player.id,
+      { entityType: 'player' }
+    );
 
     return {
       statusCode: 200,

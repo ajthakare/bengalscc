@@ -1,6 +1,7 @@
 import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
 import { validateAdminSession } from '../../src/middleware/auth';
+import { addAuditLog } from '../../src/utils/auditLog';
 import type { Player, ImportResult } from '../../src/types/player';
 import { PLAYER_ROLES } from '../../src/types/player';
 import { randomUUID } from 'crypto';
@@ -301,6 +302,14 @@ export const handler: Handler = async (
     // Save players if any were created or updated
     if (importResult.created > 0 || importResult.updated > 0) {
       await store.setJSON('players-all', players);
+
+      await addAuditLog(
+        session.username,
+        'player_import',
+        `Imported players (mode: ${mode}): ${importResult.created} created, ${importResult.updated} updated${importResult.errors.length > 0 ? `, ${importResult.errors.length} row error(s)` : ''}`,
+        mode,
+        { mode, created: importResult.created, updated: importResult.updated, errorCount: importResult.errors.length }
+      );
     }
 
     return {

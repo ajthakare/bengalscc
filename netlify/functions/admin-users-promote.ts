@@ -1,8 +1,8 @@
 import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
 import { validateAdminSession, AdminUser } from '../../src/middleware/auth';
+import { addAuditLog } from '../../src/utils/auditLog';
 import type { Player } from '../../src/types/player';
-import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Promote a registered member to admin or super_admin role
@@ -126,25 +126,13 @@ export const handler: Handler = async (
       await adminStore.setJSON('users', users);
     }
 
-    // Create audit log
-    const auditLogsStore = getStore({
-      name: 'audit-logs',
-      siteID: process.env.SITE_ID || '',
-      token: process.env.NETLIFY_AUTH_TOKEN || '',
-    });
-    const auditLogs = (await auditLogsStore.get('logs', { type: 'json' })) || [];
-
-    auditLogs.push({
-      id: uuidv4(),
-      timestamp: now,
-      action: 'PROMOTE_TO_ADMIN',
-      username: session.email,
-      details: `Promoted member ${player.firstName} ${player.lastName} (${player.email}) to ${role}`,
-      entityType: 'admin-user',
-      entityId: playerId,
-    });
-
-    await auditLogsStore.setJSON('logs', auditLogs);
+    await addAuditLog(
+      session.email!,
+      'PROMOTE_TO_ADMIN',
+      `Promoted member ${player.firstName} ${player.lastName} (${player.email}) to ${role}`,
+      playerId,
+      { entityType: 'admin-user' }
+    );
 
     return {
       statusCode: 200,

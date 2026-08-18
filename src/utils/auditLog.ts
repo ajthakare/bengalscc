@@ -111,6 +111,48 @@ export async function listLogMonths(): Promise<string[]> {
 }
 
 /**
+ * Build a specific, human-readable diff between two versions of an object,
+ * limited to a given set of fields. Returns both a structured diff (for
+ * `details`) and a ready-to-use summary string (for `description`) showing
+ * actual old -> new values instead of just field names.
+ *
+ * @param before - Object state prior to the change
+ * @param after - Object state after the change
+ * @param fields - Which keys to compare
+ * @param labels - Optional friendlier display names for fields
+ */
+export function buildFieldDiff(
+  before: Record<string, any>,
+  after: Record<string, any>,
+  fields: string[],
+  labels?: Record<string, string>
+): { changedFields: string[]; changes: Record<string, { from: any; to: any }>; summary: string } {
+  const changedFields: string[] = [];
+  const changes: Record<string, { from: any; to: any }> = {};
+
+  for (const field of fields) {
+    const from = before?.[field];
+    const to = after?.[field];
+    if (JSON.stringify(from) !== JSON.stringify(to)) {
+      changedFields.push(field);
+      changes[field] = { from, to };
+    }
+  }
+
+  const summary = changedFields
+    .map((field) => {
+      const label = labels?.[field] || field;
+      const { from, to } = changes[field];
+      const fromStr = from === undefined || from === null || from === '' ? '(empty)' : from;
+      const toStr = to === undefined || to === null || to === '' ? '(empty)' : to;
+      return `${label}: ${fromStr} → ${toStr}`;
+    })
+    .join(', ');
+
+  return { changedFields, changes, summary };
+}
+
+/**
  * Delete logs older than specified days
  */
 export async function cleanupOldLogs(daysToKeep: number = 30): Promise<number> {

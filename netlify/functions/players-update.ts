@@ -3,7 +3,7 @@ import { getStore } from '@netlify/blobs';
 import { validateAdminSession } from '../../src/middleware/auth';
 import type { Player } from '../../src/types/player';
 import { PLAYER_ROLES } from '../../src/types/player';
-import { addAuditLog } from '../../src/utils/auditLog';
+import { addAuditLog, buildFieldDiff } from '../../src/utils/auditLog';
 import { spawn } from 'child_process';
 
 /**
@@ -238,12 +238,14 @@ export const handler: Handler = async (
     await store.setJSON('players-all', players);
 
     // Wait for audit log to complete
-    const changedFields = Object.keys(cleanUpdates).filter(key =>
-      JSON.stringify(existingPlayer[key as keyof Player]) !== JSON.stringify(cleanUpdates[key])
+    const { changedFields, changes, summary } = buildFieldDiff(
+      existingPlayer,
+      updatedPlayer,
+      Object.keys(cleanUpdates)
     );
     const playerName = `${updatedPlayer.firstName} ${updatedPlayer.lastName}`;
-    const description = changedFields.length > 0
-      ? `Updated player ${playerName}: ${changedFields.join(', ')}`
+    const description = summary
+      ? `Updated player ${playerName}: ${summary}`
       : `Updated player ${playerName}`;
 
     try {
@@ -252,7 +254,7 @@ export const handler: Handler = async (
         'player_update',
         description,
         playerName,
-        { changedFields, updates: cleanUpdates }
+        { changedFields, changes }
       );
     } catch (err) {
       console.error('Audit log failed:', err);

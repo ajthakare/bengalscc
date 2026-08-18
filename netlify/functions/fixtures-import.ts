@@ -1,6 +1,7 @@
 import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
 import { validateAdminSession } from '../../src/middleware/auth';
+import { addAuditLog } from '../../src/utils/auditLog';
 import type { Fixture, Season, ImportResult } from '../../src/types/player';
 import { randomUUID } from 'crypto';
 import Papa from 'papaparse';
@@ -251,6 +252,14 @@ export const handler: Handler = async (
     // Save fixtures if any were created
     if (importResult.created > 0) {
       await fixturesStore.setJSON(`fixtures-${seasonId}`, fixtures);
+
+      await addAuditLog(
+        session.username,
+        'fixture_import',
+        `Imported ${importResult.created} fixture(s) for ${season.name}${importResult.errors.length > 0 ? ` (${importResult.errors.length} row error(s))` : ''}`,
+        season.name,
+        { seasonId, created: importResult.created, errorCount: importResult.errors.length }
+      );
     }
 
     return {

@@ -1,6 +1,7 @@
 import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
 import { validateAdminSession } from '../../src/middleware/auth';
+import { addAuditLog } from '../../src/utils/auditLog';
 import type { Fixture } from '../../src/types/player';
 
 /**
@@ -181,13 +182,42 @@ export const handler: Handler = async (
       }
     }
 
+    const existingFixture = fixtures[fixtureIndex];
+
     fixtures[fixtureIndex] = {
-      ...fixtures[fixtureIndex],
+      ...existingFixture,
       ...updates,
     };
 
     // Save back to Blobs
     await fixturesStore.setJSON(`fixtures-${seasonId}`, fixtures);
+
+    const changedFields = Object.keys(updates);
+    const descriptionParts: string[] = [];
+
+    if (result !== undefined) {
+      descriptionParts.push(`result: ${result}${playerOfMatch ? ` (POM: ${playerOfMatch})` : ''}`);
+    }
+
+    if (paidUmpireFee !== undefined) {
+      descriptionParts.push(
+        paidUmpireFee
+          ? `umpire fee: paid by ${umpireFeePaidBy}${umpireFeeAmount ? ` ($${umpireFeeAmount})` : ''}`
+          : `umpire fee: cleared`
+      );
+    }
+
+    const description = descriptionParts.length > 0
+      ? `Updated fixture ${existingFixture.gameNumber} — ${descriptionParts.join('; ')}`
+      : `Updated fixture ${existingFixture.gameNumber}`;
+
+    await addAuditLog(
+      session.username,
+      'fixture_result_update',
+      description,
+      existingFixture.gameNumber,
+      { seasonId, changedFields, updates }
+    );
 
     return {
       statusCode: 200,

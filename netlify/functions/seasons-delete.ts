@@ -1,6 +1,7 @@
 import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
 import { validateAdminSession } from '../../src/middleware/auth';
+import { addAuditLog } from '../../src/utils/auditLog';
 import type { Season } from '../../src/types/player';
 
 /**
@@ -86,6 +87,14 @@ export const handler: Handler = async (
     // - Delete associated fixtures, players, availability records
     // - Or implement soft delete (mark as deleted instead of removing)
     // - Check if there are dependencies before deletion
+
+    await addAuditLog(
+      session.username,
+      'season_delete',
+      `Deleted season ${seasonToDelete.name}`,
+      seasonToDelete.name,
+      { seasonId: id }
+    );
 
     return {
       statusCode: 200,

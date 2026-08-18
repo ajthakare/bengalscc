@@ -1,6 +1,7 @@
 import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
 import { validateAdminSession } from '../../src/middleware/auth';
+import { addAuditLog } from '../../src/utils/auditLog';
 import type { Fixture } from '../../src/types/player';
 
 /**
@@ -79,6 +80,7 @@ export const handler: Handler = async (
 
     // Filter out fixtures to delete
     const initialCount = fixtures.length;
+    const deletedFixtures = fixtures.filter(f => fixtureIds.includes(f.id));
     const remainingFixtures = fixtures.filter(f => !fixtureIds.includes(f.id));
     const deletedCount = initialCount - remainingFixtures.length;
 
@@ -93,6 +95,15 @@ export const handler: Handler = async (
 
     // Save to Blobs
     await fixturesStore.setJSON(`fixtures-${seasonId}`, remainingFixtures);
+
+    const gameNumbers = deletedFixtures.map(f => f.gameNumber).join(', ');
+    await addAuditLog(
+      session.username,
+      'fixture_delete',
+      `Deleted ${deletedCount} fixture(s): ${gameNumbers}`,
+      gameNumbers,
+      { seasonId, deletedCount, deletedIds: fixtureIds }
+    );
 
     return {
       statusCode: 200,

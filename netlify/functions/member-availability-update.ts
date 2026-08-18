@@ -2,6 +2,7 @@ import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
 import { v4 as uuidv4 } from 'uuid';
 import { validateAdminSession, isMember } from '../../src/middleware/auth';
+import { addAuditLog } from '../../src/utils/auditLog';
 import type { Fixture, FixtureAvailability, CoreRosterAssignment, Player, PlayerAvailabilityRecord } from '../../src/types/player';
 import { parseLocalDate, getPacificToday } from './_utils';
 
@@ -273,25 +274,13 @@ export const handler: Handler = async (
     // Save updated index
     await availabilityStore.setJSON(indexKey, index);
 
-    // Create audit log entry
-    const auditLogsStore = getStore({
-      name: 'audit-logs',
-      siteID: process.env.SITE_ID || '',
-      token: process.env.NETLIFY_AUTH_TOKEN || '',
-    });
-    const auditLogs = (await auditLogsStore.get('logs', { type: 'json' })) || [];
-
-    auditLogs.push({
-      id: uuidv4(),
-      timestamp: now,
-      action: 'MEMBER_AVAILABILITY_UPDATE',
-      username: session.email,
-      details: `Updated availability for ${fixture.gameNumber} (${fixture.team} vs ${fixture.opponent}): ${available ? 'Available' : 'Not Available'}`,
-      entityType: 'fixture-availability',
-      entityId: fixtureId,
-    });
-
-    await auditLogsStore.setJSON('logs', auditLogs);
+    await addAuditLog(
+      session.email!,
+      'MEMBER_AVAILABILITY_UPDATE',
+      `Updated availability for ${fixture.gameNumber} (${fixture.team} vs ${fixture.opponent}): ${available ? 'Available' : 'Not Available'}`,
+      fixtureId,
+      { entityType: 'fixture-availability' }
+    );
 
     return {
       statusCode: 200,

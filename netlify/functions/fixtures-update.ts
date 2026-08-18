@@ -2,7 +2,7 @@ import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
 import { validateAdminSession } from '../../src/middleware/auth';
 import type { Fixture } from '../../src/types/player';
-import { addAuditLog } from '../../src/utils/auditLog';
+import { addAuditLog, buildFieldDiff } from '../../src/utils/auditLog';
 
 /**
  * Update a fixture
@@ -112,11 +112,13 @@ export const handler: Handler = async (
     await fixturesStore.setJSON(`fixtures-${seasonId}`, fixtures);
 
     // Add audit log (non-blocking)
-    const changedFields = Object.keys(updates).filter(key =>
-      JSON.stringify(existingFixture[key as keyof Fixture]) !== JSON.stringify(updates[key])
+    const { changedFields, changes, summary } = buildFieldDiff(
+      existingFixture,
+      updatedFixture,
+      Object.keys(updates)
     );
-    const description = changedFields.length > 0
-      ? `Updated fixture ${existingFixture.gameNumber}: ${changedFields.join(', ')}`
+    const description = summary
+      ? `Updated fixture ${existingFixture.gameNumber}: ${summary}`
       : `Updated fixture ${existingFixture.gameNumber}`;
 
     // Wait for audit log to complete
@@ -126,7 +128,7 @@ export const handler: Handler = async (
         'fixture_update',
         description,
         existingFixture.gameNumber,
-        { seasonId, changedFields, updates }
+        { seasonId, changedFields, changes }
       );
     } catch (err) {
       console.error('Audit log failed:', err);

@@ -113,6 +113,13 @@ export const handler: Handler = async (
       updates.map((u: any) => [u.playerId, u])
     );
 
+    // Snapshot prior state for players being touched, so we can log a real diff
+    const beforeState = new Map(
+      availability.playerAvailability
+        .filter((r) => updatesMap.has(r.playerId))
+        .map((r) => [r.playerId, { wasAvailable: r.wasAvailable, wasSelected: r.wasSelected }])
+    );
+
     // Update player availability records
     availability.playerAvailability = availability.playerAvailability.map(
       (record) => {
@@ -137,10 +144,33 @@ export const handler: Handler = async (
     // Save to Blobs
     await store.setJSON(`availability-${fixtureId}`, availability);
 
-    // Wait for audit log to complete
+    // Build a per-player diff of what actually changed (not just post-save totals)
+    const stateLabel = (wasAvailable: boolean, wasSelected: boolean) =>
+      wasSelected ? 'selected' : wasAvailable ? 'available' : 'not available';
+
+    const changeSummaries: string[] = [];
+    for (const record of availability.playerAvailability) {
+      const before = beforeState.get(record.playerId);
+      if (!before) continue;
+      if (before.wasAvailable !== record.wasAvailable || before.wasSelected !== record.wasSelected) {
+        changeSummaries.push(
+          `${record.playerName}: ${stateLabel(before.wasAvailable, before.wasSelected)} → ${stateLabel(record.wasAvailable, record.wasSelected)}`
+        );
+      }
+    }
+
     const availableCount = availability.playerAvailability.filter(p => p.wasAvailable).length;
     const selectedCount = availability.playerAvailability.filter(p => p.wasSelected).length;
-    const description = `Updated availability for ${availability.gameNumber} (${availability.team} vs ${availability.opponent}): ${availableCount} available, ${selectedCount} selected`;
+    const fixtureLabel = `${availability.gameNumber} (${availability.team} vs ${availability.opponent})`;
+
+    let description: string;
+    if (changeSummaries.length === 0) {
+      description = `Updated availability for ${fixtureLabel} — no player state changes`;
+    } else if (changeSummaries.length <= 15) {
+      description = `Updated availability for ${fixtureLabel}: ${changeSummaries.join('; ')}`;
+    } else {
+      description = `Updated availability for ${fixtureLabel}: ${changeSummaries.length} players updated (${availableCount} available, ${selectedCount} selected — see details)`;
+    }
 
     try {
       await addAuditLog(
@@ -154,7 +184,9 @@ export const handler: Handler = async (
           opponent: availability.opponent,
           availableCount,
           selectedCount,
-          updatesCount: updates.length
+          updatesCount: updates.length,
+          changedCount: changeSummaries.length,
+          changes: changeSummaries,
         }
       );
     } catch (err) {

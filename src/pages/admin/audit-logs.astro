@@ -108,6 +108,7 @@ if (userRole !== 'super_admin') {
         <table class="logs-table">
           <thead>
             <tr>
+              <th></th>
               <th>Timestamp</th>
               <th>User</th>
               <th>Action</th>
@@ -228,17 +229,59 @@ if (userRole !== 'super_admin') {
     }
   }
 
+  function hasRenderableDetails(details: any): boolean {
+    return !!details && typeof details === 'object' && Object.keys(details).length > 0;
+  }
+
+  function escapeHtml(value: unknown): string {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  function formatDetails(details: any): string {
+    // Prefer a structured field-level diff when present (from buildFieldDiff / manual { from, to })
+    if (details.changes && typeof details.changes === 'object' && Object.keys(details.changes).length > 0) {
+      return `<div class="log-details-content">${Object.entries(details.changes)
+        .map(([field, change]: [string, any]) => {
+          const from = change?.from === undefined || change?.from === null || change?.from === '' ? '(empty)' : change.from;
+          const to = change?.to === undefined || change?.to === null || change?.to === '' ? '(empty)' : change.to;
+          return `<div class="change-line"><strong>${escapeHtml(field)}</strong>: ${escapeHtml(from)} → ${escapeHtml(to)}</div>`;
+        })
+        .join('')}</div>`;
+    }
+
+    // Per-player / per-item change list (e.g. availability_update, core roster bulk update)
+    if (Array.isArray(details.changes) && details.changes.length > 0) {
+      return `<div class="log-details-content">${details.changes
+        .map((line: string) => `<div class="change-line">${escapeHtml(line)}</div>`)
+        .join('')}</div>`;
+    }
+
+    // Fallback: show remaining scalar key/value pairs
+    const entries = Object.entries(details).filter(
+      ([, value]) => value !== undefined && typeof value !== 'object'
+    );
+    if (entries.length === 0) return '';
+    return `<div class="log-details-content">${entries
+      .map(([key, value]) => `<div class="change-line"><strong>${escapeHtml(key)}</strong>: ${escapeHtml(value)}</div>`)
+      .join('')}</div>`;
+  }
+
   function renderLogs() {
     logsTbody.innerHTML = '';
     logCount.textContent = filteredLogs.length.toString();
 
     filteredLogs.forEach((log: any) => {
       const row = document.createElement('tr');
+      const showToggle = hasRenderableDetails(log.details);
 
       const timestamp = new Date(log.timestamp);
       const formattedTime = timestamp.toLocaleString();
 
       row.innerHTML = `
+        <td>${showToggle ? '<button type="button" class="log-details-toggle" aria-label="Show details">▶</button>' : ''}</td>
         <td class="log-time">${formattedTime}</td>
         <td class="log-user">${log.username}</td>
         <td class="log-action">
@@ -249,6 +292,21 @@ if (userRole !== 'super_admin') {
       `;
 
       logsTbody.appendChild(row);
+
+      if (showToggle) {
+        const detailsRow = document.createElement('tr');
+        detailsRow.className = 'log-details-row';
+        detailsRow.style.display = 'none';
+        detailsRow.innerHTML = `<td colspan="6">${formatDetails(log.details)}</td>`;
+        logsTbody.appendChild(detailsRow);
+
+        const toggleBtn = row.querySelector('.log-details-toggle') as HTMLButtonElement;
+        toggleBtn.addEventListener('click', () => {
+          const isExpanded = detailsRow.style.display !== 'none';
+          detailsRow.style.display = isExpanded ? 'none' : 'table-row';
+          toggleBtn.classList.toggle('expanded', !isExpanded);
+        });
+      }
     });
   }
 
@@ -534,6 +592,48 @@ if (userRole !== 'super_admin') {
   .log-target {
     color: #6b7280;
     font-size: 13px;
+  }
+
+  .log-details-toggle {
+    background: none;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+    color: #6b7280;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s ease, color 0.15s ease;
+  }
+
+  .log-details-toggle:hover {
+    color: #374151;
+  }
+
+  .log-details-toggle.expanded {
+    transform: rotate(90deg);
+    color: #374151;
+  }
+
+  .log-details-row td {
+    background: #f9fafb;
+    padding: 12px 16px 12px 44px;
+    font-size: 13px;
+  }
+
+  .log-details-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .log-details-content .change-line strong {
+    color: #374151;
+  }
+
+  .log-details-content .change-line {
+    color: #4b5563;
   }
 
   @media (max-width: 768px) {

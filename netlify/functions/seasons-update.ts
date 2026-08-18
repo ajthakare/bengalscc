@@ -2,7 +2,7 @@ import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
 import { validateAdminSession } from '../../src/middleware/auth';
 import type { Season } from '../../src/types/player';
-import { addAuditLog } from '../../src/utils/auditLog';
+import { addAuditLog, buildFieldDiff } from '../../src/utils/auditLog';
 
 /**
  * Update a season (set active, edit dates, update teams)
@@ -136,13 +136,30 @@ export const handler: Handler = async (
     }
 
     // Add audit log (non-blocking)
-    const changedFields = Object.keys(updates);
-    let description = `Updated season ${existingSeason.name}`;
-    if (updates.isActive === true && !existingSeason.isActive) {
-      description = `Activated season ${existingSeason.name}`;
-    } else if (changedFields.length > 0) {
-      description = `Updated season ${existingSeason.name}: ${changedFields.join(', ')}`;
+    // 'teams' is handled separately below — a raw array diff isn't readable in a summary line
+    const scalarFields = Object.keys(updates).filter((k) => k !== 'teams');
+    const { changedFields, changes, summary } = buildFieldDiff(existingSeason, updatedSeason, scalarFields);
+
+    const parts: string[] = [];
+    const wasActivated = updates.isActive === true && !existingSeason.isActive;
+    if (wasActivated) parts.push('activated');
+    if (summary) parts.push(summary);
+
+    if (updates.teams) {
+      const oldTeamNames = (existingSeason.teams || []).map((t) => t.teamName).join(', ') || '(none)';
+      const newTeamNames = (updatedSeason.teams || []).map((t) => t.teamName).join(', ') || '(none)';
+      if (oldTeamNames !== newTeamNames) {
+        parts.push(`teams: ${oldTeamNames} → ${newTeamNames}`);
+      } else {
+        parts.push('teams updated');
+      }
+      changedFields.push('teams');
+      changes.teams = { from: existingSeason.teams, to: updatedSeason.teams };
     }
+
+    const description = parts.length > 0
+      ? `Updated season ${existingSeason.name}: ${parts.join(', ')}`
+      : `Updated season ${existingSeason.name}`;
 
     // Wait for audit log to complete
     try {
@@ -151,7 +168,7 @@ export const handler: Handler = async (
         'season_update',
         description,
         existingSeason.name,
-        { changedFields, wasActivated: updates.isActive === true && !existingSeason.isActive }
+        { changedFields, changes, wasActivated }
       );
     } catch (err) {
       console.error('Audit log failed:', err);

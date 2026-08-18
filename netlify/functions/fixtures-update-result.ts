@@ -193,9 +193,23 @@ export const handler: Handler = async (
     await fixturesStore.setJSON(`fixtures-${seasonId}`, fixtures);
 
     const changedFields = Object.keys(updates);
-    const description = result !== undefined
-      ? `Updated result for fixture ${existingFixture.gameNumber}: ${result}${playerOfMatch ? ` (POM: ${playerOfMatch})` : ''}`
-      : `Updated umpire fee for fixture ${existingFixture.gameNumber}`;
+    const descriptionParts: string[] = [];
+
+    if (result !== undefined) {
+      descriptionParts.push(`result: ${result}${playerOfMatch ? ` (POM: ${playerOfMatch})` : ''}`);
+    }
+
+    if (paidUmpireFee !== undefined) {
+      descriptionParts.push(
+        paidUmpireFee
+          ? `umpire fee: paid by ${umpireFeePaidBy}${umpireFeeAmount ? ` ($${umpireFeeAmount})` : ''}`
+          : `umpire fee: cleared`
+      );
+    }
+
+    const description = descriptionParts.length > 0
+      ? `Updated fixture ${existingFixture.gameNumber} — ${descriptionParts.join('; ')}`
+      : `Updated fixture ${existingFixture.gameNumber}`;
 
     await addAuditLog(
       session.username,
